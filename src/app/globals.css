@@ -1,26 +1,46 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --creme: #ecddd9;
+  --creme-claro: #f6eeeb;
+  --linha: #cdbdb8;
+  --preto: #000001;
+  --laranja: #d54a24;
+  --laranja-texto: #a8361a;
+  --amarelo: #cfbe48;
+  --cinza: #5e5452;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-creme: var(--creme);
+  --color-creme-claro: var(--creme-claro);
+  --color-linha: var(--linha);
+  --color-preto: var(--preto);
+  --color-laranja: var(--laranja);
+  --color-laranja-texto: var(--laranja-texto);
+  --color-amarelo: var(--amarelo);
+  --color-cinza: var(--cinza);
+
+  --font-sans: var(--font-inter-tight), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-instrument-serif), ui-serif, Georgia, serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, monospace;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* Identidade MCi: cantos retos e nenhuma sombra. Não usamos classes rounded-*
+   nem shadow-*; as únicas formas redondas são os círculos da marca (rounded-full). */
+*,
+*::before,
+*::after {
+  box-shadow: none !important;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--creme);
+  color: var(--preto);
+  font-family: var(--font-sans);
+}
+
+:focus-visible {
+  outline: 2px solid var(--laranja-texto);
+  outline-offset: 2px;
 }
