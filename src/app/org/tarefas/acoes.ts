@@ -22,6 +22,7 @@ import {
   criarTarefa,
   excluirTarefa,
   membrosOrg,
+  moverTarefa,
   tarefaPorId,
   type Alteracao,
   type NovaTarefa,
@@ -399,6 +400,35 @@ export async function atualizarCampoPersonalizadoTarefaAction(
   const para = descreverValorPersonalizado(campo, validado.valor);
   if (de !== para) {
     await registrarEvento({ tarefa_id: tarefaId, autor_id: sessao.conta.id, tipo: "campo", campo: campo.rotulo, de, para });
+  }
+  revalidatePath("/org", "layout");
+  return {};
+}
+
+/** Arrastar e soltar: muda a tarefa de grupo e/ou de posição dentro do projeto. */
+export async function moverTarefaAction(id: string, grupoId: string, antesDeId: string | null): Promise<EstadoForm> {
+  const sessao = await exigirOrg();
+  if (!UUID.test(id) || !UUID.test(grupoId) || (antesDeId !== null && !UUID.test(antesDeId))) return { erro: "Pedido inválido." };
+
+  const [atual, grupos] = await Promise.all([tarefaPorId(id), listarGrupos()]);
+  if (!atual) return { erro: "Tarefa não encontrada." };
+  try {
+    const r = await moverTarefa(id, grupoId, antesDeId);
+    if (r === "nao_achou") return { erro: "Só tarefas (não subtarefas) podem ser movidas." };
+    if (r === "grupo_invalido") return { erro: "O grupo precisa ser do projeto da tarefa." };
+  } catch (erro) {
+    console.error("Falha ao mover a tarefa:", erro);
+    return { erro: "Algo deu errado. Tente de novo em alguns minutos." };
+  }
+  if (atual.grupo_id !== grupoId) {
+    await registrarEvento({
+      tarefa_id: id,
+      autor_id: sessao.conta.id,
+      tipo: "campo",
+      campo: "Grupo",
+      de: grupos.find((g) => g.id === atual.grupo_id)?.nome ?? null,
+      para: grupos.find((g) => g.id === grupoId)?.nome ?? null,
+    });
   }
   revalidatePath("/org", "layout");
   return {};

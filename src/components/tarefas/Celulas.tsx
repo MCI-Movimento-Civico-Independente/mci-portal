@@ -46,7 +46,7 @@ export function CelulaOpcao({
         value={valor}
         disabled={pendente}
         onChange={(e) => salvar(e.target.value)}
-        className={`min-h-11 w-full rounded-lg border px-2.5 text-xs font-semibold hover:brightness-95 disabled:opacity-60 dark:hover:brightness-125 ${atual.classes}`}
+        className={`min-h-11 md:min-h-8 w-full rounded-lg border px-2.5 text-xs md:text-[11px] font-semibold hover:brightness-95 disabled:opacity-60 dark:hover:brightness-125 ${atual.classes}`}
       >
         {opcoes.map((o) => (
           <option key={o.valor} value={o.valor} className="bg-superficie text-texto">
@@ -81,7 +81,7 @@ export function CelulaPessoa({
         value={valor}
         disabled={pendente}
         onChange={(e) => salvar(e.target.value)}
-        className="min-h-11 w-full truncate rounded-lg border border-transparent bg-transparent px-1.5 text-sm font-medium hover:border-borda hover:bg-sutil disabled:opacity-60"
+        className="min-h-11 md:min-h-8 w-full truncate rounded-lg border border-transparent bg-transparent px-1.5 text-sm md:text-[13px] font-medium hover:border-borda hover:bg-sutil disabled:opacity-60"
       >
         <option value="">—</option>
         {membros.map((m) => (
@@ -124,7 +124,7 @@ export function CelulaData({
         disabled={pendente}
         onBlur={(e) => salvar(e.target.value)}
         onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
-        className={`min-h-11 w-28 border border-transparent bg-transparent px-1 text-xs hover:border-borda hover:bg-sutil disabled:opacity-60 ${
+        className={`min-h-11 md:min-h-8 w-28 md:w-24 border border-transparent bg-transparent px-1 text-xs md:text-[11px] hover:border-borda hover:bg-sutil disabled:opacity-60 ${
           alerta ? "font-bold text-marca-texto" : ""
         }`}
       />
@@ -158,7 +158,7 @@ export function CelulaGrupo({
           value={valor}
           disabled={pendente}
           onChange={(e) => salvar(e.target.value)}
-          className="min-h-11 w-full truncate border border-transparent bg-transparent py-0 pl-6 pr-1.5 text-sm font-medium hover:border-borda-forte hover:bg-sutil disabled:opacity-60"
+          className="min-h-11 md:min-h-8 w-full truncate border border-transparent bg-transparent py-0 pl-6 pr-1.5 text-sm md:text-[13px] font-medium hover:border-borda-forte hover:bg-sutil disabled:opacity-60"
         >
           {valor === "" && <option value="">—</option>}
           {grupos.map((g) => (
@@ -191,7 +191,7 @@ export function CelulaFormulario({
         value={valor}
         disabled={pendente}
         onChange={(e) => salvar(e.target.value)}
-        className="min-h-11 w-full truncate rounded-lg border border-transparent bg-transparent px-1.5 text-sm font-medium hover:border-borda hover:bg-sutil disabled:opacity-60"
+        className="min-h-11 md:min-h-8 w-full truncate rounded-lg border border-transparent bg-transparent px-1.5 text-sm md:text-[13px] font-medium hover:border-borda hover:bg-sutil disabled:opacity-60"
       >
         {formularios.map((f) => (
           <option key={f.id} value={f.id}>
@@ -222,7 +222,7 @@ export function CelulaComite({
         value={valor}
         disabled={pendente}
         onChange={(e) => salvar(e.target.value)}
-        className="min-h-11 w-full truncate rounded-lg border border-transparent bg-transparent px-1.5 text-sm font-medium hover:border-borda hover:bg-sutil disabled:opacity-60"
+        className="min-h-11 md:min-h-8 w-full truncate rounded-lg border border-transparent bg-transparent px-1.5 text-sm md:text-[13px] font-medium hover:border-borda hover:bg-sutil disabled:opacity-60"
       >
         <option value="">— sem comitê</option>
         {comites.map((c) => (
@@ -262,7 +262,7 @@ export function CelulaProjeto({
         value={valor}
         disabled={pendente}
         onChange={(e) => salvar(e.target.value)}
-        className="min-h-11 w-full truncate rounded-lg border border-transparent bg-transparent px-1.5 text-sm font-medium hover:border-borda hover:bg-sutil disabled:opacity-60"
+        className="min-h-11 md:min-h-8 w-full truncate rounded-lg border border-transparent bg-transparent px-1.5 text-sm md:text-[13px] font-medium hover:border-borda hover:bg-sutil disabled:opacity-60"
       >
         <option value="">— sem projeto</option>
         {comites.map((c) => {
@@ -312,7 +312,7 @@ export function CelulaTitulo({
     if (texto.trim()) salvar(texto.trim());
   }
 
-  const tamanho = grande ? "font-titulo text-2xl font-extrabold leading-tight tracking-tight md:text-3xl" : "text-[15px] font-bold leading-snug";
+  const tamanho = grande ? "font-titulo text-2xl font-extrabold leading-tight tracking-tight md:text-3xl" : "text-sm font-bold leading-snug md:text-[13px]";
 
   if (editando) {
     return (
@@ -330,7 +330,7 @@ export function CelulaTitulo({
               e.currentTarget.blur();
             }
           }}
-          className={`min-h-11 w-full border border-inverso bg-superficie px-2 ${tamanho}`}
+          className={`min-h-11 md:min-h-8 w-full border border-inverso bg-superficie px-2 ${tamanho}`}
         />
         <MensagemErro erro={erro} />
       </div>
@@ -355,7 +355,7 @@ export function CelulaTitulo({
           type="button"
           aria-label="Editar assunto"
           onClick={() => setEditando(true)}
-          className="flex size-11 shrink-0 items-center justify-center text-suave hover:bg-sutil hover:text-texto md:opacity-0 md:focus-visible:opacity-100 md:group-hover/titulo:opacity-100"
+          className="flex size-11 md:size-7 shrink-0 items-center justify-center text-suave hover:bg-sutil hover:text-texto md:opacity-0 md:focus-visible:opacity-100 md:group-hover/titulo:opacity-100"
         >
           <TbPencil size={14} aria-hidden="true" />
         </button>

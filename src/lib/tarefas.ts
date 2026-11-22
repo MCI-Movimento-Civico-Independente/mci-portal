@@ -20,6 +20,8 @@ export type TarefaDb = {
   solicitante_id: string | null;
   responsavel_id: string | null;
   criado_em: string;
+  /** Posição dentro do grupo (arrastar e soltar). */
+  ordem: number;
   concluida_em: string | null;
   /** Valores dos campos personalizados: {"<id do campo>": valor}. */
   campos: Record<string, string | number | boolean>;
@@ -39,7 +41,7 @@ export type TarefaDb = {
 // essa conferência na borda é o que protege estes dados.
 
 const COLUNAS =
-  "id, titulo, descricao, status, prioridade, data_inicio, prazo, pai_id, comite_slug, formulario_id, projeto_id, grupo_id, solicitante_id, responsavel_id, criado_em, concluida_em, campos, " +
+  "id, titulo, descricao, status, prioridade, data_inicio, prazo, pai_id, comite_slug, formulario_id, projeto_id, grupo_id, solicitante_id, responsavel_id, criado_em, ordem, concluida_em, campos, " +
   "projeto:projetos!projeto_id(id, nome), solicitante:contas!solicitante_id(id, nome), responsavel:contas!responsavel_id(id, nome)";
 
 type Linha = Omit<TarefaDb, "subtarefas" | "paiTitulo">;
@@ -241,4 +243,63 @@ export async function atualizarTarefa(id: string, alteracao: Alteracao): Promise
 export async function excluirTarefa(id: string): Promise<void> {
   const { error } = await createAdminClient().from("tarefas").delete().eq("id", id);
   if (error) throw error;
+}
+
+/**
+ * Põe a tarefa (de primeiro nível) em um grupo, antes de `antesDeId` (ou no fim, se for null).
+ * Usa a média entre as vizinhas; se o espaço acabar, renumera o grupo.
+ */
+export async function moverTarefa(
+  id: string,
+  grupoId: string,
+  antesDeId: string | null,
+): Promise<"ok" | "nao_achou" | "grupo_invalido"> {
+  const db = createAdminClient();
+  const { data: tarefa, error } = await db.from("tarefas").select("id, projeto_id, pai_id").eq("id", id).maybeSingle();
+  if (error) throw error;
+  if (!tarefa || tarefa.pai_id) return "nao_achou";
+  const { data: grupo, error: erroGrupo } = await db
+    .from("projeto_grupos")
+    .select("id, projeto_id")
+    .eq("id", grupoId)
+    .maybeSingle();
+  if (erroGrupo) throw erroGrupo;
+  if (!grupo || grupo.projeto_id !== tarefa.projeto_id) return "grupo_invalido";
+
+  const { data: lista, error: erroLista } = await db
+    .from("tarefas")
+    .select("id, ordem")
+    .eq("grupo_id", grupoId)
+    .is("pai_id", null)
+    .neq("id", id)
+    .order("ordem")
+    .order("criado_em");
+  if (erroLista) throw erroLista;
+  const outras = (lista ?? []) as { id: string; ordem: number }[];
+
+  const i = antesDeId ? outras.findIndex((t) => t.id === antesDeId) : -1;
+  const pos = i < 0 ? outras.length : i;
+  const antes = outras[pos - 1]?.ordem;
+  const depois = outras[pos]?.ordem;
+  let ordem: number;
+  if (antes !== undefined && depois !== undefined) ordem = (antes + depois) / 2;
+  else if (depois !== undefined) ordem = depois - 1000;
+  else if (antes !== undefined) ordem = antes + 1000;
+  else ordem = 1000;
+
+  const apertado = antes !== undefined && depois !== undefined && depois - antes < 0.001;
+  if (apertado) {
+    // Sem espaço entre as vizinhas: renumera o grupo inteiro (1000, 2000, ...), com a tarefa no lugar.
+    const ids = outras.map((t) => t.id);
+    ids.splice(pos, 0, id);
+    for (const [n, tid] of ids.entries()) {
+      const patch = tid === id ? { ordem: (n + 1) * 1000, grupo_id: grupoId } : { ordem: (n + 1) * 1000 };
+      const { error: erroUpd } = await db.from("tarefas").update(patch).eq("id", tid);
+      if (erroUpd) throw erroUpd;
+    }
+    return "ok";
+  }
+  const { error: erroUpd } = await db.from("tarefas").update({ grupo_id: grupoId, ordem }).eq("id", id);
+  if (erroUpd) throw erroUpd;
+  return "ok";
 }

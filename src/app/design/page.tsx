@@ -42,6 +42,7 @@ function tarefa(p: Partial<TarefaDb> & Pick<TarefaDb, "id" | "titulo">): TarefaD
     solicitante_id: vitor.id,
     responsavel_id: vitor.id,
     criado_em: "2026-11-20T12:00:00Z",
+    ordem: 1,
     concluida_em: null,
     campos: {},
     projeto: { id: "pr1", nome: "Bot Carcará" },

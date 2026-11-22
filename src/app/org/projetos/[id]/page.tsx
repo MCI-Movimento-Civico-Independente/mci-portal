@@ -2,12 +2,10 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { TbChevronLeft, TbPlus } from "react-icons/tb";
 import { BotaoArquivar } from "@/components/projetos/BotaoArquivar";
-import { BotaoNovoGrupo } from "@/components/projetos/FormGrupo";
-import { GrupoRecolhivel } from "@/components/projetos/GrupoRecolhivel";
+import { QuadroGrupos } from "@/components/projetos/QuadroGrupos";
 import { DetalheTarefa } from "@/components/tarefas/DetalheTarefa";
 import { FormNovaTarefa } from "@/components/tarefas/FormNovaTarefa";
 import { Modal } from "@/components/tarefas/Modal";
-import { TabelaTarefas } from "@/components/tarefas/TabelaTarefas";
 import { Botao } from "@/components/ui/Botao";
 import { Card } from "@/components/ui/Card";
 import { listarCamposPersonalizados } from "@/lib/campos-personalizados";
@@ -58,17 +56,6 @@ export default async function ProjetoPage({
   const arquivado = projeto.status === "arquivado";
   const hrefNova = (grupoId?: string) => `${caminho}?nova=1${grupoId ? `&grupo=${grupoId}` : ""}`;
 
-  const tabela = (lista: typeof tarefas) =>
-    lista.length === 0 ? (
-      <p className="px-2 py-3 text-[15px] text-suave">Nenhuma tarefa neste grupo.</p>
-    ) : (
-      <TabelaTarefas tarefas={lista} membros={membros} comites={comites} projetos={todosProjetos} grupos={grupos} hoje={hoje} qs="" caminho={caminho} />
-    );
-  const conta = (lista: typeof tarefas) => ({
-    total: lista.length,
-    feitas: lista.filter((t) => t.status === "concluida").length,
-  });
-
   return (
     <div className="flex flex-col gap-6">
       <Link
@@ -113,18 +100,16 @@ export default async function ProjetoPage({
         </div>
       </Card>
 
-      <div className="flex flex-col gap-4">
-        {grupos.map((g, i) => {
-          const doGrupo = tarefas.filter((t) => t.grupo_id === g.id);
-          return (
-            <GrupoRecolhivel key={g.id} grupo={g} {...conta(doGrupo)} hrefNovaTarefa={hrefNova(g.id)} primeiro={i === 0} ultimo={i === grupos.length - 1} podeExcluir={grupos.length > 1}>
-              {tabela(doGrupo)}
-            </GrupoRecolhivel>
-          );
-        })}
-        {grupos.length === 0 && <p className="px-1 text-[15px] text-suave">Este projeto ainda não tem grupos. Adicione o primeiro abaixo.</p>}
-        <BotaoNovoGrupo projetoId={id} />
-      </div>
+      <QuadroGrupos
+        projetoId={id}
+        grupos={grupos}
+        tarefas={tarefas}
+        membros={membros}
+        comites={comites}
+        projetos={todosProjetos}
+        hoje={hoje}
+        caminho={caminho}
+      />
 
       {aberta && (
         <Modal key={aberta.id} fecharHref={caminho} rotulo={`Tarefa: ${aberta.titulo}`}>
