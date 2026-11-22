@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { LinkLocal } from "@/components/LinkLocal";
 import type { ButtonHTMLAttributes, ReactNode } from "react";
 
 export type VarianteBotao = "primario" | "destaque" | "secundario";
@@ -20,7 +21,7 @@ type BaseProps = {
 type BotaoProps = BaseProps &
   (
     | ({ href?: undefined } & ButtonHTMLAttributes<HTMLButtonElement>)
-    | { href: string }
+    | { href: string; /** Só troca a URL, sem pedir a página ao servidor (abre janelas na hora). */ local?: boolean }
   );
 
 /** Botão com alvo de toque mínimo de 44px. Com `href`, renderiza um link. */
@@ -33,6 +34,13 @@ export function Botao({
   const classes = `inline-flex min-h-11 min-w-11 items-center justify-center gap-2 px-5 text-sm font-bold active:translate-y-px disabled:pointer-events-none disabled:opacity-50 ${estilos[variante]} ${className}`;
 
   if (resto.href !== undefined) {
+    if ("local" in resto && resto.local) {
+      return (
+        <LinkLocal href={resto.href} className={classes}>
+          {children}
+        </LinkLocal>
+      );
+    }
     return (
       <Link href={resto.href} className={classes}>
         {children}
@@ -41,7 +49,7 @@ export function Botao({
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars -- tira o href dos atributos do <button>
-  const { href: _href, ...atributos } = resto;
+  const { href: _href, ...atributos } = resto as ButtonHTMLAttributes<HTMLButtonElement> & { href?: undefined };
   return (
     <button type="button" className={classes} {...atributos}>
       {children}

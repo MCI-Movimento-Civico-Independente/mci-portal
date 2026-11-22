@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { LinkLocal } from "@/components/LinkLocal";
 import type { Pessoa, TarefaDb } from "@/lib/tarefas";
 import { PRIORIDADE_OPCOES, STATUS_OPCOES } from "@/lib/tarefas-campos";
 import { CelulaOpcao } from "./Celulas";
@@ -14,13 +14,12 @@ export function CartaoTarefa({ t, membros, hoje, qs }: { t: TarefaDb; membros: P
   const atrasada = t.status !== "concluida" && !!t.prazo && t.prazo < hoje;
   return (
     <li className="flex flex-col gap-2 border-2 border-borda bg-superficie p-3 hover:border-texto">
-      <Link
+      <LinkLocal
         href={`/org/tarefas?${qs ? `${qs}&` : ""}tarefa=${t.id}`}
-        scroll={false}
         className="text-[15px] font-bold leading-snug hover:text-marca-texto hover:underline"
       >
         {t.titulo}
-      </Link>
+      </LinkLocal>
       {t.projeto && <p className="truncate text-[11px] uppercase text-suave">{t.projeto.nome}</p>}
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
         <Progresso feitas={feitas} total={t.subtarefas.length} />

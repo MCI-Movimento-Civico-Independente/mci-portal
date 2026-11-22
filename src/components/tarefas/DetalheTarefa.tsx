@@ -1,7 +1,7 @@
-import Link from "next/link";
+"use client";
+
+import { LinkLocal } from "@/components/LinkLocal";
 import { TbChevronLeft } from "react-icons/tb";
-import { listarComentarios, listarHistorico, type Evento } from "@/lib/atividade";
-import { formatarDataHora, hojeSP } from "@/lib/datas";
 import {
   chaveFormulario,
   valorComoTexto,
@@ -12,7 +12,7 @@ import type { GrupoBasico } from "@/lib/grupos-tipos";
 import type { ComiteBasico, ProjetoBasico } from "@/lib/organizacao";
 import type { Pessoa, TarefaDb } from "@/lib/tarefas";
 import { CAMPOS } from "@/lib/tarefas-campos";
-import { Atividade } from "./Atividade";
+import { AtividadeCarregavel } from "./AtividadeCarregavel";
 import { BotaoExcluir } from "./BotaoExcluir";
 import { CampoPersonalizadoInline } from "./CampoPersonalizado";
 import { CampoEditavel, CelulaTitulo } from "./Celulas";
@@ -20,25 +20,8 @@ import { FormDescricao } from "./FormDescricao";
 import { NovaSubtarefa } from "./NovaSubtarefa";
 import { SubtarefasLista } from "./SubtarefasLista";
 
-function fraseDoEvento(e: Evento): string {
-  switch (e.tipo) {
-    case "criada":
-      return "criou a tarefa";
-    case "descricao":
-      return "editou a descrição";
-    case "subtarefa_adicionada":
-      return `adicionou a subtarefa "${e.para_texto ?? ""}"`;
-    case "subtarefa_removida":
-      return `removeu a subtarefa "${e.de_texto ?? ""}"`;
-    case "campo":
-      if (!e.de_texto) return `definiu ${e.campo} como ${e.para_texto}`;
-      if (!e.para_texto) return `removeu ${e.campo} (era ${e.de_texto})`;
-      return `alterou ${e.campo}: ${e.de_texto} → ${e.para_texto}`;
-  }
-}
-
 /** Conteúdo da janela da tarefa: campos editáveis, descrição, subtarefas e atividade. */
-export async function DetalheTarefa({
+export function DetalheTarefa({
   tarefa,
   membros,
   comites,
@@ -50,6 +33,7 @@ export async function DetalheTarefa({
   qs,
   euId,
   souAdmin,
+  hoje,
 }: {
   tarefa: TarefaDb;
   membros: Pessoa[];
@@ -63,10 +47,9 @@ export async function DetalheTarefa({
   qs: string;
   euId: string;
   souAdmin: boolean;
+  hoje: string;
 }) {
-  const [comentarios, historico] = await Promise.all([listarComentarios(tarefa.id), listarHistorico(tarefa.id)]);
   const ehSub = tarefa.pai_id !== null;
-  const hoje = hojeSP();
   const feitas = tarefa.subtarefas.filter((s) => s.status === "concluida").length;
   const total = tarefa.subtarefas.length;
   // O formulário da tarefa decide quais campos aparecem (os fixos aparecem sempre).
@@ -91,14 +74,13 @@ export async function DetalheTarefa({
     <div className="flex flex-col gap-6">
       <div className="pr-10">
         {ehSub ? (
-          <Link
+          <LinkLocal
             href={`${caminho}?${qs ? `${qs}&` : ""}tarefa=${tarefa.pai_id}`}
-            scroll={false}
             className="inline-flex min-h-11 items-center gap-1 rotulo text-marca-texto hover:underline"
           >
             <TbChevronLeft size={14} aria-hidden="true" />
             Subtarefa de {tarefa.paiTitulo ?? "tarefa"}
-          </Link>
+          </LinkLocal>
         ) : (
           <p className="rotulo text-suave">Tarefa</p>
         )}
@@ -178,24 +160,7 @@ export async function DetalheTarefa({
         </section>
       )}
 
-      <Atividade
-        tarefaId={tarefa.id}
-        euId={euId}
-        souAdmin={souAdmin}
-        comentarios={comentarios.map((c) => ({
-          id: c.id,
-          texto: c.texto,
-          quando: formatarDataHora(c.criado_em),
-          autor: c.autor?.nome?.trim() || "Membro removido",
-          autorId: c.autor_id,
-        }))}
-        historico={historico.map((e) => ({
-          id: e.id,
-          quando: formatarDataHora(e.criado_em),
-          autor: e.autor?.nome?.trim() || "Membro removido",
-          frase: fraseDoEvento(e),
-        }))}
-      />
+      <AtividadeCarregavel tarefaId={tarefa.id} euId={euId} souAdmin={souAdmin} versao={tarefa} />
 
       <div className="flex justify-end border-t border-borda pt-3">
         <BotaoExcluir

@@ -2,9 +2,9 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { criarComentario, excluirComentario, registrarEvento } from "@/lib/atividade";
+import { criarComentario, excluirComentario, listarComentarios, listarHistorico, registrarEvento, type Evento } from "@/lib/atividade";
 import { getSessao } from "@/lib/auth/sessao";
-import { dataValida, formatarDataCurta } from "@/lib/datas";
+import { dataValida, formatarDataCurta, formatarDataHora } from "@/lib/datas";
 import { definirValorPersonalizado, listarCamposPersonalizados } from "@/lib/campos-personalizados";
 import {
   chaveFormulario,
@@ -30,6 +30,7 @@ import {
   type Pessoa,
   type TarefaDb,
 } from "@/lib/tarefas";
+import type { ComentarioView, EventoView } from "@/components/tarefas/Atividade";
 import { campoPorChave, type CampoTarefa, type ChaveCampo, type Prioridade } from "@/lib/tarefas-campos";
 
 export type EstadoForm = { erro?: string; ok?: boolean; n?: number };
@@ -598,4 +599,50 @@ export async function atualizarEmMassaAction(ids: string[], mudanca: MudancaEmMa
   }
   revalidatePath("/org", "layout");
   return {};
+}
+
+function fraseDoEvento(e: Evento): string {
+  switch (e.tipo) {
+    case "criada":
+      return "criou a tarefa";
+    case "descricao":
+      return "editou a descrição";
+    case "subtarefa_adicionada":
+      return `adicionou a subtarefa "${e.para_texto ?? ""}"`;
+    case "subtarefa_removida":
+      return `removeu a subtarefa "${e.de_texto ?? ""}"`;
+    case "campo":
+      if (!e.de_texto) return `definiu ${e.campo} como ${e.para_texto}`;
+      if (!e.para_texto) return `removeu ${e.campo} (era ${e.de_texto})`;
+      return `alterou ${e.campo}: ${e.de_texto} → ${e.para_texto}`;
+  }
+}
+
+/** Comentários e histórico, buscados depois que a janela da tarefa já abriu (ela abre sem esperar por eles). */
+export async function carregarAtividadeAction(
+  tarefaId: string,
+): Promise<{ comentarios: ComentarioView[]; historico: EventoView[] } | { erro: string }> {
+  await exigirOrg();
+  if (!UUID.test(tarefaId)) return { erro: "Tarefa inválida." };
+  try {
+    const [comentarios, historico] = await Promise.all([listarComentarios(tarefaId), listarHistorico(tarefaId)]);
+    return {
+      comentarios: comentarios.map((c) => ({
+        id: c.id,
+        texto: c.texto,
+        quando: formatarDataHora(c.criado_em),
+        autor: c.autor?.nome?.trim() || "Membro removido",
+        autorId: c.autor_id,
+      })),
+      historico: historico.map((e) => ({
+        id: e.id,
+        quando: formatarDataHora(e.criado_em),
+        autor: e.autor?.nome?.trim() || "Membro removido",
+        frase: fraseDoEvento(e),
+      })),
+    };
+  } catch (erro) {
+    console.error("Falha ao carregar a atividade:", erro);
+    return { erro: "Não deu para carregar os comentários. Tente de novo em alguns minutos." };
+  }
 }

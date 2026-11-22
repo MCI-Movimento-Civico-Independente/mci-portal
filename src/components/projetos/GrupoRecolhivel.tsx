@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { LinkLocal } from "@/components/LinkLocal";
 import { useState, type ReactNode } from "react";
 import { TbArrowDown, TbArrowUp, TbChevronRight, TbPencil, TbPlus, TbTrash } from "react-icons/tb";
 import { excluirGrupoAction, moverGrupoAction } from "@/app/org/projetos/acoes";
@@ -56,14 +56,13 @@ export function GrupoRecolhivel({ grupo, total, feitas, hrefNovaTarefa, primeiro
 
         {!editando && (
           <div className="flex items-center">
-            <Link
+            <LinkLocal
               href={hrefNovaTarefa}
-              scroll={false}
               className="rotulo inline-flex min-h-11 items-center gap-1 px-2.5 font-bold hover:bg-inverso hover:text-sobre-inverso"
             >
               <TbPlus size={15} aria-hidden="true" />
               Tarefa
-            </Link>
+            </LinkLocal>
             {
               <>
                 <BotaoAcao acao={moverGrupoAction.bind(null, grupo.id, "cima")} desabilitado={primeiro} rotulo={`Subir ${nome}`}>

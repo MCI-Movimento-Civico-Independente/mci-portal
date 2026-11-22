@@ -1,7 +1,6 @@
 "use client";
 
 import { TbX } from "react-icons/tb";
-import { useRouter } from "next/navigation";
 import { useEffect, useRef, type ReactNode } from "react";
 
 /**
@@ -10,7 +9,6 @@ import { useEffect, useRef, type ReactNode } from "react";
  */
 export function Modal({ fecharHref, rotulo, children }: { fecharHref: string; rotulo: string; children: ReactNode }) {
   const ref = useRef<HTMLDialogElement>(null);
-  const router = useRouter();
 
   useEffect(() => {
     const dialogo = ref.current;
@@ -26,7 +24,7 @@ export function Modal({ fecharHref, rotulo, children }: { fecharHref: string; ro
     <dialog
       ref={ref}
       aria-label={rotulo}
-      onClose={() => router.push(fecharHref, { scroll: false })}
+      onClose={() => window.history.pushState(null, "", fecharHref)}
       onClick={(e) => {
         if (e.target === ref.current) ref.current?.close();
       }}

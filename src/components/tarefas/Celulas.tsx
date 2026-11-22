@@ -1,7 +1,7 @@
 "use client";
 
 import { TbPencil } from "react-icons/tb";
-import Link from "next/link";
+import { LinkLocal } from "@/components/LinkLocal";
 import { useRef, useState } from "react";
 import type { FormularioView } from "@/lib/formularios-tipos";
 import { corDoGrupo, type GrupoBasico } from "@/lib/grupos-tipos";
@@ -307,13 +307,12 @@ export function CelulaTitulo({
     <div className="min-w-0 flex-1">
       <div className="group/titulo flex items-center gap-1">
         {href ? (
-          <Link
+          <LinkLocal
             href={href}
-            scroll={false}
             className={`min-w-0 hover:text-marca-texto hover:underline ${tamanho} ${riscado ? "line-through opacity-60" : ""} ${pendente ? "opacity-60" : ""}`}
           >
             {valor}
-          </Link>
+          </LinkLocal>
         ) : (
           <span className={`min-w-0 ${tamanho} ${pendente ? "opacity-60" : ""}`}>{valor}</span>
         )}

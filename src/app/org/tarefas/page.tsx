@@ -1,10 +1,9 @@
+import { Suspense } from "react";
 import { TbPlus } from "react-icons/tb";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { CartaoTarefa } from "@/components/tarefas/CartaoTarefa";
-import { DetalheTarefa } from "@/components/tarefas/DetalheTarefa";
-import { FormNovaTarefa } from "@/components/tarefas/FormNovaTarefa";
-import { Modal } from "@/components/tarefas/Modal";
+import { JanelasTarefa } from "@/components/tarefas/JanelasTarefa";
 import { TabelaTarefas } from "@/components/tarefas/TabelaTarefas";
 import { Botao } from "@/components/ui/Botao";
 import { Card } from "@/components/ui/Card";
@@ -45,7 +44,7 @@ export default async function TarefasPage({
   const sessao = await getSessao();
   if (!sessao) redirect("/login?next=/org/tarefas");
 
-  const { vista, quem, tarefa: tarefaId, nova, comite: comiteParam, projeto: projetoParam } = await searchParams;
+  const { vista, quem, tarefa: tarefaId, comite: comiteParam, projeto: projetoParam } = await searchParams;
   const quadro = vista === "quadro";
   const todas = quem === "todas";
 
@@ -95,7 +94,7 @@ export default async function TarefasPage({
         <h1 className="font-titulo font-black uppercase tracking-tight text-3xl md:text-4xl">
           {todas ? "Todas as tarefas" : "Minhas tarefas"}
         </h1>
-        <Botao href={novaTarefaHref}>
+        <Botao href={novaTarefaHref} local>
           <TbPlus size={16} aria-hidden="true" />
           Nova tarefa
         </Botao>
@@ -209,37 +208,24 @@ export default async function TarefasPage({
         </>
       )}
 
-      {aberta && (
-        <Modal key={aberta.id} fecharHref={base} rotulo={`Tarefa: ${aberta.titulo}`}>
-          <DetalheTarefa
-            tarefa={aberta}
-            membros={membros}
-            comites={comites}
-            projetos={projetos}
-            formularios={formularios}
-            grupos={grupos}
-            camposPersonalizados={camposPersonalizados}
-            qs={qs}
-            euId={sessao.conta.id}
-            souAdmin={sessao.conta.papel === "admin"}
-          />
-        </Modal>
-      )}
-      {!aberta && nova === "1" && (
-        <Modal fecharHref={base} rotulo="Nova tarefa">
-          <h2 className="mb-5 pr-10 text-2xl font-semibold tracking-tighter">Nova tarefa</h2>
-          <FormNovaTarefa
-            membros={membros}
-            comites={comites}
-            projetos={projetos}
-            formularios={formularios}
-            grupos={grupos}
-            camposPersonalizados={camposPersonalizados}
-            euId={sessao.conta.id}
-            fecharHref={base}
-          />
-        </Modal>
-      )}
+      <Suspense fallback={null}>
+        <JanelasTarefa
+          tarefas={tarefas}
+          inicial={aberta}
+          membros={membros}
+          comites={comites}
+          projetos={projetos}
+          formularios={formularios}
+          grupos={grupos}
+          camposPersonalizados={camposPersonalizados}
+          caminho="/org/tarefas"
+          base={base}
+          qs={qs}
+          euId={sessao.conta.id}
+          souAdmin={sessao.conta.papel === "admin"}
+          hoje={hoje}
+        />
+      </Suspense>
     </div>
   );
 }

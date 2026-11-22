@@ -1,11 +1,10 @@
+import { Suspense } from "react";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { TbChevronLeft, TbPlus } from "react-icons/tb";
 import { BotaoArquivar } from "@/components/projetos/BotaoArquivar";
 import { QuadroGrupos } from "@/components/projetos/QuadroGrupos";
-import { DetalheTarefa } from "@/components/tarefas/DetalheTarefa";
-import { FormNovaTarefa } from "@/components/tarefas/FormNovaTarefa";
-import { Modal } from "@/components/tarefas/Modal";
+import { JanelasTarefa } from "@/components/tarefas/JanelasTarefa";
 import { Botao } from "@/components/ui/Botao";
 import { Card } from "@/components/ui/Card";
 import { listarCamposPersonalizados } from "@/lib/campos-personalizados";
@@ -23,10 +22,10 @@ export default async function ProjetoPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ tarefa?: string; nova?: string; grupo?: string }>;
+  searchParams: Promise<{ tarefa?: string }>;
 }) {
   const { id } = await params;
-  const { tarefa: tarefaId, nova, grupo: grupoParam } = await searchParams;
+  const { tarefa: tarefaId } = await searchParams;
   const sessao = await getSessao();
   if (!sessao) redirect(`/login?next=/org/projetos/${encodeURIComponent(id)}`);
   if (!UUID.test(id)) notFound();
@@ -50,7 +49,6 @@ export default async function ProjetoPage({
   const grupos = todosGrupos.filter((g) => g.projeto_id === id);
   const hoje = hojeSP();
   const nomeComite = comites.find((c) => c.slug === projeto.comite_slug)?.nome ?? projeto.comite_slug;
-  const idsDosGrupos = new Set(grupos.map((g) => g.id));
   const feitasTotal = tarefas.filter((t) => t.status === "concluida").length;
   const pct = tarefas.length > 0 ? Math.round((feitasTotal / tarefas.length) * 100) : 0;
   const arquivado = projeto.status === "arquivado";
@@ -77,7 +75,7 @@ export default async function ProjetoPage({
         </div>
         <div className="flex items-center gap-2">
           <BotaoArquivar id={projeto.id} arquivado={arquivado} />
-          <Botao href={hrefNova()}>
+          <Botao href={hrefNova()} local>
             <TbPlus size={17} aria-hidden="true" />
             Nova tarefa
           </Botao>
@@ -111,41 +109,25 @@ export default async function ProjetoPage({
         caminho={caminho}
       />
 
-      {aberta && (
-        <Modal key={aberta.id} fecharHref={caminho} rotulo={`Tarefa: ${aberta.titulo}`}>
-          <DetalheTarefa
-            tarefa={aberta}
-            membros={membros}
-            comites={comites}
-            projetos={todosProjetos}
-            formularios={formularios}
-            grupos={todosGrupos}
-            camposPersonalizados={camposPersonalizados}
-            caminho={caminho}
-            qs=""
-            euId={sessao.conta.id}
-            souAdmin={sessao.souAdmin}
-          />
-        </Modal>
-      )}
-      {!aberta && nova === "1" && (
-        <Modal fecharHref={caminho} rotulo="Nova tarefa">
-          <h2 className="mb-5 pr-10 font-titulo text-2xl font-black uppercase tracking-tight">Nova tarefa</h2>
-          <FormNovaTarefa
-            membros={membros}
-            comites={comites}
-            projetos={todosProjetos}
-            formularios={formularios}
-            grupos={todosGrupos}
-            camposPersonalizados={camposPersonalizados}
-            euId={sessao.conta.id}
-            fecharHref={caminho}
-            retorno={caminho}
-            projetoInicial={id}
-            grupoInicial={grupoParam && idsDosGrupos.has(grupoParam) ? grupoParam : ""}
-          />
-        </Modal>
-      )}
+      <Suspense fallback={null}>
+        <JanelasTarefa
+          tarefas={tarefas}
+          inicial={aberta}
+          membros={membros}
+          comites={comites}
+          projetos={todosProjetos}
+          formularios={formularios}
+          grupos={todosGrupos}
+          camposPersonalizados={camposPersonalizados}
+          caminho={caminho}
+          base={caminho}
+          qs=""
+          euId={sessao.conta.id}
+          souAdmin={sessao.souAdmin}
+          hoje={hoje}
+          retornoNova={{ projetoId: id }}
+        />
+      </Suspense>
     </div>
   );
 }

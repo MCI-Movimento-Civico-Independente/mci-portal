@@ -275,7 +275,7 @@ export function FormNovaTarefa({
         <Botao type="submit" disabled={pendente}>
           {pendente ? "Criando…" : "Criar tarefa"}
         </Botao>
-        <Botao href={fecharHref} variante="secundario">
+        <Botao href={fecharHref} variante="secundario" local>
           Cancelar
         </Botao>
       </div>
