@@ -1,6 +1,6 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
-import type { CorGrupo, GrupoBasico } from "./grupos-tipos";
+import { CORES_GRUPO, type CorGrupo, type GrupoBasico } from "./grupos-tipos";
 
 // Mesmo modelo de acesso das tarefas: quem chama já conferiu a sessão e o papel.
 
@@ -14,19 +14,20 @@ export async function listarGrupos(projetoId?: string): Promise<GrupoBasico[]> {
   return (data ?? []) as GrupoBasico[];
 }
 
-export async function criarGrupo(projetoId: string, nome: string, cor: CorGrupo): Promise<"ok" | "nome_em_uso"> {
+/** Cria "Novo grupo" (ou "Novo grupo 2", 3...) já pronto para renomear e trocar a cor. */
+export async function criarGrupoPadrao(projetoId: string): Promise<void> {
   const db = createAdminClient();
   const existentes = await listarGrupos(projetoId);
   const ordem = Math.max(0, ...existentes.map((g) => g.ordem)) + 1;
+  const usados = new Set(existentes.map((g) => g.nome.trim().toLowerCase()));
+  let nome = "Novo grupo";
+  for (let n = 2; usados.has(nome.toLowerCase()); n++) nome = `Novo grupo ${n}`;
+  const cor = CORES_GRUPO[existentes.length % CORES_GRUPO.length].valor;
   const { error } = await db.from("projeto_grupos").insert({ projeto_id: projetoId, nome, cor, ordem });
-  if (error) {
-    if (error.code === "23505") return "nome_em_uso";
-    throw error;
-  }
-  return "ok";
+  if (error) throw error;
 }
 
-export async function atualizarGrupo(id: string, dados: { nome: string; cor: CorGrupo }): Promise<"ok" | "nome_em_uso" | "nao_achou"> {
+export async function atualizarGrupo(id: string, dados: { nome?: string; cor?: CorGrupo }): Promise<"ok" | "nome_em_uso" | "nao_achou"> {
   const { data, error } = await createAdminClient().from("projeto_grupos").update(dados).eq("id", id).select("id");
   if (error) {
     if (error.code === "23505") return "nome_em_uso";
@@ -35,10 +36,22 @@ export async function atualizarGrupo(id: string, dados: { nome: string; cor: Cor
   return (data?.length ?? 0) > 0 ? "ok" : "nao_achou";
 }
 
-/** As tarefas do grupo voltam para "Sem grupo" (a chave no banco solta a referência). */
-export async function excluirGrupo(id: string): Promise<void> {
-  const { error } = await createAdminClient().from("projeto_grupos").delete().eq("id", id);
+/**
+ * As tarefas do grupo vão para o primeiro grupo que sobrar. O último grupo do projeto
+ * não pode ser excluído (toda tarefa de projeto fica em algum grupo).
+ */
+export async function excluirGrupo(id: string): Promise<"ok" | "ultimo"> {
+  const db = createAdminClient();
+  const { data: alvo, error } = await db.from("projeto_grupos").select("projeto_id").eq("id", id).maybeSingle();
   if (error) throw error;
+  if (!alvo) return "ok";
+  const outros = (await listarGrupos(alvo.projeto_id as string)).filter((g) => g.id !== id);
+  if (outros.length === 0) return "ultimo";
+  const { error: erroMover } = await db.from("tarefas").update({ grupo_id: outros[0].id }).eq("grupo_id", id);
+  if (erroMover) throw erroMover;
+  const { error: erroDel } = await db.from("projeto_grupos").delete().eq("id", id);
+  if (erroDel) throw erroDel;
+  return "ok";
 }
 
 /** Troca de lugar com o vizinho e renumera (1, 2, 3...). */

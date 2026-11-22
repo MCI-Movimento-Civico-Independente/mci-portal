@@ -1,67 +1,91 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect, useRef, useState, useTransition } from "react";
 import { TbPlus } from "react-icons/tb";
-import { atualizarGrupoAction, criarGrupoAction, type EstadoProjeto } from "@/app/org/projetos/acoes";
+import { atualizarGrupoAction, criarGrupoAction, mudarCorGrupoAction, type EstadoProjeto } from "@/app/org/projetos/acoes";
 import { campo } from "@/components/tarefas/estilos";
 import { Botao } from "@/components/ui/Botao";
-import { CORES_GRUPO, type CorGrupo } from "@/lib/grupos-tipos";
+import { CORES_GRUPO, corDoGrupo } from "@/lib/grupos-tipos";
 
-/** Escolha de cor do grupo: quadrados nas cores da marca. */
-export function SeletorCor({ nome = "cor", padrao = "neutro" }: { nome?: string; padrao?: CorGrupo }) {
+/** Botão discreto: cria "Novo grupo" na hora; nome e cor se mudam depois, no cabeçalho dele. */
+export function BotaoNovoGrupo({ projetoId }: { projetoId: string }) {
+  const [pendente, iniciar] = useTransition();
   return (
-    <fieldset className="flex items-center gap-1">
-      <legend className="sr-only">Cor do grupo</legend>
-      {CORES_GRUPO.map((c) => (
-        <label key={c.valor} title={c.rotulo} className="relative flex size-11 cursor-pointer items-center justify-center">
-          <input type="radio" name={nome} value={c.valor} defaultChecked={c.valor === padrao} className="peer sr-only" />
-          <span
-            aria-hidden="true"
-            className={`size-6 border-2 border-transparent peer-checked:border-texto peer-checked:outline peer-checked:outline-2 peer-checked:outline-offset-2 peer-checked:outline-texto peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-marca-texto ${c.bloco}`}
-          />
-          <span className="sr-only">{c.rotulo}</span>
-        </label>
-      ))}
-    </fieldset>
+    <button
+      type="button"
+      disabled={pendente}
+      onClick={() => iniciar(() => criarGrupoAction(projetoId))}
+      className="rotulo inline-flex min-h-11 items-center gap-1.5 self-start px-3 font-bold text-suave hover:bg-sutil hover:text-texto disabled:opacity-60"
+    >
+      <TbPlus size={15} aria-hidden="true" />
+      {pendente ? "Adicionando…" : "Adicionar novo grupo"}
+    </button>
   );
 }
 
-export function FormNovoGrupo({ projetoId }: { projetoId: string }) {
-  const [estado, acao, pendente] = useActionState<EstadoProjeto, FormData>(criarGrupoAction.bind(null, projetoId), {});
+/** Quadradinho de cor do grupo: abre a paleta e salva ao escolher. */
+export function PaletaCor({ id, cor, nome }: { id: string; cor: string; nome: string }) {
+  const [aberta, setAberta] = useState(false);
+  const [pendente, iniciar] = useTransition();
+  const raiz = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!aberta) return;
+    const fora = (e: MouseEvent) => {
+      if (!raiz.current?.contains(e.target as Node)) setAberta(false);
+    };
+    const tecla = (e: KeyboardEvent) => e.key === "Escape" && setAberta(false);
+    document.addEventListener("mousedown", fora);
+    document.addEventListener("keydown", tecla);
+    return () => {
+      document.removeEventListener("mousedown", fora);
+      document.removeEventListener("keydown", tecla);
+    };
+  }, [aberta]);
+
+  const atual = corDoGrupo(cor);
   return (
-    <form key={estado.n ?? 0} action={acao} className="flex flex-col gap-3">
-      <label htmlFor="novo-grupo" className="rotulo-barras text-suave">
-        Novo grupo
-      </label>
-      <div className="flex flex-col gap-2 md:flex-row md:items-center">
-        <input id="novo-grupo" name="nome" required maxLength={60} placeholder="Ex.: Esta semana" className={`${campo} md:max-w-xs md:flex-1`} />
-        <SeletorCor />
-        <Botao type="submit" disabled={pendente}>
-          <TbPlus size={17} aria-hidden="true" />
-          {pendente ? "Criando…" : "Criar grupo"}
-        </Botao>
-      </div>
-      {estado.erro && (
-        <p role="alert" className="text-sm font-bold text-marca-texto">
-          {estado.erro}
-        </p>
+    <div ref={raiz} className="relative">
+      <button
+        type="button"
+        aria-label={`Cor do grupo ${nome}`}
+        aria-haspopup="true"
+        aria-expanded={aberta}
+        disabled={pendente}
+        onClick={() => setAberta((v) => !v)}
+        className="flex h-11 w-6 items-center justify-center hover:bg-sutil"
+      >
+        <span aria-hidden="true" className="h-6 w-3 border border-borda-forte" style={{ backgroundColor: atual }} />
+      </button>
+      {aberta && (
+        <div
+          role="group"
+          aria-label="Escolha a cor"
+          className="absolute left-0 top-full z-20 mt-1 grid w-max grid-cols-5 gap-1.5 border-2 border-inverso bg-superficie p-2.5"
+        >
+          {CORES_GRUPO.map((c) => (
+            <button
+              key={c.valor}
+              type="button"
+              title={c.rotulo}
+              aria-label={c.rotulo}
+              aria-pressed={c.valor.toLowerCase() === atual.toLowerCase()}
+              onClick={() => {
+                setAberta(false);
+                iniciar(() => mudarCorGrupoAction(id, c.valor));
+              }}
+              className="size-9 border-2 border-transparent hover:scale-110 aria-pressed:border-texto aria-pressed:outline aria-pressed:outline-2 aria-pressed:outline-offset-1 aria-pressed:outline-texto"
+              style={{ backgroundColor: c.valor }}
+            />
+          ))}
+        </div>
       )}
-    </form>
+    </div>
   );
 }
 
-/** Edição do nome e da cor de um grupo, na própria linha do cabeçalho. */
-export function FormEditarGrupo({
-  id,
-  nome,
-  cor,
-  aoTerminar,
-}: {
-  id: string;
-  nome: string;
-  cor: CorGrupo;
-  aoTerminar: () => void;
-}) {
+/** Renomear um grupo, na própria linha do cabeçalho. */
+export function FormEditarGrupo({ id, nome, aoTerminar }: { id: string; nome: string; aoTerminar: () => void }) {
   const [estado, acao, pendente] = useActionState<EstadoProjeto, FormData>(
     async (anterior, form) => {
       const r = await atualizarGrupoAction(id, anterior, form);
@@ -71,22 +95,29 @@ export function FormEditarGrupo({
     {},
   );
   return (
-    <form action={acao} className="flex min-w-0 flex-1 flex-col gap-2 py-2 md:flex-row md:items-center">
+    <form action={acao} className="flex min-w-0 flex-1 flex-wrap items-center gap-2 py-2">
       <label htmlFor={`grupo-${id}`} className="sr-only">
         Nome do grupo
       </label>
-      <input id={`grupo-${id}`} name="nome" required maxLength={60} defaultValue={nome} autoFocus className={`${campo} md:max-w-xs md:flex-1`} />
-      <SeletorCor padrao={cor} />
-      <div className="flex gap-2">
-        <Botao type="submit" disabled={pendente}>
-          {pendente ? "…" : "Salvar"}
-        </Botao>
-        <Botao variante="secundario" onClick={aoTerminar}>
-          Cancelar
-        </Botao>
-      </div>
+      <input
+        id={`grupo-${id}`}
+        name="nome"
+        required
+        maxLength={60}
+        defaultValue={nome}
+        autoFocus
+        onFocus={(e) => e.currentTarget.select()}
+        onKeyDown={(e) => e.key === "Escape" && aoTerminar()}
+        className={`${campo} max-w-xs flex-1`}
+      />
+      <Botao type="submit" disabled={pendente}>
+        {pendente ? "…" : "Salvar"}
+      </Botao>
+      <Botao variante="secundario" onClick={aoTerminar}>
+        Cancelar
+      </Botao>
       {estado.erro && (
-        <p role="alert" className="text-xs font-bold text-marca-texto md:basis-full">
+        <p role="alert" className="basis-full text-xs font-bold text-marca-texto">
           {estado.erro}
         </p>
       )}

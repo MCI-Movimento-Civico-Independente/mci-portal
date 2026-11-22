@@ -171,7 +171,7 @@ export function FormNovaTarefa({
               Grupo {opcional}
             </label>
             <select key={projeto} id="grupo_id" name="grupo_id" defaultValue={projeto === projetoInicial ? grupoInicial : ""} className={campo}>
-              <option value="">Sem grupo</option>
+              <option value="">Primeiro grupo</option>
               {grupos
                 .filter((g) => g.projeto_id === projeto)
                 .map((g) => (

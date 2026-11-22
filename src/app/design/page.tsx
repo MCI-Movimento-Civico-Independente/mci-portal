@@ -287,15 +287,15 @@ export default function DesignPage() {
       <Secao titulo="Grupos do projeto (clique no cabeçalho para comprimir e expandir)">
         <div className="flex flex-col gap-4">
           <GrupoRecolhivel
-            grupo={{ id: "g1", projeto_id: "pr1", nome: "Esta semana", cor: "laranja", ordem: 1 }}
+            grupo={{ id: "g1", projeto_id: "pr1", nome: "Esta semana", cor: "#d54a24", ordem: 1 }}
             total={2}
             feitas={1}
             hrefNovaTarefa="#"
             primeiro
           >
-            <TabelaTarefas tarefas={TAREFAS.slice(0, 2)} membros={[vitor, ana]} comites={COMITES} projetos={PROJETOS} grupos={[{ id: "g1", projeto_id: "pr1", nome: "Esta semana", cor: "laranja", ordem: 1 }]} hoje="2026-11-22" qs="" />
+            <TabelaTarefas tarefas={TAREFAS.slice(0, 2)} membros={[vitor, ana]} comites={COMITES} projetos={PROJETOS} grupos={[{ id: "g1", projeto_id: "pr1", nome: "Esta semana", cor: "#d54a24", ordem: 1 }]} hoje="2026-11-22" qs="" />
           </GrupoRecolhivel>
-          <GrupoRecolhivel grupo={{ id: "g2", projeto_id: "pr1", nome: "Backlog", cor: "ouro", ordem: 2 }} total={0} feitas={0} hrefNovaTarefa="#" ultimo>
+          <GrupoRecolhivel grupo={{ id: "g2", projeto_id: "pr1", nome: "Backlog", cor: "#cfbe48", ordem: 2 }} total={0} feitas={0} hrefNovaTarefa="#" ultimo>
             <p className="px-2 py-3 text-[15px] text-suave">Nenhuma tarefa neste grupo.</p>
           </GrupoRecolhivel>
         </div>

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { TbChevronLeft, TbPlus } from "react-icons/tb";
 import { BotaoArquivar } from "@/components/projetos/BotaoArquivar";
-import { FormNovoGrupo } from "@/components/projetos/FormGrupo";
+import { BotaoNovoGrupo } from "@/components/projetos/FormGrupo";
 import { GrupoRecolhivel } from "@/components/projetos/GrupoRecolhivel";
 import { DetalheTarefa } from "@/components/tarefas/DetalheTarefa";
 import { FormNovaTarefa } from "@/components/tarefas/FormNovaTarefa";
@@ -53,7 +53,6 @@ export default async function ProjetoPage({
   const hoje = hojeSP();
   const nomeComite = comites.find((c) => c.slug === projeto.comite_slug)?.nome ?? projeto.comite_slug;
   const idsDosGrupos = new Set(grupos.map((g) => g.id));
-  const semGrupo = tarefas.filter((t) => !t.grupo_id || !idsDosGrupos.has(t.grupo_id));
   const feitasTotal = tarefas.filter((t) => t.status === "concluida").length;
   const pct = tarefas.length > 0 ? Math.round((feitasTotal / tarefas.length) * 100) : 0;
   const arquivado = projeto.status === "arquivado";
@@ -118,21 +117,14 @@ export default async function ProjetoPage({
         {grupos.map((g, i) => {
           const doGrupo = tarefas.filter((t) => t.grupo_id === g.id);
           return (
-            <GrupoRecolhivel key={g.id} grupo={g} {...conta(doGrupo)} hrefNovaTarefa={hrefNova(g.id)} primeiro={i === 0} ultimo={i === grupos.length - 1}>
+            <GrupoRecolhivel key={g.id} grupo={g} {...conta(doGrupo)} hrefNovaTarefa={hrefNova(g.id)} primeiro={i === 0} ultimo={i === grupos.length - 1} podeExcluir={grupos.length > 1}>
               {tabela(doGrupo)}
             </GrupoRecolhivel>
           );
         })}
-        {(semGrupo.length > 0 || grupos.length === 0) && (
-          <GrupoRecolhivel grupo={null} {...conta(semGrupo)} hrefNovaTarefa={hrefNova()}>
-            {tabela(semGrupo)}
-          </GrupoRecolhivel>
-        )}
+        {grupos.length === 0 && <p className="px-1 text-[15px] text-suave">Este projeto ainda não tem grupos. Adicione o primeiro abaixo.</p>}
+        <BotaoNovoGrupo projetoId={id} />
       </div>
-
-      <Card className="p-4 md:p-5">
-        <FormNovoGrupo projetoId={id} />
-      </Card>
 
       {aberta && (
         <Modal key={aberta.id} fecharHref={caminho} rotulo={`Tarefa: ${aberta.titulo}`}>

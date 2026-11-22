@@ -4,7 +4,7 @@ import { TbPencil } from "react-icons/tb";
 import Link from "next/link";
 import { useRef, useState } from "react";
 import type { FormularioView } from "@/lib/formularios-tipos";
-import { blocoDaCor, type GrupoBasico } from "@/lib/grupos-tipos";
+import { corDoGrupo, type GrupoBasico } from "@/lib/grupos-tipos";
 import type { ComiteBasico, ProjetoBasico } from "@/lib/organizacao";
 import type { Pessoa, TarefaDb } from "@/lib/tarefas";
 import {
@@ -150,7 +150,8 @@ export function CelulaGrupo({
       <div className="relative">
         <span
           aria-hidden="true"
-          className={`pointer-events-none absolute left-2 top-1/2 size-2.5 -translate-y-1/2 ${atual ? blocoDaCor(atual.cor) : "bg-borda-forte"}`}
+          className="pointer-events-none absolute left-2 top-1/2 size-2.5 -translate-y-1/2"
+          style={{ backgroundColor: atual ? corDoGrupo(atual.cor) : "#c4c4c4" }}
         />
         <select
           aria-label="Grupo"
@@ -159,7 +160,7 @@ export function CelulaGrupo({
           onChange={(e) => salvar(e.target.value)}
           className="min-h-11 w-full truncate border border-transparent bg-transparent py-0 pl-6 pr-1.5 text-sm font-medium hover:border-borda-forte hover:bg-sutil disabled:opacity-60"
         >
-          <option value="">Sem grupo</option>
+          {valor === "" && <option value="">—</option>}
           {grupos.map((g) => (
             <option key={g.id} value={g.id}>
               {g.nome}
