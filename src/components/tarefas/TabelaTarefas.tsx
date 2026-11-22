@@ -48,10 +48,12 @@ type LinhaProps = Omit<Props, "tarefas"> & {
   sub?: boolean;
   expansor?: { aberto: boolean; alternar: () => void };
   alca?: ReactNode;
+  /** Pointer do dnd-kit: a área do título também arrasta a linha. */
+  arrastarPeloTitulo?: (e: React.PointerEvent) => void;
   fantasma?: boolean;
 };
 
-function Linha({ t, membros, comites, projetos, hoje, qs, caminho = "/org/tarefas", grupos, sub = false, expansor, alca, fantasma = false }: LinhaProps) {
+function Linha({ t, membros, comites, projetos, hoje, qs, caminho = "/org/tarefas", grupos, sub = false, expansor, alca, arrastarPeloTitulo, fantasma = false }: LinhaProps) {
   const href = `${caminho}?${qs ? `${qs}&` : ""}tarefa=${t.id}`;
   const feitas = t.subtarefas.filter((s) => s.status === "concluida").length;
   const atrasada = t.status !== "concluida" && !!t.prazo && t.prazo < hoje;
@@ -79,7 +81,12 @@ function Linha({ t, membros, comites, projetos, hoje, qs, caminho = "/org/tarefa
           </button>
         )}
       </div>
-      <div className={`flex min-w-0 flex-1 items-center gap-2 ${c.none} ${sub ? "pl-4" : ""}`}>
+      <div
+        onPointerDown={arrastarPeloTitulo}
+        className={`flex min-w-0 flex-1 items-center gap-2 ${c.none} ${sub ? "pl-4" : ""} ${
+          arrastarPeloTitulo ? "cursor-grab active:cursor-grabbing [&_a]:cursor-grab! [&_a]:active:cursor-grabbing!" : ""
+        }`}
+      >
         <CelulaTitulo id={t.id} valor={t.titulo} href={href} riscado={t.status === "concluida"} />
         <Progresso feitas={feitas} total={t.subtarefas.length} />
       </div>
@@ -118,12 +125,12 @@ function Linha({ t, membros, comites, projetos, hoje, qs, caminho = "/org/tarefa
   );
 }
 
-function Corpo(props: Omit<LinhaProps, "expansor" | "sub"> & { alca?: ReactNode }) {
+function Corpo(props: Omit<LinhaProps, "expansor" | "sub">) {
   const [aberto, setAberto] = useState(false);
   return (
     <>
       <Linha {...props} expansor={{ aberto, alternar: () => setAberto((v) => !v) }} />
-      {aberto && props.t.subtarefas.map((s) => <Linha key={s.id} {...props} t={s} sub alca={undefined} fantasma={false} />)}
+      {aberto && props.t.subtarefas.map((s) => <Linha key={s.id} {...props} t={s} sub alca={undefined} arrastarPeloTitulo={undefined} fantasma={false} />)}
     </>
   );
 }
@@ -144,6 +151,11 @@ function ItemArrastavel(props: Omit<LinhaProps, "expansor" | "sub">) {
       <Corpo
         {...props}
         fantasma={isDragging}
+        arrastarPeloTitulo={(e) => {
+          // Campo de texto aberto (editar assunto): o mouse seleciona texto, não arrasta.
+          if ((e.target as HTMLElement).closest("input, textarea, select")) return;
+          listeners?.onPointerDown?.(e);
+        }}
         alca={
           <button
             type="button"

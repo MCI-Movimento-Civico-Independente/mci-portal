@@ -206,6 +206,12 @@ input[type="date"] {
   cursor: pointer;
 }
 
+/* Enquanto uma tarefa é arrastada: mãozinha fechada em toda a tela. */
+body.arrastando,
+body.arrastando * {
+  cursor: grabbing !important;
+}
+
 button:disabled,
 select:disabled {
   cursor: not-allowed;

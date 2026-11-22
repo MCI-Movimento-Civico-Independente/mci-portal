@@ -13,7 +13,7 @@ import {
   type DragStartEvent,
 } from "@dnd-kit/core";
 import { arrayMove, sortableKeyboardCoordinates } from "@dnd-kit/sortable";
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { moverTarefaAction } from "@/app/org/tarefas/acoes";
 import { TabelaTarefas } from "@/components/tarefas/TabelaTarefas";
 import type { GrupoBasico } from "@/lib/grupos-tipos";
@@ -67,6 +67,13 @@ export function QuadroGrupos({
     setOrigem({ grupos, tarefas });
     setItens(distribuir(grupos, tarefas));
   }
+
+  // Durante o arrasto, o cursor é a mãozinha fechada em qualquer lugar da tela.
+  useEffect(() => {
+    if (!ativoId) return;
+    document.body.classList.add("arrastando");
+    return () => document.body.classList.remove("arrastando");
+  }, [ativoId]);
 
   const porId = new Map(tarefas.map((t) => [t.id, t]));
   const sensores = useSensors(
