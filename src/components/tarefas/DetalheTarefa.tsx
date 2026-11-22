@@ -80,6 +80,13 @@ export async function DetalheTarefa({
   const personalizados = camposPersonalizados.filter((c) => incluidos.has(chaveFormulario(c.id)));
   const campos = CAMPOS.filter((c) => c.chave !== "titulo" && semHerdados(c.chave) && (c.chave !== "grupo_id" || (!!tarefa.projeto_id && grupos.some((g) => g.projeto_id === tarefa.projeto_id))) && (c.fixo || incluidos.has(c.chave)));
 
+  // Início e entrega viram um campo só ("Período"), com calendário.
+  const ehData = (chave: string) => chave === "data_inicio" || chave === "prazo";
+  const primeiraData = campos.findIndex((c) => ehData(c.chave));
+  const camposTela = campos.flatMap((c, i) =>
+    !ehData(c.chave) ? [c] : i === primeiraData ? [{ ...c, chave: "data_inicio" as const, rotulo: "Período" }] : [],
+  );
+
   return (
     <div className="flex flex-col gap-6">
       <div className="pr-10">
@@ -101,7 +108,7 @@ export async function DetalheTarefa({
       </div>
 
       <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-2">
-        {campos.map((c) => (
+        {camposTela.map((c) => (
           <div key={c.chave} className="grid grid-cols-[110px_1fr] items-center">
             <dt className="rotulo text-suave">{c.rotulo}</dt>
             <dd>

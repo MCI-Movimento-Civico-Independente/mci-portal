@@ -433,3 +433,38 @@ export async function moverTarefaAction(id: string, grupoId: string, antesDeId: 
   revalidatePath("/org", "layout");
   return {};
 }
+
+/** Período (início e entrega) escolhido no calendário: salva os dois de uma vez. Vazio limpa. */
+export async function atualizarPeriodoAction(id: string, inicio: string, fim: string): Promise<EstadoForm> {
+  const sessao = await exigirOrg();
+  if (!UUID.test(id)) return { erro: "Pedido inválido." };
+  if ((inicio && !dataValida(inicio)) || (fim && !dataValida(fim))) return { erro: "Data inválida." };
+  if (inicio && fim && inicio > fim) return { erro: ERRO_PERIODO };
+
+  const [atual, cat] = await Promise.all([tarefaPorId(id), carregarCatalogos()]);
+  if (!atual) return { erro: "Tarefa não encontrada." };
+
+  const patch: Alteracao = { data_inicio: inicio || null, prazo: fim || null };
+  try {
+    if (!(await atualizarTarefa(id, patch))) return { erro: "Tarefa não encontrada." };
+  } catch (erro) {
+    console.error("Falha ao atualizar o período:", erro);
+    return { erro: "Algo deu errado. Tente de novo em alguns minutos." };
+  }
+  for (const chave of ["data_inicio", "prazo"] as const) {
+    const c = campoPorChave(chave)!;
+    const antes = valorAtual(atual, chave);
+    const depois = patch[chave] ?? null;
+    if (antes === depois) continue;
+    await registrarEvento({
+      tarefa_id: id,
+      autor_id: sessao.conta.id,
+      tipo: "campo",
+      campo: c.rotulo,
+      de: descrever(c, antes, cat),
+      para: descrever(c, depois, cat),
+    });
+  }
+  revalidatePath("/org", "layout");
+  return {};
+}

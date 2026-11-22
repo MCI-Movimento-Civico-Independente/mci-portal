@@ -13,6 +13,7 @@ import {
   type ChaveCampo,
   type Opcao,
 } from "@/lib/tarefas-campos";
+import { CelulaPeriodo } from "./CelulaPeriodo";
 import { useCampo } from "./useCampo";
 
 function MensagemErro({ erro }: { erro: string | null }) {
@@ -393,12 +394,12 @@ export function CampoEditavel({
       return <CelulaPessoa id={tarefa.id} chave={campo.chave} valor={bruto} membros={membros} rotulo={campo.rotulo} />;
     case "data":
       return (
-        <CelulaData
+        <CelulaPeriodo
           id={tarefa.id}
-          chave={campo.chave}
-          valor={bruto}
-          rotulo={campo.rotulo}
-          alerta={campo.chave === "prazo" && !!bruto && bruto < hoje && tarefa.status !== "concluida"}
+          inicio={tarefa.data_inicio ?? ""}
+          fim={tarefa.prazo ?? ""}
+          hoje={hoje}
+          alerta={!!tarefa.prazo && tarefa.prazo < hoje && tarefa.status !== "concluida"}
         />
       );
     case "comite":

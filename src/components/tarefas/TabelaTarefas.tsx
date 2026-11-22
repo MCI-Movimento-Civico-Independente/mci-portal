@@ -10,7 +10,8 @@ import type { ComiteBasico, ProjetoBasico } from "@/lib/organizacao";
 import type { GrupoBasico } from "@/lib/grupos-tipos";
 import type { Pessoa, TarefaDb } from "@/lib/tarefas";
 import { PRIORIDADE_OPCOES, STATUS_OPCOES } from "@/lib/tarefas-campos";
-import { CelulaData, CelulaOpcao, CelulaPessoa, CelulaProjeto, CelulaTitulo } from "./Celulas";
+import { CelulaOpcao, CelulaPessoa, CelulaProjeto, CelulaTitulo } from "./Celulas";
+import { CelulaPeriodo } from "./CelulaPeriodo";
 import { LinhaNovaSubtarefa } from "./LinhaNovaSubtarefa";
 import { Progresso } from "./Progresso";
 
@@ -24,9 +25,9 @@ import { Progresso } from "./Progresso";
  * A partir de @6xl entra a coluna "Solicitante".
  */
 const GRID_PROJETO =
-  "@3xl:grid @3xl:grid-cols-[20px_24px_minmax(160px,1fr)_120px_96px_84px_212px] @6xl:grid-cols-[20px_24px_minmax(160px,1fr)_108px_120px_96px_84px_212px] @3xl:items-center @3xl:gap-x-1";
+  "@3xl:grid @3xl:grid-cols-[20px_24px_minmax(160px,1fr)_120px_96px_84px_150px] @6xl:grid-cols-[20px_24px_minmax(160px,1fr)_108px_120px_96px_84px_150px] @3xl:items-center @3xl:gap-x-1";
 const GRID_LISTA =
-  "@4xl:grid @4xl:grid-cols-[24px_minmax(160px,1fr)_130px_120px_96px_84px_212px] @6xl:grid-cols-[24px_minmax(160px,1fr)_130px_108px_120px_96px_84px_212px] @4xl:items-center @4xl:gap-x-1";
+  "@4xl:grid @4xl:grid-cols-[24px_minmax(160px,1fr)_130px_120px_96px_84px_150px] @6xl:grid-cols-[24px_minmax(160px,1fr)_130px_108px_120px_96px_84px_150px] @4xl:items-center @4xl:gap-x-1";
 
 type Props = {
   tarefas: TarefaDb[];
@@ -114,12 +115,8 @@ function Linha({ t, membros, comites, projetos, hoje, qs, caminho = "/org/tarefa
         <div className={`w-28 ${c.auto}`}>
           <CelulaOpcao id={t.id} chave="prioridade" valor={t.prioridade ?? ""} opcoes={PRIORIDADE_OPCOES} rotulo="Prioridade" />
         </div>
-        <div className="flex items-center gap-0.5">
-          <CelulaData id={t.id} chave="data_inicio" valor={t.data_inicio ?? ""} rotulo="Início" />
-          <span aria-hidden="true" className="text-suave">
-            →
-          </span>
-          <CelulaData id={t.id} chave="prazo" valor={t.prazo ?? ""} rotulo="Entrega" alerta={atrasada} />
+        <div className="w-44 @3xl:w-auto">
+          <CelulaPeriodo id={t.id} inicio={t.data_inicio ?? ""} fim={t.prazo ?? ""} hoje={hoje} alerta={atrasada} />
         </div>
       </div>
     </div>
@@ -188,8 +185,8 @@ export function TabelaTarefas({ tarefas, membros, comites, projetos, hoje, qs, c
   const { setNodeRef } = useDroppable({ id: `grupo:${grupoId ?? "-"}`, disabled: !arrastavel });
   const modoProjeto = !!grupos;
   const cabecalho = modoProjeto
-    ? "@3xl:grid @3xl:grid-cols-[20px_24px_minmax(160px,1fr)_120px_96px_84px_212px] @6xl:grid-cols-[20px_24px_minmax(160px,1fr)_108px_120px_96px_84px_212px] @3xl:gap-x-1"
-    : "@4xl:grid @4xl:grid-cols-[24px_minmax(160px,1fr)_130px_120px_96px_84px_212px] @6xl:grid-cols-[24px_minmax(160px,1fr)_130px_108px_120px_96px_84px_212px] @4xl:gap-x-1";
+    ? "@3xl:grid @3xl:grid-cols-[20px_24px_minmax(160px,1fr)_120px_96px_84px_150px] @6xl:grid-cols-[20px_24px_minmax(160px,1fr)_108px_120px_96px_84px_150px] @3xl:gap-x-1"
+    : "@4xl:grid @4xl:grid-cols-[24px_minmax(160px,1fr)_130px_120px_96px_84px_150px] @6xl:grid-cols-[24px_minmax(160px,1fr)_130px_108px_120px_96px_84px_150px] @4xl:gap-x-1";
   const mostrar = modoProjeto ? "@3xl:grid" : "@4xl:grid";
 
   const itens = tarefas.map((t) => {
@@ -212,7 +209,7 @@ export function TabelaTarefas({ tarefas, membros, comites, projetos, hoje, qs, c
         <span className="pl-1.5">Executor</span>
         <span>Status</span>
         <span>Prioridade</span>
-        <span>Início → Entrega</span>
+        <span>Período</span>
       </div>
       {arrastavel ? (
         <SortableContext items={tarefas.map((t) => t.id)} strategy={verticalListSortingStrategy}>
