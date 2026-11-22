@@ -12,7 +12,7 @@ export function CartaoTarefa({ t, membros, hoje, qs }: { t: TarefaDb; membros: P
   const feitas = t.subtarefas.filter((s) => s.status === "concluida").length;
   const atrasada = t.status !== "concluida" && !!t.prazo && t.prazo < hoje;
   return (
-    <li className="flex flex-col gap-2 rounded-xl border border-borda bg-superficie p-3 shadow-suave hover:-translate-y-0.5 hover:border-borda-forte hover:shadow-elevado">
+    <li className="flex flex-col gap-2 border-2 border-borda bg-superficie p-3 hover:border-texto">
       <Link
         href={`/org/tarefas?${qs ? `${qs}&` : ""}tarefa=${t.id}`}
         scroll={false}

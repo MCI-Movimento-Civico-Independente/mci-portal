@@ -1,87 +1,114 @@
 @import "tailwindcss";
 
-/* O tema escuro é a classe .dark no <html> (next-themes). */
+/* O tema Noite é a classe .dark no <html> (next-themes). */
 @custom-variant dark (&:where(.dark, .dark *));
 
 /*
- * Sistema de design MCi.
- * Os componentes usam só os nomes semânticos abaixo (fundo, superficie, texto,
- * marca...). Claro e escuro trocam os valores aqui; nenhum componente precisa
- * saber em que tema está.
+ * Sistema de design MCI, a partir do Manual da Marca (versão 1, nov/2026).
  *
- * Marca: laranja #EB3C11, ouro #C7AC00, grafite #2A2A2D, claro #ECEEF3.
- * O laranja puro não tem contraste suficiente com texto (4,0:1), então o
- * preenchimento de botões usa um tom um pouco mais fechado no claro e mais
- * aberto no escuro. Todos os pares texto/fundo abaixo passam de 4,5:1 (WCAG AA).
+ * Dois temas: PAPEL (portal e documentos) e NOITE (Telegram e app do Carcará).
+ * Os componentes usam só os nomes semânticos abaixo; cada tema troca os valores.
+ *
+ * Regras do manual aplicadas aqui: cor chapada (sem degradê), cantos retos, sem
+ * sombra, hierarquia pela cor e pela borda de 2px, 70% fundo e cards, 20% texto,
+ * 10% laranja e amarelo (o laranja chama atenção porque aparece pouco).
+ *
+ * Contraste (WCAG AA, 4,5:1): texto preto sobre laranja, amarelo e creme; texto
+ * branco sobre verde, roxo e vermelho "absurdo".
  */
 :root {
   color-scheme: light;
 
-  --fundo: #f2f3f7;
-  --superficie: #ffffff;
-  --sutil: #eceef3;
-  --borda: #e1e4ec;
-  --borda-forte: #c5cad6;
+  /* PAPEL */
+  --fundo: #ecddd9; /* creme */
+  --superficie: #f6eeeb; /* creme claro: cards */
+  --sutil: #e4d3ce; /* hover e áreas discretas */
+  --borda: #cdbdb8;
+  --borda-forte: #8f807b; /* contorno de campos (3:1 contra a superfície) */
 
-  --texto: #1c1c20;
-  --suave: #5d616d;
-  --inverso: #1c1c20;
-  --sobre-inverso: #ffffff;
+  --texto: #000001;
+  --suave: #5e5452;
+  --inverso: #000001; /* botão principal, etiqueta "a fazer" */
+  --sobre-inverso: #ecddd9;
 
-  --marca: #d2330a;
-  --sobre-marca: #ffffff;
-  --marca-texto: #b82b05;
-  --marca-suave: #fde8e1;
+  --bloco: #000001; /* menu lateral, faixa de boas-vindas */
+  --sobre-bloco: #ecddd9;
 
-  --ouro: #c7ac00;
-  --sobre-ouro: #1c1c20;
-  --ouro-suave: #fbf3c4;
-  --ouro-texto: #735f00;
+  --marca: #d54a24; /* laranja: áreas grandes */
+  --sobre-marca: #000001;
+  --marca-texto: #a8361a; /* laranja para texto pequeno e links */
+  --marca-suave: #f0c9bb;
 
-  --verde: #1f9d55;
-  --verde-suave: #def5e7;
-  --verde-texto: #17703e;
+  --ouro: #cfbe48; /* amarelo: ativo, nível, XP */
+  --sobre-ouro: #000001;
+  --ouro-suave: #e8dd9a;
 
-  --sombra-sm: 0 1px 2px rgb(16 24 40 / 0.06), 0 1px 3px rgb(16 24 40 / 0.08);
-  --sombra-md: 0 4px 10px -2px rgb(16 24 40 / 0.1), 0 2px 4px -2px rgb(16 24 40 / 0.06);
-  --sombra-lg: 0 24px 48px -12px rgb(16 24 40 / 0.28);
+  --verde: #237a3b; /* excelente */
+  --sobre-verde: #ffffff;
+  --verde-suave: #c5dfc9;
+  --verde-texto: #1b5f2d;
 
-  --brilho: color-mix(in srgb, #eb3c11 9%, transparent);
+  --absurdo: #c9300a;
+  --sobre-absurdo: #ffffff;
+
+  --roxo: #8a63c9; /* coordenação */
+  --sobre-roxo: #ffffff;
+
+  /* Sem sombra no manual. As variáveis ficam para podermos reativar num lugar só. */
+  --sombra-sm: 0 0 #0000;
+  --sombra-md: 0 0 #0000;
+  --sombra-lg: 0 0 #0000;
 }
 
 .dark {
   color-scheme: dark;
 
-  --fundo: #141417;
-  --superficie: #1e1e22;
-  --sutil: #28282d;
-  --borda: #34343a;
-  --borda-forte: #4a4a53;
+  /* NOITE */
+  --fundo: #19191b; /* ground */
+  --superficie: #232325; /* surface */
+  --sutil: #2d2d30;
+  --borda: #3b3b3f;
+  --borda-forte: #75757c;
 
-  --texto: #f3f3f6;
-  --suave: #a3a3ae;
-  --inverso: #f3f3f6;
-  --sobre-inverso: #141417;
+  --texto: #eceef3; /* ink */
+  --suave: #a6a6ae;
+  --inverso: #eceef3;
+  --sobre-inverso: #19191b;
 
-  --marca: #ff5a2e;
-  --sobre-marca: #1a1a1d;
-  --marca-texto: #ff8a66;
-  --marca-suave: #3b2019;
+  --bloco: #0e0e0f;
+  --sobre-bloco: #eceef3;
 
-  --ouro: #e0c200;
-  --sobre-ouro: #1c1c20;
-  --ouro-suave: #3a3510;
-  --ouro-texto: #ecd54a;
+  --marca: #e83c11; /* brand */
+  --sobre-marca: #000001;
+  --marca-texto: #ff6a45; /* brand-text: links */
+  --marca-suave: #4a2217;
 
-  --verde: #3fcf7d;
-  --verde-suave: #16301f;
-  --verde-texto: #6fe3a0;
+  --ouro: #c7ac00; /* signal */
+  --sobre-ouro: #000001;
+  --ouro-suave: #3d3708;
 
-  --sombra-sm: 0 1px 2px rgb(0 0 0 / 0.5);
-  --sombra-md: 0 8px 18px -6px rgb(0 0 0 / 0.6);
-  --sombra-lg: 0 28px 56px -14px rgb(0 0 0 / 0.75);
+  --verde: #237a3b;
+  --sobre-verde: #ffffff;
+  --verde-suave: #173323;
+  --verde-texto: #6fd48a;
 
-  --brilho: color-mix(in srgb, #eb3c11 20%, transparent);
+  --absurdo: #c9300a;
+  --sobre-absurdo: #ffffff;
+
+  --roxo: #8a63c9;
+  --sobre-roxo: #ffffff;
+}
+
+/* Cantos retos: só o que for círculo (rounded-full) fica redondo, como no cartaz. */
+@theme {
+  --radius-xs: 0px;
+  --radius-sm: 0px;
+  --radius-md: 0px;
+  --radius-lg: 0px;
+  --radius-xl: 0px;
+  --radius-2xl: 0px;
+  --radius-3xl: 0px;
+  --radius-4xl: 0px;
 }
 
 @theme inline {
@@ -94,6 +121,8 @@
   --color-suave: var(--suave);
   --color-inverso: var(--inverso);
   --color-sobre-inverso: var(--sobre-inverso);
+  --color-bloco: var(--bloco);
+  --color-sobre-bloco: var(--sobre-bloco);
   --color-marca: var(--marca);
   --color-sobre-marca: var(--sobre-marca);
   --color-marca-texto: var(--marca-texto);
@@ -101,28 +130,58 @@
   --color-ouro: var(--ouro);
   --color-sobre-ouro: var(--sobre-ouro);
   --color-ouro-suave: var(--ouro-suave);
-  --color-ouro-texto: var(--ouro-texto);
   --color-verde: var(--verde);
+  --color-sobre-verde: var(--sobre-verde);
   --color-verde-suave: var(--verde-suave);
   --color-verde-texto: var(--verde-texto);
+  --color-absurdo: var(--absurdo);
+  --color-sobre-absurdo: var(--sobre-absurdo);
+  --color-roxo: var(--roxo);
+  --color-sobre-roxo: var(--sobre-roxo);
 
   --shadow-suave: var(--sombra-sm);
   --shadow-elevado: var(--sombra-md);
   --shadow-flutuante: var(--sombra-lg);
 
-  /* DM Serif Display nos títulos, Space Grotesk na interface (quadro da marca). */
-  --font-sans: var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif;
-  --font-serif: var(--font-dm-serif), ui-serif, Georgia, serif;
+  /* As cinco famílias do manual. */
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif; /* texto corrido e tarefas */
+  --font-titulo: var(--font-inter-tight), var(--font-inter), ui-sans-serif, sans-serif; /* títulos do portal, 800 a 900 */
+  --font-serif: var(--font-instrument-serif), ui-serif, Georgia, serif; /* itálico: 1 ou 2 palavras de destaque */
+  --font-mono: var(--font-plex-mono), ui-monospace, monospace; /* rótulos, datas, status e XP */
+  --font-impacto: var(--font-anton), var(--font-inter-tight), ui-sans-serif, sans-serif; /* números e títulos de impacto, caixa alta */
 }
 
 body {
   background-color: var(--fundo);
-  /* Brilho laranja no topo, como na referência escura (discreto no claro). */
-  background-image: radial-gradient(1100px 420px at 78% -140px, var(--brilho), transparent);
-  background-repeat: no-repeat;
   color: var(--texto);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
+}
+
+/* Sobretítulo em mono, caixa alta. Com "//" antes de cada seção. */
+@utility rotulo {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+@utility rotulo-barras {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  &::before {
+    content: "// ";
+  }
+}
+
+/* Meio-tom: grade de pontos como em impressão de rua. Usa a cor do texto. */
+@utility meio-tom {
+  background-image: radial-gradient(circle, currentColor 1.4px, transparent 1.6px);
+  background-size: 8px 8px;
 }
 
 :focus-visible {
@@ -131,7 +190,8 @@ body {
 }
 
 ::selection {
-  background: color-mix(in srgb, var(--marca) 30%, transparent);
+  background: var(--ouro);
+  color: #000001;
 }
 
 /* O reset do Tailwind v4 tira o cursor de mão dos botões: devolvemos aqui. */
@@ -151,6 +211,14 @@ select:disabled {
   cursor: not-allowed;
 }
 
+/* Setinha dos <details> (grupos que expandem e comprimem) fica por nossa conta. */
+summary {
+  list-style: none;
+}
+summary::-webkit-details-marker {
+  display: none;
+}
+
 @media (prefers-reduced-motion: no-preference) {
   button,
   a[href],
@@ -158,11 +226,10 @@ select:disabled {
   input,
   textarea {
     transition:
-      background-color 140ms ease,
-      color 140ms ease,
-      border-color 140ms ease,
-      box-shadow 140ms ease,
-      opacity 140ms ease,
-      transform 140ms ease;
+      background-color 120ms ease,
+      color 120ms ease,
+      border-color 120ms ease,
+      opacity 120ms ease,
+      transform 120ms ease;
   }
 }

@@ -108,7 +108,7 @@ export function FormEditarFormulario({
         </ul>
         {personalizados.length > 0 && (
           <>
-            <h3 className="mt-5 text-[11px] uppercase tracking-widest text-suave">Campos personalizados</h3>
+            <h3 className="mt-5 rotulo text-suave">Campos personalizados</h3>
             <ul className="mt-1 grid gap-x-6 sm:grid-cols-2">
               {personalizados.map((c) => (
                 <li key={c.id}>

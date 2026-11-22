@@ -13,6 +13,8 @@ import {
   type ValorPersonalizado,
 } from "@/lib/campos-personalizados-tipos";
 import { listarFormularios } from "@/lib/formularios";
+import { listarGrupos } from "@/lib/grupos";
+import type { GrupoBasico } from "@/lib/grupos-tipos";
 import { resolverFormulario, type FormularioView } from "@/lib/formularios-tipos";
 import { comitesBasicos, projetosBasicos, type ComiteBasico, type ProjetoBasico } from "@/lib/organizacao";
 import {
@@ -48,16 +50,18 @@ type Catalogos = {
   comites: ComiteBasico[];
   projetos: ProjetoBasico[];
   formularios: FormularioView[];
+  grupos: GrupoBasico[];
 };
 
 async function carregarCatalogos(): Promise<Catalogos> {
-  const [membros, comites, projetos, formularios] = await Promise.all([
+  const [membros, comites, projetos, formularios, grupos] = await Promise.all([
     membrosOrg(),
     comitesBasicos(),
     projetosBasicos(),
     listarFormularios(),
+    listarGrupos(),
   ]);
-  return { membros, comites, projetos, formularios };
+  return { membros, comites, projetos, formularios, grupos };
 }
 
 type Validado = { erro: string } | { valor: string | null };
@@ -83,6 +87,9 @@ function validarCampo(campo: CampoTarefa, bruto: string, cat: Catalogos): Valida
     case "comite":
       if (!v) return { valor: null };
       return cat.comites.some((c) => c.slug === v) ? { valor: v } : { erro: "Comitê inválido." };
+    case "grupo":
+      if (!v) return { valor: null };
+      return cat.grupos.some((g) => g.id === v) ? { valor: v } : { erro: "Grupo inválido." };
     case "formulario":
       if (!v) return { valor: null };
       return cat.formularios.some((f) => f.id === v) ? { valor: v } : { erro: "Formulário inválido." };
@@ -110,6 +117,8 @@ function descrever(campo: CampoTarefa, valor: string | null, cat: Catalogos): st
       return cat.projetos.find((p) => p.id === valor)?.nome ?? null;
     case "formulario":
       return cat.formularios.find((f) => f.id === valor)?.nome ?? null;
+    case "grupo":
+      return cat.grupos.find((g) => g.id === valor)?.nome ?? null;
     default:
       return valor;
   }
@@ -125,8 +134,8 @@ export async function atualizarCampoAction(id: string, chave: string, valor: str
 
   const [atual, cat] = await Promise.all([tarefaPorId(id), carregarCatalogos()]);
   if (!atual) return { erro: "Tarefa não encontrada." };
-  if (atual.pai_id && (chave === "comite_slug" || chave === "projeto_id" || chave === "formulario_id")) {
-    return { erro: "A subtarefa segue o comitê, o projeto e o formulário da tarefa original." };
+  if (atual.pai_id && (chave === "comite_slug" || chave === "projeto_id" || chave === "formulario_id" || chave === "grupo_id")) {
+    return { erro: "A subtarefa segue o comitê, o projeto, o grupo e o formulário da tarefa original." };
   }
 
   const validado = validarCampo(campo, valor, cat);
@@ -139,6 +148,14 @@ export async function atualizarCampoAction(id: string, chave: string, valor: str
     const fim = chave === "prazo" ? validado.valor : atual.prazo;
     if (inicio && fim && inicio > fim) return { erro: ERRO_PERIODO };
   }
+  // O grupo precisa ser do projeto da tarefa.
+  if (chave === "grupo_id" && validado.valor) {
+    if (!atual.projeto_id) return { erro: "Escolha um projeto antes de escolher o grupo." };
+    const grupo = cat.grupos.find((g) => g.id === validado.valor);
+    if (grupo?.projeto_id !== atual.projeto_id) return { erro: "O grupo precisa ser do projeto da tarefa." };
+  }
+  // Trocar de projeto tira a tarefa do grupo (o grupo era do projeto anterior).
+  if (chave === "projeto_id" && atual.grupo_id) patch.grupo_id = null;
   // Escolher um projeto traz o comitê dele; trocar o comitê solta um projeto de outro comitê.
   if (chave === "projeto_id" && validado.valor) {
     patch.comite_slug = cat.projetos.find((p) => p.id === validado.valor)!.comite_slug;
@@ -152,7 +169,7 @@ export async function atualizarCampoAction(id: string, chave: string, valor: str
     if (!(await atualizarTarefa(id, patch))) return { erro: "Tarefa não encontrada." };
   } catch (erro) {
     console.error("Falha ao atualizar o campo:", erro);
-    return { erro: "Não foi possível salvar. Tente de novo." };
+    return { erro: "Algo deu errado. Tente de novo em alguns minutos." };
   }
 
   for (const chaveAlterada of Object.keys(patch) as ChaveCampo[]) {
@@ -179,7 +196,7 @@ export async function criarTarefaAction(_anterior: EstadoForm, form: FormData): 
   const cat = await carregarCatalogos();
 
   const lido: Record<string, string | null> = {};
-  for (const chave of ["titulo", "comite_slug", "formulario_id", "projeto_id", "solicitante_id", "responsavel_id", "prioridade", "data_inicio", "prazo"]) {
+  for (const chave of ["titulo", "comite_slug", "formulario_id", "projeto_id", "grupo_id", "solicitante_id", "responsavel_id", "prioridade", "data_inicio", "prazo"]) {
     const v = validarCampo(campoPorChave(chave)!, texto(form.get(chave)), cat);
     if ("erro" in v) return { erro: v.erro };
     lido[chave] = v.valor;
@@ -188,6 +205,12 @@ export async function criarTarefaAction(_anterior: EstadoForm, form: FormData): 
   if (!descricao) return { erro: "Escreva a descrição da tarefa." };
   if (descricao.length > 2000) return { erro: "A descrição pode ter no máximo 2000 caracteres." };
   if (lido.data_inicio && lido.prazo && lido.data_inicio > lido.prazo) return { erro: ERRO_PERIODO };
+
+  // O grupo precisa ser do projeto escolhido.
+  if (lido.grupo_id) {
+    const grupo = cat.grupos.find((g) => g.id === lido.grupo_id);
+    if (!lido.projeto_id || grupo?.projeto_id !== lido.projeto_id) return { erro: "O grupo precisa ser do projeto escolhido." };
+  }
 
   // O projeto manda: escolher um projeto define o comitê.
   if (lido.projeto_id) lido.comite_slug = cat.projetos.find((p) => p.id === lido.projeto_id)!.comite_slug;
@@ -215,6 +238,7 @@ export async function criarTarefaAction(_anterior: EstadoForm, form: FormData): 
       formulario_id: formularioId,
       campos: camposValores,
       projeto_id: lido.projeto_id,
+      grupo_id: lido.grupo_id,
       prioridade: lido.prioridade as Prioridade | null,
       solicitante_id: lido.solicitante_id,
       responsavel_id: lido.responsavel_id,
@@ -223,11 +247,14 @@ export async function criarTarefaAction(_anterior: EstadoForm, form: FormData): 
     });
   } catch (erro) {
     console.error("Falha ao criar tarefa:", erro);
-    return { erro: "Não foi possível salvar a tarefa. Tente de novo." };
+    return { erro: "Algo deu errado. Tente de novo em alguns minutos." };
   }
   await registrarEvento({ tarefa_id: id, autor_id: sessao.conta.id, tipo: "criada" });
   revalidatePath("/org", "layout");
-  redirect(`/org/tarefas?tarefa=${id}`);
+  // Volta para a página de onde veio (lista de tarefas ou página do projeto), com a tarefa aberta.
+  const retorno = texto(form.get("retorno"));
+  const base = /^\/org\/(tarefas|projetos\/[0-9a-f-]{36})$/i.test(retorno) ? retorno : "/org/tarefas";
+  redirect(`${base}?tarefa=${id}`);
 }
 
 export async function salvarDescricaoAction(id: string, _anterior: EstadoForm, form: FormData): Promise<EstadoForm> {
@@ -245,7 +272,7 @@ export async function salvarDescricaoAction(id: string, _anterior: EstadoForm, f
     await atualizarTarefa(id, { descricao: descricao || null });
   } catch (erro) {
     console.error("Falha ao salvar a descrição:", erro);
-    return { erro: "Não foi possível salvar. Tente de novo." };
+    return { erro: "Algo deu errado. Tente de novo em alguns minutos." };
   }
   if ((atual.descricao ?? "") !== descricao) {
     await registrarEvento({ tarefa_id: id, autor_id: sessao.conta.id, tipo: "descricao" });
@@ -283,7 +310,7 @@ export async function criarSubtarefaAction(paiId: string, anterior: EstadoForm, 
     await registrarEvento({ tarefa_id: subId, autor_id: sessao.conta.id, tipo: "criada" });
   } catch (erro) {
     console.error("Falha ao criar subtarefa:", erro);
-    return { erro: "Não foi possível criar a subtarefa. Tente de novo." };
+    return { erro: "Algo deu errado. Tente de novo em alguns minutos." };
   }
   await registrarEvento({
     tarefa_id: paiId,
@@ -327,7 +354,7 @@ export async function comentarAction(tarefaId: string, anterior: EstadoForm, for
     await criarComentario(tarefaId, sessao.conta.id, comentario);
   } catch (erro) {
     console.error("Falha ao comentar:", erro);
-    return { erro: "Não foi possível enviar o comentário. Tente de novo." };
+    return { erro: "Algo deu errado. Tente de novo em alguns minutos." };
   }
   revalidatePath("/org", "layout");
   return { ok: true, n: (anterior.n ?? 0) + 1 };
@@ -365,7 +392,7 @@ export async function atualizarCampoPersonalizadoTarefaAction(
     anterior = r.antes;
   } catch (erro) {
     console.error("Falha ao salvar o campo personalizado:", erro);
-    return { erro: "Não foi possível salvar. Tente de novo." };
+    return { erro: "Algo deu errado. Tente de novo em alguns minutos." };
   }
 
   const de = descreverValorPersonalizado(campo, anterior);

@@ -12,16 +12,14 @@ export function BarraLateral({ souAdmin = false }: { souAdmin?: boolean }) {
   const itens = souAdmin ? [...itensLaterais, itemAdmin] : itensLaterais;
 
   return (
-    <aside className="hidden w-64 shrink-0 border-r border-borda bg-superficie md:flex">
-      <div className="sticky top-0 flex h-dvh w-full flex-col gap-8 px-4 pb-4 pt-6">
-        <Link href="/org" aria-label="MCI, início" className="flex items-center gap-3 rounded-lg px-2">
-          <Logo className="text-4xl" />
-          <span className="rounded-full bg-sutil px-2 py-0.5 text-[10px] font-semibold uppercase tracking-widest text-suave">
-            Organização
-          </span>
+    <aside className="hidden w-[248px] shrink-0 bg-bloco text-sobre-bloco md:flex">
+      <div className="sticky top-0 flex h-dvh w-full flex-col gap-8 px-[18px] pb-[18px] pt-6">
+        <Link href="/org" aria-label="MCI, início" className="flex items-baseline gap-2 px-2">
+          <Logo className="text-[32px]" />
+          <span className="rotulo text-[10px] text-sobre-bloco/70">Organização</span>
         </Link>
 
-        <nav aria-label="Principal" className="flex flex-col gap-1">
+        <nav aria-label="Principal" className="flex flex-col gap-0.5">
           {itens.map((item) => {
             const ativo = estaAtivo(pathname, item);
             const Icone = item.icone;
@@ -30,13 +28,13 @@ export function BarraLateral({ souAdmin = false }: { souAdmin?: boolean }) {
                 key={item.href}
                 href={item.href}
                 aria-current={ativo ? "page" : undefined}
-                className={`group flex min-h-11 items-center gap-3 rounded-xl px-3 text-[15px] ${
+                className={`flex min-h-11 items-center gap-3 px-3.5 text-[15px] ${
                   ativo
-                    ? "bg-marca-suave font-semibold text-marca-texto"
-                    : "font-medium text-suave hover:bg-sutil hover:text-texto"
+                    ? "bg-ouro font-bold text-sobre-ouro"
+                    : "font-medium text-sobre-bloco hover:bg-sobre-bloco/15"
                 }`}
               >
-                <Icone size={19} aria-hidden="true" className={ativo ? "" : "group-hover:text-marca-texto"} />
+                <Icone size={18} aria-hidden="true" />
                 {item.rotulo}
               </Link>
             );
@@ -47,7 +45,7 @@ export function BarraLateral({ souAdmin = false }: { souAdmin?: boolean }) {
           <ThemeToggle />
           <Link
             href="/"
-            className="flex min-h-11 items-center gap-2 rounded-xl border border-borda px-3 text-sm font-medium text-suave hover:bg-sutil hover:text-texto"
+            className="rotulo flex min-h-11 items-center gap-3 border-2 border-sobre-bloco/30 px-3.5 text-sobre-bloco hover:border-sobre-bloco hover:bg-sobre-bloco hover:text-bloco"
           >
             <TbChevronLeft size={16} aria-hidden="true" />
             Voltar ao portal

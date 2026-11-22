@@ -8,6 +8,7 @@ import {
   type CampoPersonalizado,
 } from "@/lib/campos-personalizados-tipos";
 import { resolverFormulario, type FormularioView } from "@/lib/formularios-tipos";
+import type { GrupoBasico } from "@/lib/grupos-tipos";
 import type { ComiteBasico, ProjetoBasico } from "@/lib/organizacao";
 import type { Pessoa, TarefaDb } from "@/lib/tarefas";
 import { CAMPOS } from "@/lib/tarefas-campos";
@@ -43,7 +44,9 @@ export async function DetalheTarefa({
   comites,
   projetos,
   formularios,
+  grupos,
   camposPersonalizados,
+  caminho = "/org/tarefas",
   qs,
   euId,
   souAdmin,
@@ -53,7 +56,10 @@ export async function DetalheTarefa({
   comites: ComiteBasico[];
   projetos: ProjetoBasico[];
   formularios: FormularioView[];
+  grupos: GrupoBasico[];
   camposPersonalizados: CampoPersonalizado[];
+  /** Página onde a janela abre (lista de tarefas ou página do projeto). */
+  caminho?: string;
   qs: string;
   euId: string;
   souAdmin: boolean;
@@ -70,24 +76,24 @@ export async function DetalheTarefa({
     : (formularios.find((f) => f.id === tarefa.formulario_id) ?? resolverFormulario(formularios, tarefa.comite_slug));
   const incluidos = new Set(formulario?.campos ?? []);
   // Subtarefa segue o comitê, o projeto e o formulário da tarefa original.
-  const semHerdados = (chave: string) => !(ehSub && (chave === "comite_slug" || chave === "projeto_id" || chave === "formulario_id"));
+  const semHerdados = (chave: string) => !(ehSub && (chave === "comite_slug" || chave === "projeto_id" || chave === "formulario_id" || chave === "grupo_id"));
   const personalizados = camposPersonalizados.filter((c) => incluidos.has(chaveFormulario(c.id)));
-  const campos = CAMPOS.filter((c) => c.chave !== "titulo" && semHerdados(c.chave) && (c.fixo || incluidos.has(c.chave)));
+  const campos = CAMPOS.filter((c) => c.chave !== "titulo" && semHerdados(c.chave) && (c.chave !== "grupo_id" || (!!tarefa.projeto_id && grupos.some((g) => g.projeto_id === tarefa.projeto_id))) && (c.fixo || incluidos.has(c.chave)));
 
   return (
     <div className="flex flex-col gap-6">
       <div className="pr-10">
         {ehSub ? (
           <Link
-            href={`/org/tarefas?${qs ? `${qs}&` : ""}tarefa=${tarefa.pai_id}`}
+            href={`${caminho}?${qs ? `${qs}&` : ""}tarefa=${tarefa.pai_id}`}
             scroll={false}
-            className="inline-flex min-h-11 items-center gap-1 text-[11px] uppercase tracking-widest text-marca-texto hover:underline"
+            className="inline-flex min-h-11 items-center gap-1 rotulo text-marca-texto hover:underline"
           >
             <TbChevronLeft size={14} aria-hidden="true" />
             Subtarefa de {tarefa.paiTitulo ?? "tarefa"}
           </Link>
         ) : (
-          <p className="text-[11px] uppercase tracking-widest text-suave">Tarefa</p>
+          <p className="rotulo text-suave">Tarefa</p>
         )}
         <div className="mt-1">
           <CelulaTitulo id={tarefa.id} valor={tarefa.titulo} grande />
@@ -97,7 +103,7 @@ export async function DetalheTarefa({
       <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-2">
         {campos.map((c) => (
           <div key={c.chave} className="grid grid-cols-[110px_1fr] items-center">
-            <dt className="text-[11px] uppercase tracking-widest text-suave">{c.rotulo}</dt>
+            <dt className="rotulo text-suave">{c.rotulo}</dt>
             <dd>
               <CampoEditavel
                 campo={c}
@@ -106,6 +112,7 @@ export async function DetalheTarefa({
                 comites={comites}
                 projetos={projetos}
                 formularios={formularios}
+                grupos={grupos}
                 hoje={hoje}
               />
             </dd>
@@ -116,7 +123,7 @@ export async function DetalheTarefa({
             key={c.id}
             className={`grid grid-cols-[110px_1fr] items-start ${c.tipo === "texto_longo" ? "sm:col-span-2" : "items-center"}`}
           >
-            <dt className="pt-3 text-[11px] uppercase tracking-widest text-suave">
+            <dt className="pt-3 rotulo text-suave">
               {c.rotulo}
               {c.obrigatorio && <span aria-hidden="true"> *</span>}
             </dt>
@@ -136,7 +143,7 @@ export async function DetalheTarefa({
               Subtarefas
             </h2>
             {total > 0 && (
-              <span className="text-[11px] font-bold uppercase text-suave">
+              <span className="rotulo font-bold text-suave">
                 {feitas} de {total} concluídas
               </span>
             )}

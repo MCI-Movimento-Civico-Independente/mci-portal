@@ -30,12 +30,12 @@ export default async function FormularioAdminPage({ params }: { params: Promise<
     <div className="flex max-w-3xl flex-col gap-6">
       <Link
         href="/org/admin/formularios"
-        className="inline-flex min-h-11 w-fit items-center gap-1 text-[11px] uppercase tracking-widest text-marca-texto hover:underline"
+        className="inline-flex min-h-11 w-fit items-center gap-1 rotulo text-marca-texto hover:underline"
       >
         <TbChevronLeft size={14} aria-hidden="true" />
         Formulários
       </Link>
-      <h1 className="font-serif text-2xl md:text-3xl">{formulario.nome}</h1>
+      <h1 className="font-titulo font-black uppercase tracking-tight text-2xl md:text-3xl">{formulario.nome}</h1>
 
       <Card>
         <FormEditarFormulario

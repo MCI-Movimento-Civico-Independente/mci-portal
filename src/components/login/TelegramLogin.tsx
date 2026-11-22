@@ -47,7 +47,7 @@ export function TelegramLogin({ bot, next }: { bot: string; next?: string }) {
           window.location.assign(json.redirect);
           return;
         }
-        setErro(MENSAGENS[json.erro] ?? "Não foi possível entrar. Tente de novo.");
+        setErro(MENSAGENS[json.erro] ?? "Algo deu errado. Tente de novo em alguns minutos.");
       } catch {
         setErro("Sem conexão. Tente de novo.");
       }

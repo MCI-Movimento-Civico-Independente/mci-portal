@@ -10,9 +10,9 @@ import { oidcConfigurado } from "@/lib/auth/telegram-oidc";
 export const metadata = { title: "Entrar · MCi" };
 
 const ERROS: Record<string, string> = {
-  google: "Não foi possível entrar com o Google. Tente de novo.",
-  falha: "Algo deu errado ao entrar. Tente de novo.",
-  telegram: "Não foi possível entrar com o Telegram. Tente de novo.",
+  google: "Algo deu errado. Tente de novo em alguns minutos.",
+  falha: "Algo deu errado. Tente de novo em alguns minutos.",
+  telegram: "Algo deu errado. Tente de novo em alguns minutos.",
   config: "O portal está com a configuração do Supabase incompleta. Avise a equipe técnica.",
 };
 
@@ -28,10 +28,10 @@ export default function LoginPage({
       </div>
       <Logo className="self-start text-6xl" />
       <div>
-        <h1 className="font-serif text-4xl leading-tight md:text-5xl">
-          Entrar <span className="italic text-marca-texto">no portal</span>
+        <h1 className="font-titulo font-black uppercase tracking-tight text-4xl leading-tight md:text-5xl">
+          Entrar <span className="font-serif text-[1.15em] font-normal normal-case italic text-marca-texto">no portal</span>
         </h1>
-        <p className="mt-3 text-suave">Pensar. Agir. Transformar.</p>
+        <p className="mt-3 text-suave">Pensar · Agir · Fiscalizar</p>
       </div>
       <Suspense fallback={<div className="min-h-40" />}>
         <Formas searchParams={searchParams} />
@@ -58,7 +58,7 @@ async function Formas({
       )}
 
       <Card>
-        <p className="text-[11px] font-semibold uppercase tracking-widest text-suave">Forma principal</p>
+        <p className="rotulo text-suave">Forma principal</p>
         <p className="mb-4 mt-2 text-sm">
           Use a mesma conta do Telegram que você usa no grupo do MCi.
         </p>

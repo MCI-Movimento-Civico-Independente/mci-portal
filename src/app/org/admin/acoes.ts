@@ -55,7 +55,7 @@ export async function alterarPapelAction(contaId: string, papel: string): Promis
     }
   } catch (erro) {
     console.error("Falha ao alterar o papel:", erro);
-    return { erro: "Não foi possível salvar. Tente de novo." };
+    return { erro: "Algo deu errado. Tente de novo em alguns minutos." };
   }
   revalidatePath("/org", "layout");
   return {};
@@ -74,7 +74,7 @@ export async function criarComiteAction(anterior: EstadoAdmin, form: FormData): 
     await auditar(sessao.conta.id, "comite_criado", r.slug, { nome });
   } catch (erro) {
     console.error("Falha ao criar comitê:", erro);
-    return { erro: "Não foi possível criar o comitê. Tente de novo." };
+    return { erro: "Algo deu errado. Tente de novo em alguns minutos." };
   }
   revalidatePath("/org", "layout");
   return { ok: true, n: (anterior.n ?? 0) + 1 };
@@ -94,7 +94,7 @@ export async function renomearComiteAction(slug: string, _anterior: EstadoAdmin,
     await auditar(sessao.conta.id, "comite_renomeado", slug, { nome });
   } catch (erro) {
     console.error("Falha ao renomear comitê:", erro);
-    return { erro: "Não foi possível salvar. Tente de novo." };
+    return { erro: "Algo deu errado. Tente de novo em alguns minutos." };
   }
   revalidatePath("/org", "layout");
   return { ok: true };
@@ -141,7 +141,7 @@ export async function criarFormularioAction(_anterior: EstadoAdmin, form: FormDa
     await auditar(sessao.conta.id, "formulario_criado", id, { nome });
   } catch (erro) {
     console.error("Falha ao criar formulário:", erro);
-    return { erro: "Não foi possível criar o formulário. Tente de novo." };
+    return { erro: "Algo deu errado. Tente de novo em alguns minutos." };
   }
   revalidatePath("/org", "layout");
   redirect(`/org/admin/formularios/${id}`);
@@ -169,7 +169,7 @@ export async function salvarFormularioAction(id: string, _anterior: EstadoAdmin,
     await auditar(sessao.conta.id, "formulario_salvo", id, { nome, campos, comites });
   } catch (erro) {
     console.error("Falha ao salvar formulário:", erro);
-    return { erro: "Não foi possível salvar. Tente de novo." };
+    return { erro: "Algo deu errado. Tente de novo em alguns minutos." };
   }
   revalidatePath("/org", "layout");
   return { ok: true };
@@ -224,7 +224,7 @@ export async function criarCampoPersonalizadoAction(
     await auditar(sessao.conta.id, "campo_criado", r.id, { rotulo, tipo, formularioId: formularioId || null });
   } catch (erro) {
     console.error("Falha ao criar campo personalizado:", erro);
-    return { erro: "Não foi possível criar o campo. Tente de novo." };
+    return { erro: "Algo deu errado. Tente de novo em alguns minutos." };
   }
   revalidatePath("/org", "layout");
   return { ok: true, n: (anterior.n ?? 0) + 1 };
@@ -252,7 +252,7 @@ export async function atualizarCampoPersonalizadoAction(
     await auditar(sessao.conta.id, "campo_editado", id, { rotulo });
   } catch (erro) {
     console.error("Falha ao editar campo personalizado:", erro);
-    return { erro: "Não foi possível salvar. Tente de novo." };
+    return { erro: "Algo deu errado. Tente de novo em alguns minutos." };
   }
   revalidatePath("/org", "layout");
   return { ok: true };

@@ -13,8 +13,7 @@ type Props = {
   temGoogle: boolean;
 };
 
-const item =
-  "flex min-h-11 w-full items-center rounded-lg px-3 text-left text-sm font-medium hover:bg-sutil";
+const item = "flex min-h-11 w-full items-center px-3 text-left text-sm font-medium hover:bg-sutil";
 
 /** Avatar com menu: Organização (só com papel), Administração, Comunidade, tema, Vincular Google, Sair. */
 export function MenuAvatar({ inicial, nome, podeOrg, souAdmin = false, temGoogle }: Props) {
@@ -46,7 +45,7 @@ export function MenuAvatar({ inicial, nome, podeOrg, souAdmin = false, temGoogle
         aria-haspopup="menu"
         aria-expanded={aberto}
         onClick={() => setAbertoEm(aberto ? null : pathname)}
-        className="flex size-11 shrink-0 items-center justify-center rounded-full bg-marca text-base font-semibold text-sobre-marca shadow-suave ring-2 ring-superficie hover:bg-marca-texto hover:shadow-elevado"
+        className="flex size-11 shrink-0 items-center justify-center rounded-full bg-marca text-lg font-extrabold text-sobre-marca hover:bg-ouro hover:text-sobre-ouro"
       >
         {inicial}
       </button>
@@ -54,9 +53,9 @@ export function MenuAvatar({ inicial, nome, podeOrg, souAdmin = false, temGoogle
       {aberto && (
         <div
           role="menu"
-          className="absolute right-0 top-full z-30 mt-2 w-64 rounded-2xl border border-borda bg-superficie p-1.5 text-texto shadow-flutuante"
+          className="absolute right-0 top-full z-30 mt-2 w-64 border-2 border-inverso bg-superficie p-1.5 text-texto"
         >
-          <p className="truncate px-3 pb-2 pt-2 text-sm font-semibold">{nome}</p>
+          <p className="truncate px-3 pb-2 pt-2 text-sm font-bold">{nome}</p>
           <div className="border-t border-borda pt-1.5">
             {podeOrg && (
               <Link role="menuitem" href="/org" className={item}>
@@ -81,8 +80,8 @@ export function MenuAvatar({ inicial, nome, podeOrg, souAdmin = false, temGoogle
             )}
           </div>
           <div className="mt-1.5 flex items-center justify-between gap-3 border-t border-borda px-3 py-2">
-            <span className="text-sm font-medium text-suave">Tema</span>
-            <ThemeToggle compacto />
+            <span className="rotulo text-suave">Tema</span>
+            <ThemeToggle />
           </div>
           <form action="/auth/sair" method="post" className="border-t border-borda pt-1.5">
             <button role="menuitem" type="submit" className={`${item} text-marca-texto`}>

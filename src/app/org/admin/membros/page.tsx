@@ -18,12 +18,12 @@ export default async function MembrosAdminPage({ searchParams }: { searchParams:
     <div className="flex max-w-4xl flex-col gap-6">
       <Link
         href="/org/admin"
-        className="inline-flex min-h-11 w-fit items-center gap-1 text-[11px] uppercase tracking-widest text-marca-texto hover:underline"
+        className="inline-flex min-h-11 w-fit items-center gap-1 rotulo text-marca-texto hover:underline"
       >
         <TbChevronLeft size={14} aria-hidden="true" />
         Administração
       </Link>
-      <h1 className="font-serif text-3xl md:text-4xl">Membros e acessos</h1>
+      <h1 className="font-titulo font-black uppercase tracking-tight text-3xl md:text-4xl">Membros e acessos</h1>
 
       <p className="text-sm text-suave">
         <strong>Membro</strong> usa só a comunidade. <strong>Organização</strong> também entra na área de tarefas,
@@ -53,7 +53,7 @@ export default async function MembrosAdminPage({ searchParams }: { searchParams:
       </form>
 
       <Card>
-        <h2 className="text-[11px] uppercase tracking-widest text-suave">
+        <h2 className="rotulo text-suave">
           {contas.length} {contas.length === 1 ? "conta" : "contas"}
           {contas.length === 100 && " (mostrando as 100 primeiras; refine a busca)"}
         </h2>

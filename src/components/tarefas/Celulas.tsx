@@ -4,6 +4,7 @@ import { TbPencil } from "react-icons/tb";
 import Link from "next/link";
 import { useRef, useState } from "react";
 import type { FormularioView } from "@/lib/formularios-tipos";
+import { blocoDaCor, type GrupoBasico } from "@/lib/grupos-tipos";
 import type { ComiteBasico, ProjetoBasico } from "@/lib/organizacao";
 import type { Pessoa, TarefaDb } from "@/lib/tarefas";
 import {
@@ -127,6 +128,45 @@ export function CelulaData({
           alerta ? "font-bold text-marca-texto" : ""
         }`}
       />
+      <MensagemErro erro={erro} />
+    </div>
+  );
+}
+
+/** Seletor de grupo do projeto (como na Monday). Só lista os grupos do projeto da tarefa. */
+export function CelulaGrupo({
+  id,
+  valor: valorServidor,
+  grupos,
+}: {
+  id: string;
+  valor: string;
+  grupos: GrupoBasico[];
+}) {
+  const { valor, salvar, pendente, erro } = useCampo(id, "grupo_id", valorServidor);
+  const atual = grupos.find((g) => g.id === valor);
+  return (
+    <div className="min-w-0">
+      <div className="relative">
+        <span
+          aria-hidden="true"
+          className={`pointer-events-none absolute left-2 top-1/2 size-2.5 -translate-y-1/2 ${atual ? blocoDaCor(atual.cor) : "bg-borda-forte"}`}
+        />
+        <select
+          aria-label="Grupo"
+          value={valor}
+          disabled={pendente}
+          onChange={(e) => salvar(e.target.value)}
+          className="min-h-11 w-full truncate border border-transparent bg-transparent py-0 pl-6 pr-1.5 text-sm font-medium hover:border-borda-forte hover:bg-sutil disabled:opacity-60"
+        >
+          <option value="">Sem grupo</option>
+          {grupos.map((g) => (
+            <option key={g.id} value={g.id}>
+              {g.nome}
+            </option>
+          ))}
+        </select>
+      </div>
       <MensagemErro erro={erro} />
     </div>
   );
@@ -271,7 +311,7 @@ export function CelulaTitulo({
     if (texto.trim()) salvar(texto.trim());
   }
 
-  const tamanho = grande ? "font-serif text-2xl leading-tight md:text-3xl" : "text-[15px] font-bold leading-snug";
+  const tamanho = grande ? "font-titulo text-2xl font-extrabold leading-tight tracking-tight md:text-3xl" : "text-[15px] font-bold leading-snug";
 
   if (editando) {
     return (
@@ -332,6 +372,7 @@ export function CampoEditavel({
   comites,
   projetos,
   formularios,
+  grupos,
   hoje,
 }: {
   campo: CampoTarefa;
@@ -340,6 +381,7 @@ export function CampoEditavel({
   comites: ComiteBasico[];
   projetos: ProjetoBasico[];
   formularios: FormularioView[];
+  grupos: GrupoBasico[];
   hoje: string;
 }) {
   const bruto = (tarefa as unknown as Record<string, string | null>)[campo.chave] ?? "";
@@ -360,6 +402,8 @@ export function CampoEditavel({
       );
     case "comite":
       return <CelulaComite id={tarefa.id} valor={bruto} comites={comites} />;
+    case "grupo":
+      return <CelulaGrupo id={tarefa.id} valor={bruto} grupos={grupos.filter((g) => g.projeto_id === tarefa.projeto_id)} />;
     case "formulario":
       return <CelulaFormulario id={tarefa.id} valor={bruto} formularios={formularios} />;
     case "projeto":

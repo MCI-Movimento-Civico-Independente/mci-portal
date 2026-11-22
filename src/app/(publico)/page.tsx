@@ -12,11 +12,11 @@ export default function PortalPage() {
       </div>
       <Logo className="self-start text-7xl md:text-8xl" />
       <div className="flex flex-col gap-5">
-        <p className="text-xs font-semibold uppercase tracking-widest text-marca-texto">
+        <p className="rotulo text-marca-texto">
           Movimento Cívico Independente
         </p>
-        <h1 className="font-serif text-5xl leading-[1.05] md:text-7xl">
-          Pensar. Agir. <span className="italic text-marca-texto">Transformar.</span>
+        <h1 className="font-titulo font-black uppercase tracking-tight text-5xl leading-[1.05] md:text-7xl">
+          Pensar. Agir. <span className="font-serif text-[1.15em] font-normal normal-case italic text-marca-texto">Fiscalizar.</span>
         </h1>
         <p className="max-w-xl text-lg text-suave">
           Ação ética, pensamento livre, futuro coletivo. O portal do MCI está em construção.

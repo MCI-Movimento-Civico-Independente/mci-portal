@@ -30,14 +30,14 @@ export function Modal({ fecharHref, rotulo, children }: { fecharHref: string; ro
       onClick={(e) => {
         if (e.target === ref.current) ref.current?.close();
       }}
-      className="m-auto max-h-[92dvh] w-[min(100%-1.5rem,60rem)] overflow-y-auto rounded-2xl border border-borda bg-superficie p-0 text-texto shadow-flutuante backdrop:bg-black/50 backdrop:backdrop-blur-sm"
+      className="m-auto max-h-[92dvh] w-[min(100%-1.5rem,60rem)] overflow-y-auto border-2 border-inverso bg-superficie p-0 text-texto backdrop:bg-black/60"
     >
       <div className="relative p-5 md:p-8">
         <button
           type="button"
           aria-label="Fechar"
           onClick={() => ref.current?.close()}
-          className="absolute right-3 top-3 flex size-11 items-center justify-center rounded-lg text-suave hover:bg-sutil hover:text-texto"
+          className="absolute right-3 top-3 flex size-11 items-center justify-center border-2 border-transparent hover:border-inverso hover:bg-inverso hover:text-sobre-inverso"
         >
           <TbX size={20} aria-hidden="true" />
         </button>

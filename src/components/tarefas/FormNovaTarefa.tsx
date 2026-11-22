@@ -5,6 +5,7 @@ import { criarTarefaAction, type EstadoForm } from "@/app/org/tarefas/acoes";
 import { Botao } from "@/components/ui/Botao";
 import { chaveFormulario, type CampoPersonalizado } from "@/lib/campos-personalizados-tipos";
 import { resolverFormulario, type FormularioView } from "@/lib/formularios-tipos";
+import type { GrupoBasico } from "@/lib/grupos-tipos";
 import type { ComiteBasico, ProjetoBasico } from "@/lib/organizacao";
 import type { Pessoa } from "@/lib/tarefas";
 import { PRIORIDADE_OPCOES } from "@/lib/tarefas-campos";
@@ -15,20 +16,31 @@ export function FormNovaTarefa({
   comites,
   projetos,
   formularios,
+  grupos,
   camposPersonalizados,
   euId,
   fecharHref,
+  retorno = "/org/tarefas",
+  projetoInicial = "",
+  grupoInicial = "",
 }: {
   membros: Pessoa[];
   comites: ComiteBasico[];
   projetos: ProjetoBasico[];
   formularios: FormularioView[];
+  grupos: GrupoBasico[];
   camposPersonalizados: CampoPersonalizado[];
   euId: string;
   fecharHref: string;
+  /** Página para onde voltar depois de criar (a tarefa abre por cima dela). */
+  retorno?: string;
+  /** Quando a janela abre a partir de um grupo do projeto, vêm preenchidos. */
+  projetoInicial?: string;
+  grupoInicial?: string;
 }) {
   const [estado, acao, pendente] = useActionState<EstadoForm, FormData>(criarTarefaAction, {});
   const [comite, setComite] = useState("");
+  const [projeto, setProjeto] = useState(projetoInicial);
   // Formulário escolhido à mão; sem escolha, vale o padrão do comitê (ou o Padrão geral).
   const [formManual, setFormManual] = useState<string | null>(null);
   const formularioId = formManual ?? resolverFormulario(formularios, comite)?.id ?? "";
@@ -56,6 +68,7 @@ export function FormNovaTarefa({
 
   return (
     <form action={acao} className="flex flex-col gap-5">
+      <input type="hidden" name="retorno" value={retorno} />
       <div>
         <label htmlFor="titulo" className={rotulo}>
           Assunto
@@ -134,7 +147,7 @@ export function FormNovaTarefa({
             <label htmlFor="projeto_id" className={rotulo}>
               Projeto {opcional}
             </label>
-            <select id="projeto_id" name="projeto_id" defaultValue="" className={campo}>
+            <select id="projeto_id" name="projeto_id" value={projeto} onChange={(e) => setProjeto(e.target.value)} className={campo}>
               <option value="">Sem projeto</option>
               {comites.map((c) => {
                 const doComite = projetos.filter((p) => p.comite_slug === c.slug && p.status === "ativo");
@@ -150,6 +163,23 @@ export function FormNovaTarefa({
               })}
             </select>
             <p className="mt-1 text-xs text-suave">Escolher um projeto define o comitê dele.</p>
+          </div>
+        )}
+        {tem("projeto_id") && grupos.some((g) => g.projeto_id === projeto) && (
+          <div>
+            <label htmlFor="grupo_id" className={rotulo}>
+              Grupo {opcional}
+            </label>
+            <select key={projeto} id="grupo_id" name="grupo_id" defaultValue={projeto === projetoInicial ? grupoInicial : ""} className={campo}>
+              <option value="">Sem grupo</option>
+              {grupos
+                .filter((g) => g.projeto_id === projeto)
+                .map((g) => (
+                  <option key={g.id} value={g.id}>
+                    {g.nome}
+                  </option>
+                ))}
+            </select>
           </div>
         )}
         {tem("solicitante_id") && seletorPessoa("solicitante_id", "Solicitante")}

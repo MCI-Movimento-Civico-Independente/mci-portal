@@ -48,7 +48,7 @@ export function FormRenomearComite({ slug, nome }: { slug: string; nome: string 
         </p>
       )}
       {estado.ok && !pendente && (
-        <p role="status" className="mt-1 text-[11px] font-bold uppercase text-suave">
+        <p role="status" className="mt-1 rotulo font-bold text-suave">
           Salvo
         </p>
       )}

@@ -25,16 +25,16 @@ export default async function ComunidadePage({
           {AVISOS[aviso]}
         </p>
       )}
-      <h1 className="font-serif text-4xl leading-none md:text-5xl">
+      <h1 className="font-titulo font-black uppercase tracking-tight text-4xl leading-none md:text-5xl">
         Olá,{" "}
-        <span className="font-serif font-normal normal-case italic">{sessao.primeiroNome}.</span>
+        <span className="font-serif text-[1.15em] font-normal normal-case italic">{sessao.primeiroNome}.</span>
       </h1>
       <Card>
-        <p className="text-[11px] uppercase tracking-widest text-suave">Seu perfil</p>
+        <p className="rotulo text-suave">Seu perfil</p>
         <dl className="mt-4 grid grid-cols-3 gap-4">
           <div>
             <dt className="text-[11px] uppercase text-suave">Nível</dt>
-            <dd className="font-serif text-4xl">{sessao.nivel.numero}</dd>
+            <dd className="font-impacto text-5xl leading-none">{sessao.nivel.numero}</dd>
           </div>
           <div>
             <dt className="text-[11px] uppercase text-suave">Título</dt>
@@ -42,7 +42,7 @@ export default async function ComunidadePage({
           </div>
           <div>
             <dt className="text-[11px] uppercase text-suave">XP</dt>
-            <dd className="font-serif text-4xl">{sessao.xp}</dd>
+            <dd className="font-impacto text-5xl leading-none">{sessao.xp}</dd>
           </div>
         </dl>
         {sessao.nivel.proximo && (

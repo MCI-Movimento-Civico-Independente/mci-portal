@@ -20,12 +20,12 @@ export default async function CamposAdminPage() {
     <div className="flex max-w-3xl flex-col gap-6">
       <Link
         href="/org/admin"
-        className="inline-flex min-h-11 w-fit items-center gap-1 text-[11px] uppercase tracking-widest text-marca-texto hover:underline"
+        className="inline-flex min-h-11 w-fit items-center gap-1 rotulo text-marca-texto hover:underline"
       >
         <TbChevronLeft size={14} aria-hidden="true" />
         Administração
       </Link>
-      <h1 className="font-serif text-3xl md:text-4xl">Campos personalizados</h1>
+      <h1 className="font-titulo font-black uppercase tracking-tight text-3xl md:text-4xl">Campos personalizados</h1>
       <p className="text-sm text-suave">
         Um campo é criado uma vez e pode entrar em vários formulários (em <Link href="/org/admin/formularios" className="font-bold text-marca-texto underline">Formulários</Link>).
         Arquivar esconde o campo de todos os formulários, mas os valores já preenchidos nas tarefas continuam guardados.
@@ -69,7 +69,7 @@ export default async function CamposAdminPage() {
 
       {arquivados.length > 0 && (
         <Card>
-          <h2 className="text-[11px] uppercase tracking-widest text-suave">Arquivados · {arquivados.length}</h2>
+          <h2 className="rotulo text-suave">Arquivados · {arquivados.length}</h2>
           <ul className="mt-2">
             {arquivados.map((c) => (
               <li key={c.id} className="flex flex-wrap items-center justify-between gap-2 border-b border-borda py-2 last:border-b-0">

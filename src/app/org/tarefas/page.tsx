@@ -12,6 +12,7 @@ import { getSessao } from "@/lib/auth/sessao";
 import { hojeSP } from "@/lib/datas";
 import { listarCamposPersonalizados } from "@/lib/campos-personalizados";
 import { listarFormularios } from "@/lib/formularios";
+import { listarGrupos } from "@/lib/grupos";
 import { comitesBasicos, projetosBasicos } from "@/lib/organizacao";
 import { listarTarefas, membrosOrg, tarefaPorId, type TarefaDb } from "@/lib/tarefas";
 import { STATUS_OPCOES } from "@/lib/tarefas-campos";
@@ -25,10 +26,10 @@ function Aba({ href, ativa, children }: { href: string; ativa: boolean; children
     <Link
       href={href}
       aria-current={ativa ? "page" : undefined}
-      className={`inline-flex min-h-11 items-center rounded-lg border px-4 text-sm font-semibold ${
+      className={`rotulo inline-flex min-h-11 items-center border-2 px-4 font-bold ${
         ativa
-          ? "border-inverso bg-inverso text-sobre-inverso shadow-suave"
-          : "border-borda bg-superficie text-suave shadow-suave hover:border-borda-forte hover:text-texto"
+          ? "border-inverso bg-inverso text-sobre-inverso"
+          : "border-borda-forte text-texto hover:border-inverso hover:bg-inverso hover:text-sobre-inverso"
       }`}
     >
       {children}
@@ -48,12 +49,13 @@ export default async function TarefasPage({
   const quadro = vista === "quadro";
   const todas = quem === "todas";
 
-  const [membros, comites, projetos, formularios, camposPersonalizados] = await Promise.all([
+  const [membros, comites, projetos, formularios, camposPersonalizados, grupos] = await Promise.all([
     membrosOrg(),
     comitesBasicos(),
     projetosBasicos(),
     listarFormularios(),
     listarCamposPersonalizados(),
+    listarGrupos(),
   ]);
   // Só aceita filtros que existem de verdade.
   const comite = comites.find((c) => c.slug === comiteParam)?.slug;
@@ -90,7 +92,7 @@ export default async function TarefasPage({
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="font-serif text-3xl md:text-4xl">
+        <h1 className="font-titulo font-black uppercase tracking-tight text-3xl md:text-4xl">
           {todas ? "Todas as tarefas" : "Minhas tarefas"}
         </h1>
         <Botao href={novaTarefaHref}>
@@ -161,7 +163,7 @@ export default async function TarefasPage({
             const itens: TarefaDb[] = tarefas.filter((t) => t.status === valor);
             return (
               <section key={valor} aria-label={rotulo} className="flex flex-col gap-3 rounded-2xl bg-sutil p-3">
-                <h2 className="text-[11px] font-bold uppercase tracking-widest text-suave">
+                <h2 className="rotulo font-bold tracking-widest text-suave">
                   {rotulo} · {itens.length}
                 </h2>
                 <ul className="flex flex-col gap-3">
@@ -177,7 +179,7 @@ export default async function TarefasPage({
       ) : (
         <>
           <Card className="p-4 md:p-4">
-            <h2 className="text-[11px] uppercase tracking-widest text-suave">
+            <h2 className="rotulo-barras text-suave">
               Em aberto · {emAberto.length}
             </h2>
             {emAberto.length === 0 ? (
@@ -196,7 +198,7 @@ export default async function TarefasPage({
 
           {concluidas.length > 0 && (
             <Card className="p-4 md:p-4">
-              <h2 className="text-[11px] uppercase tracking-widest text-suave">
+              <h2 className="rotulo-barras text-suave">
                 Concluídas · {concluidas.length}
               </h2>
               <div className="mt-3">
@@ -215,6 +217,7 @@ export default async function TarefasPage({
             comites={comites}
             projetos={projetos}
             formularios={formularios}
+            grupos={grupos}
             camposPersonalizados={camposPersonalizados}
             qs={qs}
             euId={sessao.conta.id}
@@ -230,6 +233,7 @@ export default async function TarefasPage({
             comites={comites}
             projetos={projetos}
             formularios={formularios}
+            grupos={grupos}
             camposPersonalizados={camposPersonalizados}
             euId={sessao.conta.id}
             fecharHref={base}

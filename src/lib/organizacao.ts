@@ -90,3 +90,20 @@ export async function mudarStatusProjeto(id: string, status: "ativo" | "arquivad
   if (error) throw error;
   return (data?.length ?? 0) > 0;
 }
+
+/** Um projeto com a contagem de tarefas de primeiro nível. */
+export async function projetoPorId(id: string): Promise<ProjetoResumo | null> {
+  const { data, error } = await createAdminClient()
+    .from("projetos")
+    .select("id, nome, comite_slug, status, descricao, criado_em")
+    .eq("id", id)
+    .maybeSingle();
+  if (error) throw error;
+  if (!data) return null;
+  const { porProjeto } = await contagens();
+  return {
+    ...(data as Omit<ProjetoResumo, "tarefasAbertas" | "tarefasTotal">),
+    tarefasAbertas: porProjeto.get(id)?.[0] ?? 0,
+    tarefasTotal: porProjeto.get(id)?.[1] ?? 0,
+  };
+}

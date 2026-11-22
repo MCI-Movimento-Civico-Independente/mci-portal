@@ -33,7 +33,7 @@ const itens = [
 export default function AdminPage() {
   return (
     <div className="flex max-w-3xl flex-col gap-6">
-      <h1 className="font-serif text-3xl md:text-4xl">Administração</h1>
+      <h1 className="font-titulo font-black uppercase tracking-tight text-3xl md:text-4xl">Administração</h1>
       <ul className="grid gap-4 md:grid-cols-2">
         {itens.map(({ href, titulo, texto, icone: Icone }) => (
           <li key={href}>

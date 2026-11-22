@@ -16,12 +16,12 @@ export default async function ComitesAdminPage() {
     <div className="flex max-w-3xl flex-col gap-6">
       <Link
         href="/org/admin"
-        className="inline-flex min-h-11 w-fit items-center gap-1 text-[11px] uppercase tracking-widest text-marca-texto hover:underline"
+        className="inline-flex min-h-11 w-fit items-center gap-1 rotulo text-marca-texto hover:underline"
       >
         <TbChevronLeft size={14} aria-hidden="true" />
         Administração
       </Link>
-      <h1 className="font-serif text-3xl md:text-4xl">Comitês</h1>
+      <h1 className="font-titulo font-black uppercase tracking-tight text-3xl md:text-4xl">Comitês</h1>
 
       <Card>
         <ul>

@@ -3,6 +3,8 @@ import { TbBell, TbPlus, TbSearch } from "react-icons/tb";
 import { BarraLateral } from "@/components/org/BarraLateral";
 import { BarraSuperior } from "@/components/org/BarraSuperior";
 import { CartaoComite } from "@/components/org/CartaoComite";
+import { CartaoProjeto } from "@/components/projetos/CartaoProjeto";
+import { GrupoRecolhivel } from "@/components/projetos/GrupoRecolhivel";
 import { InicioView } from "@/components/org/InicioView";
 import { NavegacaoInferior } from "@/components/org/NavegacaoInferior";
 import { Atividade } from "@/components/tarefas/Atividade";
@@ -36,6 +38,7 @@ function tarefa(p: Partial<TarefaDb> & Pick<TarefaDb, "id" | "titulo">): TarefaD
     comite_slug: "ti",
     formulario_id: null,
     projeto_id: null,
+    grupo_id: null,
     solicitante_id: vitor.id,
     responsavel_id: vitor.id,
     criado_em: "2026-11-20T12:00:00Z",
@@ -98,12 +101,12 @@ const CORES: { nome: string; classe: string; texto?: string }[] = [
   { nome: "borda", classe: "bg-borda" },
   { nome: "texto", classe: "bg-texto", texto: "text-fundo" },
   { nome: "suave", classe: "bg-suave", texto: "text-fundo" },
+  { nome: "bloco", classe: "bg-bloco", texto: "text-sobre-bloco" },
   { nome: "marca", classe: "bg-marca", texto: "text-sobre-marca" },
-  { nome: "marca-suave", classe: "bg-marca-suave", texto: "text-marca-texto" },
   { nome: "ouro", classe: "bg-ouro", texto: "text-sobre-ouro" },
-  { nome: "ouro-suave", classe: "bg-ouro-suave", texto: "text-ouro-texto" },
-  { nome: "verde", classe: "bg-verde", texto: "text-fundo" },
-  { nome: "verde-suave", classe: "bg-verde-suave", texto: "text-verde-texto" },
+  { nome: "verde", classe: "bg-verde", texto: "text-sobre-verde" },
+  { nome: "absurdo", classe: "bg-absurdo", texto: "text-sobre-absurdo" },
+  { nome: "roxo", classe: "bg-roxo", texto: "text-sobre-roxo" },
 ];
 
 const SESSAO: Sessao = {
@@ -121,7 +124,7 @@ const SESSAO: Sessao = {
 function Secao({ titulo, children }: { titulo: string; children: React.ReactNode }) {
   return (
     <section className="flex flex-col gap-4">
-      <h2 className="border-b border-borda pb-2 text-xs font-semibold uppercase tracking-widest text-suave">{titulo}</h2>
+      <h2 className="border-b border-borda pb-2 rotulo text-suave">{titulo}</h2>
       {children}
     </section>
   );
@@ -134,8 +137,8 @@ export default function DesignPage() {
         <div className="flex items-center gap-4">
           <Logo className="text-5xl" />
           <div>
-            <h1 className="font-serif text-3xl leading-none md:text-4xl">Guia de design</h1>
-            <p className="mt-1 text-sm text-suave">Componentes do portal nos temas claro e escuro.</p>
+            <h1 className="font-titulo font-black uppercase tracking-tight text-3xl leading-none md:text-4xl">Guia de design</h1>
+            <p className="mt-1 text-sm text-suave">Componentes do portal nos temas Papel e Noite.</p>
           </div>
         </div>
         <ThemeToggle />
@@ -171,17 +174,23 @@ export default function DesignPage() {
         </ul>
       </Secao>
 
-      <Secao titulo="Tipografia">
-        <div className="grid gap-6 md:grid-cols-2">
-          <div>
-            <p className="font-serif text-6xl leading-none">Pensar.</p>
-            <p className="mt-1 font-serif text-6xl italic leading-none text-marca-texto">Agir.</p>
-            <p className="mt-3 text-xs text-suave">DM Serif Display · títulos e destaques</p>
+      <Secao titulo="Tipografia (as cinco famílias do manual)">
+        <div className="grid gap-8 md:grid-cols-2">
+          <div className="flex flex-col gap-3">
+            <p className="font-impacto text-6xl uppercase leading-[0.9]">Pensar agir fiscalizar</p>
+            <p className="rotulo text-suave">Anton · títulos de impacto e números · sempre em caixa alta</p>
+            <p className="font-titulo text-4xl font-black uppercase leading-none tracking-tight">
+              Boa noite, <span className="font-serif text-[1.15em] font-normal normal-case italic">Vitor.</span>
+            </p>
+            <p className="rotulo text-suave">Inter Tight 900 · títulos do portal · Instrument Serif itálico: 1 ou 2 palavras de destaque</p>
           </div>
-          <div className="flex flex-col gap-2">
-            <p className="text-2xl font-semibold">Subtítulo em Space Grotesk semibold</p>
-            <p className="text-base">Texto corrido em Space Grotesk regular, 15 a 17 px, para tarefas, descrições e documentos da equipe.</p>
-            <p className="text-xs font-semibold uppercase tracking-widest text-suave">Rótulos e metadados</p>
+          <div className="flex flex-col gap-3">
+            <p className="text-base">
+              Toda semana a comunidade avalia as notícias que importam. <strong className="font-semibold">Títulos de item em peso 600.</strong>
+            </p>
+            <p className="rotulo text-suave">Inter · texto corrido, notícias e tarefas</p>
+            <p className="rotulo-barras text-base">Absurdo ou excelente?</p>
+            <p className="rotulo text-suave">IBM Plex Mono · rótulos, datas, status e XP · sobretítulo com // antes de cada seção</p>
           </div>
         </div>
       </Secao>
@@ -249,14 +258,46 @@ export default function DesignPage() {
         </div>
       </Secao>
 
-      <Secao titulo="Cartões">
+      <Secao titulo="Cartões de comitê (alternam preto, laranja e amarelo)">
         <div className="grid gap-4 md:grid-cols-3">
-          <CartaoComite comite={{ ...COMITES[0], projetosAtivos: 2, tarefasAbertas: 7 }} />
-          <CartaoComite comite={{ ...COMITES[1], projetosAtivos: 1, tarefasAbertas: 3 }} />
+          <CartaoComite indice={0} comite={{ ...COMITES[0], projetosAtivos: 3, tarefasAbertas: 12 }} />
+          <CartaoComite indice={1} comite={{ ...COMITES[1], projetosAtivos: 1, tarefasAbertas: 4 }} />
+          <CartaoComite indice={2} comite={{ ...COMITES[2], projetosAtivos: 2, tarefasAbertas: 7 }} selecionado />
+        </div>
+      </Secao>
+
+      <Secao titulo="Cartões de projeto e card padrão">
+        <div className="grid gap-4 md:grid-cols-3">
+          <CartaoProjeto
+            nomeComite="Comitê de TI"
+            projeto={{ id: "pr1", nome: "Bot Carcará", comite_slug: "ti", status: "ativo", descricao: "Cadastro, votação do radar e níveis de XP.", criado_em: "2026-11-01T12:00:00Z", tarefasAbertas: 5, tarefasTotal: 12 }}
+          />
+          <CartaoProjeto
+            nomeComite="Comitê de Mídia"
+            projeto={{ id: "pr2", nome: "Cartilha de atuação cidadã", comite_slug: "midia", status: "arquivado", descricao: null, criado_em: "2026-10-01T12:00:00Z", tarefasAbertas: 0, tarefasTotal: 6 }}
+          />
           <Card>
-            <h3 className="text-lg font-semibold">Card simples</h3>
-            <p className="mt-2 text-sm text-suave">Superfície elevada com borda e sombra suave.</p>
+            <p className="rotulo text-suave">Enviada por membro · há 2h</p>
+            <h3 className="mt-2 text-lg font-semibold">Card padrão: superfície, borda de 2px, cantos retos</h3>
+            <p className="rotulo mt-3 text-marca-texto">Abrir →</p>
           </Card>
+        </div>
+      </Secao>
+
+      <Secao titulo="Grupos do projeto (clique no cabeçalho para comprimir e expandir)">
+        <div className="flex flex-col gap-4">
+          <GrupoRecolhivel
+            grupo={{ id: "g1", projeto_id: "pr1", nome: "Esta semana", cor: "laranja", ordem: 1 }}
+            total={2}
+            feitas={1}
+            hrefNovaTarefa="#"
+            primeiro
+          >
+            <TabelaTarefas tarefas={TAREFAS.slice(0, 2)} membros={[vitor, ana]} comites={COMITES} projetos={PROJETOS} grupos={[{ id: "g1", projeto_id: "pr1", nome: "Esta semana", cor: "laranja", ordem: 1 }]} hoje="2026-11-22" qs="" />
+          </GrupoRecolhivel>
+          <GrupoRecolhivel grupo={{ id: "g2", projeto_id: "pr1", nome: "Backlog", cor: "ouro", ordem: 2 }} total={0} feitas={0} hrefNovaTarefa="#" ultimo>
+            <p className="px-2 py-3 text-[15px] text-suave">Nenhuma tarefa neste grupo.</p>
+          </GrupoRecolhivel>
         </div>
       </Secao>
 
@@ -270,7 +311,7 @@ export default function DesignPage() {
         <div className="grid gap-4 md:grid-cols-3">
           {(["a_fazer", "em_andamento", "em_revisao"] as const).map((st) => (
             <div key={st} className="flex flex-col gap-3 rounded-2xl bg-sutil p-3">
-              <h3 className="text-xs font-semibold uppercase tracking-widest text-suave">
+              <h3 className="rotulo text-suave">
                 {STATUS_OPCOES.find((o) => o.valor === st)?.rotulo}
               </h3>
               <ul className="flex flex-col gap-3">

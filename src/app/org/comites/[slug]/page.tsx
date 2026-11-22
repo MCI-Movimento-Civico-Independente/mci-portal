@@ -18,13 +18,13 @@ export default async function ComitePage({ params }: { params: Promise<{ slug: s
     <div className="flex max-w-3xl flex-col gap-6">
       <Link
         href="/org/comites"
-        className="inline-flex min-h-11 w-fit items-center gap-1 text-[11px] uppercase tracking-widest text-marca-texto hover:underline"
+        className="inline-flex min-h-11 w-fit items-center gap-1 rotulo text-marca-texto hover:underline"
       >
         <TbChevronLeft size={14} aria-hidden="true" />
         Comitês
       </Link>
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <h1 className="font-serif min-w-0 flex-1 text-2xl leading-tight md:text-3xl">{comite.nome}</h1>
+        <h1 className="font-titulo font-black uppercase tracking-tight min-w-0 flex-1 text-2xl leading-tight md:text-3xl">{comite.nome}</h1>
         <Botao href={`/org/tarefas?quem=todas&comite=${comite.slug}`} variante="secundario">
           Ver tarefas do comitê
         </Botao>

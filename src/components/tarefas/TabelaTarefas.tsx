@@ -3,9 +3,10 @@
 import { TbChevronRight } from "react-icons/tb";
 import { useState } from "react";
 import type { ComiteBasico, ProjetoBasico } from "@/lib/organizacao";
+import type { GrupoBasico } from "@/lib/grupos-tipos";
 import type { Pessoa, TarefaDb } from "@/lib/tarefas";
 import { PRIORIDADE_OPCOES, STATUS_OPCOES } from "@/lib/tarefas-campos";
-import { CelulaData, CelulaOpcao, CelulaPessoa, CelulaProjeto, CelulaTitulo } from "./Celulas";
+import { CelulaData, CelulaGrupo, CelulaOpcao, CelulaPessoa, CelulaProjeto, CelulaTitulo } from "./Celulas";
 import { Progresso } from "./Progresso";
 
 // Colunas: expandir | tarefa | projeto | solicitante | executor | status | prioridade | período
@@ -20,6 +21,10 @@ type Props = {
   hoje: string;
   /** Query atual (vista, quem) para o link da janela da tarefa conservá-la. */
   qs: string;
+  /** Página onde a tabela está (a janela da tarefa abre por cima dela). */
+  caminho?: string;
+  /** Na página do projeto a coluna "Projeto" dá lugar à coluna "Grupo". */
+  grupos?: GrupoBasico[];
 };
 
 function Linha({
@@ -29,6 +34,8 @@ function Linha({
   projetos,
   hoje,
   qs,
+  caminho = "/org/tarefas",
+  grupos,
   sub = false,
   expansor,
 }: Omit<Props, "tarefas"> & {
@@ -36,7 +43,7 @@ function Linha({
   sub?: boolean;
   expansor?: { aberto: boolean; alternar: () => void };
 }) {
-  const href = `/org/tarefas?${qs ? `${qs}&` : ""}tarefa=${t.id}`;
+  const href = `${caminho}?${qs ? `${qs}&` : ""}tarefa=${t.id}`;
   const feitas = t.subtarefas.filter((s) => s.status === "concluida").length;
   const atrasada = t.status !== "concluida" && !!t.prazo && t.prazo < hoje;
 
@@ -64,6 +71,8 @@ function Linha({
         <div className="w-full sm:w-52 md:w-auto">
           {sub ? (
             <span aria-hidden="true" />
+          ) : grupos ? (
+            <CelulaGrupo id={t.id} valor={t.grupo_id ?? ""} grupos={grupos.filter((g) => g.projeto_id === t.projeto_id)} />
           ) : (
             <CelulaProjeto id={t.id} valor={t.projeto_id ?? ""} comites={comites} projetos={projetos} comiteFiltro={t.comite_slug} />
           )}
@@ -92,7 +101,7 @@ function Linha({
   );
 }
 
-function Grupo(props: Omit<Props, "tarefas"> & { t: TarefaDb }) {
+function TarefaComSubtarefas(props: Omit<Props, "tarefas"> & { t: TarefaDb }) {
   const [aberto, setAberto] = useState(false);
   return (
     <li>
@@ -104,17 +113,17 @@ function Grupo(props: Omit<Props, "tarefas"> & { t: TarefaDb }) {
 }
 
 /** Lista no estilo Monday: campos editáveis na própria linha e subtarefas em lista suspensa. */
-export function TabelaTarefas({ tarefas, membros, comites, projetos, hoje, qs }: Props) {
+export function TabelaTarefas({ tarefas, membros, comites, projetos, hoje, qs, caminho, grupos }: Props) {
   return (
     <div className="overflow-x-auto">
       <div className="md:min-w-[960px] 2xl:min-w-[1070px]">
         <div
           aria-hidden="true"
-          className={`hidden border-b border-borda-forte pb-2 text-[11px] font-semibold uppercase tracking-widest text-suave md:grid md:grid-cols-[28px_minmax(220px,1fr)_140px_112px_132px_100px_240px] 2xl:grid-cols-[28px_minmax(220px,1fr)_140px_112px_112px_132px_100px_240px] md:gap-x-1`}
+          className={`hidden border-b border-borda-forte pb-2 rotulo text-suave md:grid md:grid-cols-[28px_minmax(220px,1fr)_140px_112px_132px_100px_240px] 2xl:grid-cols-[28px_minmax(220px,1fr)_140px_112px_112px_132px_100px_240px] md:gap-x-1`}
         >
           <span />
           <span>Tarefa</span>
-          <span className="pl-1.5">Projeto</span>
+          <span className="pl-1.5">{grupos ? "Grupo" : "Projeto"}</span>
           <span className="hidden pl-1.5 2xl:block">Solicitante</span>
           <span className="pl-1.5">Executor</span>
           <span>Status</span>
@@ -123,7 +132,7 @@ export function TabelaTarefas({ tarefas, membros, comites, projetos, hoje, qs }:
         </div>
         <ul>
           {tarefas.map((t) => (
-            <Grupo key={t.id} t={t} membros={membros} comites={comites} projetos={projetos} hoje={hoje} qs={qs} />
+            <TarefaComSubtarefas key={t.id} t={t} membros={membros} comites={comites} projetos={projetos} hoje={hoje} qs={qs} caminho={caminho} grupos={grupos} />
           ))}
         </ul>
       </div>
