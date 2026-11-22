@@ -1,34 +1,38 @@
-import Link from "next/link";
-import { SeletorStatus } from "./ControlesTarefa";
-import { Progresso, textoPrazo } from "./LinhaTarefa";
-import { Pessoa } from "./Pessoa";
-import type { TarefaDb } from "@/lib/tarefas";
+"use client";
 
-/** Cartão do quadro (estilo Jira/Monday). */
-export function CartaoTarefa({ t, hoje }: { t: TarefaDb; hoje: string }) {
-  const { texto, atrasada } = textoPrazo(t, hoje);
+import Link from "next/link";
+import type { Pessoa, TarefaDb } from "@/lib/tarefas";
+import { PRIORIDADE_OPCOES, STATUS_OPCOES } from "@/lib/tarefas-campos";
+import { CelulaOpcao, CelulaPessoa } from "./Celulas";
+import { Progresso } from "./Progresso";
+import { formatarPrazo } from "@/lib/datas";
+
+/** Cartão do quadro. Mostra só tarefas de primeiro nível; as subtarefas ficam dentro da janela da tarefa. */
+export function CartaoTarefa({ t, membros, hoje, qs }: { t: TarefaDb; membros: Pessoa[]; hoje: string; qs: string }) {
+  const feitas = t.subtarefas.filter((s) => s.status === "concluida").length;
+  const atrasada = t.status !== "concluida" && !!t.prazo && t.prazo < hoje;
   return (
-    <li className="flex flex-col gap-3 border border-linha bg-creme-claro p-3 hover:border-preto">
-      <div>
-        {t.paiTitulo && (
-          <p className="mb-1 truncate font-mono text-[11px] uppercase text-cinza">↳ {t.paiTitulo}</p>
-        )}
-        <Link href={`/org/tarefas/${t.id}`} className="block text-[15px] font-bold leading-snug hover:text-laranja-texto hover:underline">
-          {t.titulo}
-        </Link>
-      </div>
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <Pessoa pessoa={t.responsavel} />
-        <span className="flex items-center gap-3">
-          <Progresso feitas={t.subfeitas} total={t.subtotal} />
-          <span
-            className={`font-mono text-[11px] uppercase ${atrasada ? "font-bold text-laranja-texto" : "text-cinza"}`}
-          >
-            {texto}
+    <li className="flex flex-col gap-2 border border-linha bg-creme-claro p-3 hover:border-preto">
+      <Link
+        href={`/org/tarefas?${qs ? `${qs}&` : ""}tarefa=${t.id}`}
+        scroll={false}
+        className="text-[15px] font-bold leading-snug hover:text-laranja-texto hover:underline"
+      >
+        {t.titulo}
+      </Link>
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+        <Progresso feitas={feitas} total={t.subtarefas.length} />
+        {t.prazo && (
+          <span className={`font-mono text-[11px] uppercase ${atrasada ? "font-bold text-laranja-texto" : "text-cinza"}`}>
+            {formatarPrazo(t.prazo, hoje)}
           </span>
-        </span>
+        )}
       </div>
-      <SeletorStatus id={t.id} status={t.status} />
+      <CelulaPessoa id={t.id} chave="responsavel_id" valor={t.responsavel_id ?? ""} membros={membros} rotulo="Executor" />
+      <div className="grid grid-cols-2 gap-2">
+        <CelulaOpcao id={t.id} chave="status" valor={t.status} opcoes={STATUS_OPCOES} rotulo="Status" />
+        <CelulaOpcao id={t.id} chave="prioridade" valor={t.prioridade ?? ""} opcoes={PRIORIDADE_OPCOES} rotulo="Prioridade" />
+      </div>
     </li>
   );
 }

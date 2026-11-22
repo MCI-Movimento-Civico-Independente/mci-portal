@@ -1,8 +1,6 @@
 import "server-only";
-import type { StatusTarefa } from "@/components/ui/EtiquetaStatus";
 import { createAdminClient } from "@/lib/supabase/admin";
-
-export const STATUS: StatusTarefa[] = ["a_fazer", "em_andamento", "em_revisao", "concluida"];
+import type { Prioridade, StatusTarefa } from "./tarefas-campos";
 
 export type Pessoa = { id: string; nome: string | null };
 
@@ -11,109 +9,147 @@ export type TarefaDb = {
   titulo: string;
   descricao: string | null;
   status: StatusTarefa;
+  prioridade: Prioridade | null;
+  data_inicio: string | null;
   prazo: string | null;
-  comite_slug: string | null;
   pai_id: string | null;
+  solicitante_id: string | null;
   responsavel_id: string | null;
   criado_em: string;
   concluida_em: string | null;
+  solicitante: Pessoa | null;
+  /** O "Executor" na tela. */
   responsavel: Pessoa | null;
+  /** Subtarefas (só em tarefas de primeiro nível). */
+  subtarefas: TarefaDb[];
   /** Título da tarefa-pai, quando esta é uma subtarefa. */
   paiTitulo: string | null;
-  /** Contagem de subtarefas (só faz sentido em tarefas de primeiro nível). */
-  subtotal: number;
-  subfeitas: number;
 };
 
 // Modelo de acesso: quem é da organização (papel organizacao/admin) vê e edita
 // TODAS as tarefas, como num quadro compartilhado. Quem chama já conferiu o papel
-// da sessão (ver as Server Actions e o layout de /org). A service role ignora o
-// RLS, então essa conferência na borda é o que protege estes dados.
+// da sessão (layout de /org e Server Actions). A service role ignora o RLS, então
+// essa conferência na borda é o que protege estes dados.
 
 const COLUNAS =
-  "id, titulo, descricao, status, prazo, comite_slug, pai_id, responsavel_id, criado_em, concluida_em, responsavel:contas!responsavel_id(id, nome)";
+  "id, titulo, descricao, status, prioridade, data_inicio, prazo, pai_id, solicitante_id, responsavel_id, criado_em, concluida_em, " +
+  "solicitante:contas!solicitante_id(id, nome), responsavel:contas!responsavel_id(id, nome)";
 
-type Linha = Omit<TarefaDb, "paiTitulo" | "subtotal" | "subfeitas">;
+type Linha = Omit<TarefaDb, "subtarefas" | "paiTitulo">;
+const comoLinhas = (dados: unknown) => (dados ?? []) as Linha[];
 
-/** Acrescenta contagem de subtarefas e o título da tarefa-pai. */
-async function enriquecer(linhas: Linha[]): Promise<TarefaDb[]> {
-  if (linhas.length === 0) return [];
-  const admin = createAdminClient();
-
-  const ids = linhas.map((t) => t.id);
-  const paiIds = [...new Set(linhas.map((t) => t.pai_id).filter((x): x is string => !!x))];
-
-  const [subs, pais] = await Promise.all([
-    admin.from("tarefas").select("pai_id, status").in("pai_id", ids),
-    paiIds.length
-      ? admin.from("tarefas").select("id, titulo").in("id", paiIds)
-      : Promise.resolve({ data: [], error: null }),
-  ]);
-  if (subs.error) throw subs.error;
-  if (pais.error) throw pais.error;
-
-  const total = new Map<string, number>();
-  const feitas = new Map<string, number>();
-  for (const s of (subs.data ?? []) as { pai_id: string; status: string }[]) {
-    total.set(s.pai_id, (total.get(s.pai_id) ?? 0) + 1);
-    if (s.status === "concluida") feitas.set(s.pai_id, (feitas.get(s.pai_id) ?? 0) + 1);
+/** Prazo mais próximo primeiro, sem prazo por último; empate: a mais nova primeiro. */
+function ordenar(a: Linha, b: Linha) {
+  if (a.prazo !== b.prazo) {
+    if (!a.prazo) return 1;
+    if (!b.prazo) return -1;
+    return a.prazo < b.prazo ? -1 : 1;
   }
-  const titulos = new Map(((pais.data ?? []) as { id: string; titulo: string }[]).map((p) => [p.id, p.titulo]));
+  return a.criado_em < b.criado_em ? 1 : -1;
+}
 
-  return linhas.map((t) => ({
+function montar(topo: Linha[], subs: Linha[]): TarefaDb[] {
+  const porPai = new Map<string, Linha[]>();
+  for (const s of subs) {
+    if (!s.pai_id) continue;
+    porPai.set(s.pai_id, [...(porPai.get(s.pai_id) ?? []), s]);
+  }
+  return [...topo].sort(ordenar).map((t) => ({
     ...t,
-    paiTitulo: t.pai_id ? (titulos.get(t.pai_id) ?? null) : null,
-    subtotal: total.get(t.id) ?? 0,
-    subfeitas: feitas.get(t.id) ?? 0,
+    paiTitulo: null,
+    subtarefas: (porPai.get(t.id) ?? []).map((s) => ({ ...s, subtarefas: [], paiTitulo: t.titulo })),
   }));
 }
 
-export type FiltroTarefas = {
-  /** Só as tarefas atribuídas a esta conta. Sem isso, traz todas. */
-  responsavelId?: string;
-  situacao: "abertas" | "concluidas";
-  limite?: number;
-};
+/**
+ * Tarefas de primeiro nível, cada uma com as subtarefas aninhadas.
+ * Com `executorId`: as tarefas desse executor e também as tarefas-pai de
+ * subtarefas dele (para a subtarefa aparecer no contexto da tarefa original).
+ */
+export async function listarTarefas(filtro: { executorId?: string } = {}): Promise<TarefaDb[]> {
+  const admin = createAdminClient();
 
-/** Lista tarefas (de qualquer nível). Abertas: prazo mais próximo primeiro, sem prazo por último. */
-export async function listarTarefas(filtro: FiltroTarefas): Promise<TarefaDb[]> {
-  let consulta = createAdminClient().from("tarefas").select(COLUNAS);
-  if (filtro.responsavelId) consulta = consulta.eq("responsavel_id", filtro.responsavelId);
-
-  if (filtro.situacao === "abertas") {
-    consulta = consulta
-      .neq("status", "concluida")
-      .order("prazo", { ascending: true, nullsFirst: false })
-      .order("criado_em", { ascending: false });
-  } else {
-    consulta = consulta.eq("status", "concluida").order("concluida_em", { ascending: false });
+  if (!filtro.executorId) {
+    const [topo, subs] = await Promise.all([
+      admin.from("tarefas").select(COLUNAS).is("pai_id", null).limit(500),
+      admin.from("tarefas").select(COLUNAS).not("pai_id", "is", null).order("criado_em").limit(2000),
+    ]);
+    if (topo.error) throw topo.error;
+    if (subs.error) throw subs.error;
+    return montar(comoLinhas(topo.data), comoLinhas(subs.data));
   }
 
-  const { data, error } = await consulta.limit(filtro.limite ?? (filtro.situacao === "abertas" ? 200 : 30));
+  const { data, error } = await admin
+    .from("tarefas")
+    .select(COLUNAS)
+    .eq("responsavel_id", filtro.executorId)
+    .limit(500);
   if (error) throw error;
-  return enriquecer((data ?? []) as unknown as Linha[]);
+  const minhas = comoLinhas(data);
+
+  const topo = minhas.filter((t) => !t.pai_id);
+  const jaTem = new Set(topo.map((t) => t.id));
+  const paisFaltando = [...new Set(minhas.map((t) => t.pai_id).filter((id): id is string => !!id))].filter(
+    (id) => !jaTem.has(id),
+  );
+  if (paisFaltando.length) {
+    const { data: pais, error: erroPais } = await admin.from("tarefas").select(COLUNAS).in("id", paisFaltando);
+    if (erroPais) throw erroPais;
+    topo.push(...comoLinhas(pais));
+  }
+  if (topo.length === 0) return [];
+
+  const { data: subs, error: erroSubs } = await admin
+    .from("tarefas")
+    .select(COLUNAS)
+    .in("pai_id", topo.map((t) => t.id))
+    .order("criado_em");
+  if (erroSubs) throw erroSubs;
+  return montar(topo, comoLinhas(subs));
 }
 
-export type TarefaDetalhe = { tarefa: TarefaDb; subtarefas: TarefaDb[] };
+/** Tarefas (de qualquer nível) em aberto atribuídas à conta, para o Início. */
+export async function tarefasAbertasDe(contaId: string, limite = 50): Promise<TarefaDb[]> {
+  const { data, error } = await createAdminClient()
+    .from("tarefas")
+    .select(COLUNAS)
+    .eq("responsavel_id", contaId)
+    .neq("status", "concluida")
+    .order("prazo", { ascending: true, nullsFirst: false })
+    .order("criado_em", { ascending: false })
+    .limit(limite);
+  if (error) throw error;
+  return comoLinhas(data).map((t) => ({ ...t, subtarefas: [], paiTitulo: null }));
+}
 
-export async function tarefaPorId(id: string): Promise<TarefaDetalhe | null> {
+/** Uma tarefa com as subtarefas (se for de primeiro nível) ou o título da pai (se for subtarefa). */
+export async function tarefaPorId(id: string): Promise<TarefaDb | null> {
   const admin = createAdminClient();
   const { data, error } = await admin.from("tarefas").select(COLUNAS).eq("id", id).maybeSingle();
   if (error) throw error;
   if (!data) return null;
+  const tarefa = data as unknown as Linha;
+
+  if (tarefa.pai_id) {
+    const { data: pai, error: erroPai } = await admin
+      .from("tarefas")
+      .select("titulo")
+      .eq("id", tarefa.pai_id)
+      .maybeSingle();
+    if (erroPai) throw erroPai;
+    return { ...tarefa, subtarefas: [], paiTitulo: (pai?.titulo as string | undefined) ?? null };
+  }
 
   const { data: filhas, error: erroFilhas } = await admin
     .from("tarefas")
     .select(COLUNAS)
     .eq("pai_id", id)
-    .order("criado_em", { ascending: true });
+    .order("criado_em");
   if (erroFilhas) throw erroFilhas;
-
-  const [tarefa] = await enriquecer([data as unknown as Linha]);
-  return { tarefa, subtarefas: await enriquecer((filhas ?? []) as unknown as Linha[]) };
+  return montar([tarefa], comoLinhas(filhas))[0];
 }
 
-/** Pessoas que podem receber tarefas: quem tem acesso à organização. */
+/** Pessoas que podem ser solicitante ou executor: quem tem acesso à organização. */
 export async function membrosOrg(): Promise<Pessoa[]> {
   const { data, error } = await createAdminClient()
     .from("contas")
@@ -124,14 +160,18 @@ export async function membrosOrg(): Promise<Pessoa[]> {
   return (data ?? []) as Pessoa[];
 }
 
-export type DadosTarefa = {
+export type NovaTarefa = {
   titulo: string;
   descricao: string | null;
-  prazo: string | null;
+  prioridade: Prioridade | null;
+  solicitante_id: string | null;
   responsavel_id: string | null;
+  data_inicio: string | null;
+  prazo: string | null;
+  pai_id?: string | null;
 };
 
-export async function criarTarefa(criadoPor: string, dados: DadosTarefa & { pai_id?: string | null }): Promise<string> {
+export async function criarTarefa(criadoPor: string, dados: NovaTarefa): Promise<string> {
   const { data, error } = await createAdminClient()
     .from("tarefas")
     .insert({ ...dados, criado_por: criadoPor })
@@ -141,21 +181,23 @@ export async function criarTarefa(criadoPor: string, dados: DadosTarefa & { pai_
   return data.id as string;
 }
 
-export async function atualizarTarefa(id: string, dados: DadosTarefa): Promise<boolean> {
-  const { data, error } = await createAdminClient()
-    .from("tarefas")
-    .update({ ...dados, atualizado_em: new Date().toISOString() })
-    .eq("id", id)
-    .select("id");
-  if (error) throw error;
-  return (data?.length ?? 0) > 0;
-}
+export type Alteracao = Partial<
+  Pick<
+    Linha,
+    "titulo" | "descricao" | "status" | "prioridade" | "data_inicio" | "prazo" | "solicitante_id" | "responsavel_id"
+  >
+>;
 
-export async function mudarStatusTarefa(id: string, status: StatusTarefa): Promise<boolean> {
+/** Aplica a alteração. Mudar o status também ajusta concluida_em. Devolve false se a tarefa não existe. */
+export async function atualizarTarefa(id: string, alteracao: Alteracao): Promise<boolean> {
   const agora = new Date().toISOString();
   const { data, error } = await createAdminClient()
     .from("tarefas")
-    .update({ status, atualizado_em: agora, concluida_em: status === "concluida" ? agora : null })
+    .update({
+      ...alteracao,
+      atualizado_em: agora,
+      ...(alteracao.status ? { concluida_em: alteracao.status === "concluida" ? agora : null } : {}),
+    })
     .eq("id", id)
     .select("id");
   if (error) throw error;

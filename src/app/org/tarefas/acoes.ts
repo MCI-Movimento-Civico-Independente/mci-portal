@@ -9,16 +9,16 @@ import {
   criarTarefa,
   excluirTarefa,
   membrosOrg,
-  mudarStatusTarefa,
-  STATUS,
   tarefaPorId,
-  type DadosTarefa,
+  type Alteracao,
+  type NovaTarefa,
 } from "@/lib/tarefas";
-import type { StatusTarefa } from "@/components/ui/EtiquetaStatus";
+import { campoPorChave, type CampoTarefa, type Prioridade } from "@/lib/tarefas-campos";
 
 export type EstadoForm = { erro?: string; ok?: boolean; n?: number };
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const ERRO_PERIODO = "A data de início não pode ser depois da entrega.";
 
 // Server Actions são endpoints públicos: cada uma confere sessão e papel de novo.
 async function exigirOrg() {
@@ -30,50 +30,99 @@ async function exigirOrg() {
 
 const texto = (v: FormDataEntryValue | null) => (typeof v === "string" ? v.trim() : "");
 
-type Lido = { erro: string } | { dados: DadosTarefa };
+type Validado = { erro: string } | { valor: string | null };
 
-/** Lê e valida os campos comuns do formulário de tarefa. */
-async function lerCampos(form: FormData, descricaoObrigatoria: boolean): Promise<Lido> {
-  const titulo = texto(form.get("titulo"));
-  const descricao = texto(form.get("descricao"));
-  const prazo = texto(form.get("prazo"));
-  const responsavel = texto(form.get("responsavel"));
-
-  if (!titulo) return { erro: "Dê um assunto para a tarefa." };
-  if (titulo.length > 200) return { erro: "O assunto pode ter no máximo 200 caracteres." };
-  if (descricaoObrigatoria && !descricao) return { erro: "Escreva a descrição da tarefa." };
-  if (descricao.length > 2000) return { erro: "A descrição pode ter no máximo 2000 caracteres." };
-  if (prazo && !dataValida(prazo)) return { erro: "Data inválida." };
-
-  let responsavel_id: string | null = null;
-  if (responsavel) {
-    // Só quem tem acesso à organização pode receber tarefa.
-    if (!UUID.test(responsavel) || !(await membrosOrg()).some((m) => m.id === responsavel)) {
-      return { erro: "Pessoa inválida em \"Atribuído a\"." };
+/** Valida um valor conforme o tipo do campo no registro (tarefas-campos). */
+function validarCampo(campo: CampoTarefa, bruto: string, membros: Set<string>): Validado {
+  const v = bruto.trim();
+  switch (campo.tipo) {
+    case "texto":
+      if (!v) return { erro: "Dê um assunto para a tarefa." };
+      if (v.length > 200) return { erro: "O assunto pode ter no máximo 200 caracteres." };
+      return { valor: v };
+    case "opcao": {
+      if (!v) return campo.obrigatorio ? { erro: `${campo.rotulo} é obrigatório.` } : { valor: null };
+      if (!campo.opcoes?.some((o) => o.valor === v)) return { erro: `${campo.rotulo} inválido.` };
+      return { valor: v };
     }
-    responsavel_id = responsavel;
+    case "pessoa":
+      // Só quem tem acesso à organização pode ser solicitante ou executor.
+      if (!v) return { valor: null };
+      return UUID.test(v) && membros.has(v) ? { valor: v } : { erro: `${campo.rotulo}: pessoa inválida.` };
+    case "data":
+      if (!v) return { valor: null };
+      return dataValida(v) ? { valor: v } : { erro: "Data inválida." };
+  }
+}
+
+async function conjuntoMembros() {
+  return new Set((await membrosOrg()).map((m) => m.id));
+}
+
+/** Edição inline de um campo (lista, quadro e janela da tarefa). */
+export async function atualizarCampoAction(id: string, chave: string, valor: string): Promise<EstadoForm> {
+  await exigirOrg();
+  const campo = campoPorChave(chave);
+  if (!campo || !UUID.test(id)) return { erro: "Pedido inválido." };
+
+  const validado = validarCampo(campo, valor, await conjuntoMembros());
+  if ("erro" in validado) return { erro: validado.erro };
+
+  if (campo.tipo === "data") {
+    const atual = await tarefaPorId(id);
+    if (!atual) return { erro: "Tarefa não encontrada." };
+    const inicio = chave === "data_inicio" ? validado.valor : atual.data_inicio;
+    const fim = chave === "prazo" ? validado.valor : atual.prazo;
+    if (inicio && fim && inicio > fim) return { erro: ERRO_PERIODO };
   }
 
-  return { dados: { titulo, descricao: descricao || null, prazo: prazo || null, responsavel_id } };
+  try {
+    if (!(await atualizarTarefa(id, { [campo.chave]: validado.valor } as Alteracao))) {
+      return { erro: "Tarefa não encontrada." };
+    }
+  } catch (erro) {
+    console.error("Falha ao atualizar o campo:", erro);
+    return { erro: "Não foi possível salvar. Tente de novo." };
+  }
+  revalidatePath("/org", "layout");
+  return {};
 }
 
 export async function criarTarefaAction(_anterior: EstadoForm, form: FormData): Promise<EstadoForm> {
   const sessao = await exigirOrg();
-  const lido = await lerCampos(form, true);
-  if ("erro" in lido) return { erro: lido.erro };
+  const membros = await conjuntoMembros();
+
+  const lido: Record<string, string | null> = {};
+  for (const chave of ["titulo", "solicitante_id", "responsavel_id", "prioridade", "data_inicio", "prazo"]) {
+    const v = validarCampo(campoPorChave(chave)!, texto(form.get(chave)), membros);
+    if ("erro" in v) return { erro: v.erro };
+    lido[chave] = v.valor;
+  }
+  const descricao = texto(form.get("descricao"));
+  if (!descricao) return { erro: "Escreva a descrição da tarefa." };
+  if (descricao.length > 2000) return { erro: "A descrição pode ter no máximo 2000 caracteres." };
+  if (lido.data_inicio && lido.prazo && lido.data_inicio > lido.prazo) return { erro: ERRO_PERIODO };
 
   let id: string;
   try {
-    id = await criarTarefa(sessao.conta.id, lido.dados);
+    id = await criarTarefa(sessao.conta.id, {
+      titulo: lido.titulo!,
+      descricao,
+      prioridade: lido.prioridade as Prioridade | null,
+      solicitante_id: lido.solicitante_id,
+      responsavel_id: lido.responsavel_id,
+      data_inicio: lido.data_inicio,
+      prazo: lido.prazo,
+    });
   } catch (erro) {
     console.error("Falha ao criar tarefa:", erro);
     return { erro: "Não foi possível salvar a tarefa. Tente de novo." };
   }
   revalidatePath("/org", "layout");
-  redirect(`/org/tarefas/${id}`);
+  redirect(`/org/tarefas?tarefa=${id}`);
 }
 
-export async function atualizarTarefaAction(
+export async function salvarDescricaoAction(
   id: string,
   _anterior: EstadoForm,
   form: FormData,
@@ -83,14 +132,15 @@ export async function atualizarTarefaAction(
   const atual = await tarefaPorId(id);
   if (!atual) return { erro: "Tarefa não encontrada." };
 
-  // Descrição só é obrigatória em tarefas; subtarefa pode ficar sem.
-  const lido = await lerCampos(form, atual.tarefa.pai_id === null);
-  if ("erro" in lido) return { erro: lido.erro };
+  const descricao = texto(form.get("descricao"));
+  // A descrição é obrigatória nas tarefas; na subtarefa pode ficar vazia.
+  if (!descricao && atual.pai_id === null) return { erro: "Escreva a descrição da tarefa." };
+  if (descricao.length > 2000) return { erro: "A descrição pode ter no máximo 2000 caracteres." };
 
   try {
-    await atualizarTarefa(id, lido.dados);
+    await atualizarTarefa(id, { descricao: descricao || null });
   } catch (erro) {
-    console.error("Falha ao atualizar tarefa:", erro);
+    console.error("Falha ao salvar a descrição:", erro);
     return { erro: "Não foi possível salvar. Tente de novo." };
   }
   revalidatePath("/org", "layout");
@@ -106,13 +156,28 @@ export async function criarSubtarefaAction(
   if (!UUID.test(paiId)) return { erro: "Tarefa inválida." };
   const pai = await tarefaPorId(paiId);
   if (!pai) return { erro: "Tarefa não encontrada." };
-  if (pai.tarefa.pai_id) return { erro: "Subtarefas não podem ter subtarefas." };
+  if (pai.pai_id) return { erro: "Subtarefas não podem ter subtarefas." };
 
-  const lido = await lerCampos(form, false);
-  if ("erro" in lido) return { erro: lido.erro };
+  const membros = await conjuntoMembros();
+  const lido: Record<string, string | null> = {};
+  for (const chave of ["titulo", "responsavel_id", "prazo"]) {
+    const v = validarCampo(campoPorChave(chave)!, texto(form.get(chave)), membros);
+    if ("erro" in v) return { erro: v.erro };
+    lido[chave] = v.valor;
+  }
 
+  const nova: NovaTarefa = {
+    titulo: lido.titulo!,
+    descricao: null,
+    prioridade: null,
+    solicitante_id: sessao.conta.id,
+    responsavel_id: lido.responsavel_id,
+    data_inicio: null,
+    prazo: lido.prazo,
+    pai_id: paiId,
+  };
   try {
-    await criarTarefa(sessao.conta.id, { ...lido.dados, pai_id: paiId });
+    await criarTarefa(sessao.conta.id, nova);
   } catch (erro) {
     console.error("Falha ao criar subtarefa:", erro);
     return { erro: "Não foi possível criar a subtarefa. Tente de novo." };
@@ -121,25 +186,12 @@ export async function criarSubtarefaAction(
   return { ok: true, n: (anterior.n ?? 0) + 1 };
 }
 
-export async function mudarStatusAction(id: string, status: string): Promise<EstadoForm> {
-  await exigirOrg();
-  if (!UUID.test(id) || !STATUS.includes(status as StatusTarefa)) return { erro: "Pedido inválido." };
-  try {
-    if (!(await mudarStatusTarefa(id, status as StatusTarefa))) return { erro: "Tarefa não encontrada." };
-  } catch (erro) {
-    console.error("Falha ao mudar o status:", erro);
-    return { erro: "Não foi possível atualizar. Tente de novo." };
-  }
-  revalidatePath("/org", "layout");
-  return {};
-}
-
-/** Apaga a tarefa (e as subtarefas dela). Vai para a pai se for subtarefa, senão para a lista. */
+/** Apaga a tarefa (e as subtarefas). Subtarefa volta para a pai; tarefa volta para a lista. */
 export async function excluirTarefaAction(id: string): Promise<void> {
   await exigirOrg();
   if (!UUID.test(id)) redirect("/org/tarefas");
   const atual = await tarefaPorId(id);
   if (atual) await excluirTarefa(id);
   revalidatePath("/org", "layout");
-  redirect(atual?.tarefa.pai_id ? `/org/tarefas/${atual.tarefa.pai_id}` : "/org/tarefas");
+  redirect(atual?.pai_id ? `/org/tarefas?tarefa=${atual.pai_id}` : "/org/tarefas");
 }

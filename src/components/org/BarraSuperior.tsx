@@ -51,7 +51,7 @@ export function BarraSuperior({ sessao }: { sessao: Sessao }) {
         </label>
 
         <div className="ml-auto flex items-center gap-3">
-          <Botao href="/org/tarefas/nova">
+          <Botao href="/org/tarefas?nova=1">
             <Plus size={16} aria-hidden="true" />
             Nova tarefa
           </Botao>

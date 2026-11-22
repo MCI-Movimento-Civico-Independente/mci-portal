@@ -36,7 +36,7 @@ export function NovaSubtarefa({
           placeholder="O que precisa ser feito"
           className={`${campo} md:flex-1`}
         />
-        <select name="responsavel" aria-label="Atribuído a" defaultValue={responsavelPadrao ?? ""} className={`${campo} md:w-44`}>
+        <select name="responsavel_id" aria-label="Executor" defaultValue={responsavelPadrao ?? ""} className={`${campo} md:w-44`}>
           <option value="">Ninguém</option>
           {membros.map((m) => (
             <option key={m.id} value={m.id}>
@@ -44,7 +44,7 @@ export function NovaSubtarefa({
             </option>
           ))}
         </select>
-        <input name="prazo" type="date" aria-label="Para quando" className={`${campo} md:w-40`} />
+        <input name="prazo" type="date" aria-label="Entrega" className={`${campo} md:w-40`} />
         <Botao type="submit" disabled={pendente}>
           <Plus size={16} aria-hidden="true" />
           {pendente ? "Adicionando…" : "Adicionar"}

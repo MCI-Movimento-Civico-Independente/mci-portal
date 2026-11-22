@@ -4,13 +4,15 @@ import { useActionState } from "react";
 import { criarTarefaAction, type EstadoForm } from "@/app/org/tarefas/acoes";
 import { Botao } from "@/components/ui/Botao";
 import type { Pessoa } from "@/lib/tarefas";
+import { PRIORIDADE_OPCOES } from "@/lib/tarefas-campos";
 import { campo, rotulo } from "./estilos";
 
-export function FormNovaTarefa({ membros, euId }: { membros: Pessoa[]; euId: string }) {
+export function FormNovaTarefa({ membros, euId, fecharHref }: { membros: Pessoa[]; euId: string; fecharHref: string }) {
   const [estado, acao, pendente] = useActionState<EstadoForm, FormData>(criarTarefaAction, {});
+  const opcional = <span className="font-normal text-cinza">(opcional)</span>;
 
   return (
-    <form action={acao} className="flex max-w-2xl flex-col gap-5">
+    <form action={acao} className="flex flex-col gap-5">
       <div>
         <label htmlFor="titulo" className={rotulo}>
           Assunto
@@ -34,7 +36,7 @@ export function FormNovaTarefa({ membros, euId }: { membros: Pessoa[]; euId: str
           id="descricao"
           name="descricao"
           required
-          rows={6}
+          rows={5}
           maxLength={2000}
           placeholder="O que precisa ser feito e qual o resultado esperado"
           className={`${campo} py-2`}
@@ -43,10 +45,10 @@ export function FormNovaTarefa({ membros, euId }: { membros: Pessoa[]; euId: str
 
       <div className="grid gap-5 sm:grid-cols-2">
         <div>
-          <label htmlFor="responsavel" className={rotulo}>
-            Atribuído a <span className="font-normal text-cinza">(opcional)</span>
+          <label htmlFor="solicitante_id" className={rotulo}>
+            Solicitante {opcional}
           </label>
-          <select id="responsavel" name="responsavel" defaultValue={euId} className={campo}>
+          <select id="solicitante_id" name="solicitante_id" defaultValue={euId} className={campo}>
             <option value="">Ninguém</option>
             {membros.map((m) => (
               <option key={m.id} value={m.id}>
@@ -57,10 +59,44 @@ export function FormNovaTarefa({ membros, euId }: { membros: Pessoa[]; euId: str
           </select>
         </div>
         <div>
-          <label htmlFor="prazo" className={rotulo}>
-            Para quando <span className="font-normal text-cinza">(opcional)</span>
+          <label htmlFor="responsavel_id" className={rotulo}>
+            Executor {opcional}
           </label>
-          <input id="prazo" name="prazo" type="date" className={campo} />
+          <select id="responsavel_id" name="responsavel_id" defaultValue={euId} className={campo}>
+            <option value="">Ninguém</option>
+            {membros.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.nome}
+                {m.id === euId ? " (eu)" : ""}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label htmlFor="prioridade" className={rotulo}>
+            Prioridade {opcional}
+          </label>
+          <select id="prioridade" name="prioridade" defaultValue="" className={campo}>
+            {PRIORIDADE_OPCOES.map((o) => (
+              <option key={o.valor} value={o.valor}>
+                {o.valor ? o.rotulo : "Não definida"}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label htmlFor="data_inicio" className={rotulo}>
+              De quando {opcional}
+            </label>
+            <input id="data_inicio" name="data_inicio" type="date" className={campo} />
+          </div>
+          <div>
+            <label htmlFor="prazo" className={rotulo}>
+              Até quando {opcional}
+            </label>
+            <input id="prazo" name="prazo" type="date" className={campo} />
+          </div>
         </div>
       </div>
 
@@ -74,7 +110,7 @@ export function FormNovaTarefa({ membros, euId }: { membros: Pessoa[]; euId: str
         <Botao type="submit" disabled={pendente}>
           {pendente ? "Criando…" : "Criar tarefa"}
         </Botao>
-        <Botao href="/org/tarefas" variante="secundario">
+        <Botao href={fecharHref} variante="secundario">
           Cancelar
         </Botao>
       </div>

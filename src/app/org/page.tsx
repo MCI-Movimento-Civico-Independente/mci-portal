@@ -6,7 +6,7 @@ import { EtiquetaStatus } from "@/components/ui/EtiquetaStatus";
 import { redirect } from "next/navigation";
 import { getSessao } from "@/lib/auth/sessao";
 import { formatarPrazo, hojeSP } from "@/lib/datas";
-import { listarTarefas } from "@/lib/tarefas";
+import { tarefasAbertasDe } from "@/lib/tarefas";
 import { comites, proximos, saudacao } from "@/lib/mock";
 
 const rotuloMono = "font-mono text-[11px] uppercase tracking-widest";
@@ -15,7 +15,7 @@ export default async function InicioPage() {
   const sessao = await getSessao();
   if (!sessao) redirect("/login?next=/org");
   const { nivel } = sessao;
-  const abertas = await listarTarefas({ responsavelId: sessao.conta.id, situacao: "abertas" });
+  const abertas = await tarefasAbertasDe(sessao.conta.id);
   const tarefas = abertas.slice(0, 4);
   const hoje = hojeSP();
 
@@ -125,7 +125,7 @@ export default async function InicioPage() {
           {tarefas.length === 0 && (
             <p className="mt-3 border-t border-linha pt-4 text-[15px]">
               Nenhuma tarefa em aberto.{" "}
-              <Link href="/org/tarefas/nova" className="font-bold text-laranja-texto underline">
+              <Link href="/org/tarefas?nova=1" className="font-bold text-laranja-texto underline">
                 Criar tarefa
               </Link>
             </p>
@@ -142,18 +142,12 @@ export default async function InicioPage() {
                 />
                 <div className="min-w-0 flex-1">
                   <Link
-                    href={`/org/tarefas/${t.id}`}
+                    href={`/org/tarefas?tarefa=${t.id}`}
                     className="text-[15px] font-bold leading-snug hover:text-laranja-texto hover:underline"
                   >
                     {t.titulo}
                   </Link>
                   <p className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-[11px] uppercase tracking-wider text-cinza">
-                    {t.comite_slug && (
-                      <>
-                        <span>{t.comite_slug}</span>
-                        <span aria-hidden="true">·</span>
-                      </>
-                    )}
                     <span>{formatarPrazo(t.prazo, hoje)}</span>
                     {t.status === "em_andamento" && (
                       <span className="md:hidden">

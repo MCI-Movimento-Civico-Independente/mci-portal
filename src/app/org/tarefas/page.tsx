@@ -1,23 +1,21 @@
 import { Plus } from "lucide-react";
 import Link from "next/link";
-import { redirect } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { CartaoTarefa } from "@/components/tarefas/CartaoTarefa";
-import { LinhaTarefa } from "@/components/tarefas/LinhaTarefa";
+import { DetalheTarefa } from "@/components/tarefas/DetalheTarefa";
+import { FormNovaTarefa } from "@/components/tarefas/FormNovaTarefa";
+import { Modal } from "@/components/tarefas/Modal";
+import { TabelaTarefas } from "@/components/tarefas/TabelaTarefas";
 import { Botao } from "@/components/ui/Botao";
 import { Card } from "@/components/ui/Card";
-import type { StatusTarefa } from "@/components/ui/EtiquetaStatus";
 import { getSessao } from "@/lib/auth/sessao";
 import { hojeSP } from "@/lib/datas";
-import { listarTarefas, type TarefaDb } from "@/lib/tarefas";
+import { listarTarefas, membrosOrg, tarefaPorId, type TarefaDb } from "@/lib/tarefas";
+import { STATUS_OPCOES } from "@/lib/tarefas-campos";
 
 export const metadata = { title: "Tarefas · MCi" };
 
-const COLUNAS: { status: StatusTarefa; rotulo: string }[] = [
-  { status: "a_fazer", rotulo: "A fazer" },
-  { status: "em_andamento", rotulo: "Em andamento" },
-  { status: "em_revisao", rotulo: "Em revisão" },
-  { status: "concluida", rotulo: "Concluída" },
-];
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function Aba({ href, ativa, children }: { href: string; ativa: boolean; children: React.ReactNode }) {
   return (
@@ -36,27 +34,34 @@ function Aba({ href, ativa, children }: { href: string; ativa: boolean; children
 export default async function TarefasPage({
   searchParams,
 }: {
-  searchParams: Promise<{ vista?: string; quem?: string }>;
+  searchParams: Promise<{ vista?: string; quem?: string; tarefa?: string; nova?: string }>;
 }) {
   const sessao = await getSessao();
   if (!sessao) redirect("/login?next=/org/tarefas");
 
-  const { vista, quem } = await searchParams;
+  const { vista, quem, tarefa: tarefaId, nova } = await searchParams;
   const quadro = vista === "quadro";
   const todas = quem === "todas";
-  const eu = todas ? undefined : sessao.conta.id;
 
-  const [abertas, concluidas] = await Promise.all([
-    listarTarefas({ responsavelId: eu, situacao: "abertas" }),
-    listarTarefas({ responsavelId: eu, situacao: "concluidas" }),
+  // Query que a janela da tarefa conserva ao abrir e ao fechar.
+  const qs = new URLSearchParams({ ...(quadro ? { vista: "quadro" } : {}), ...(todas ? { quem: "todas" } : {}) }).toString();
+  const base = `/org/tarefas${qs ? `?${qs}` : ""}`;
+  const href = (v: boolean, t: boolean) => {
+    const p = new URLSearchParams({ ...(v ? { vista: "quadro" } : {}), ...(t ? { quem: "todas" } : {}) }).toString();
+    return `/org/tarefas${p ? `?${p}` : ""}`;
+  };
+
+  const [tarefas, membros, aberta] = await Promise.all([
+    listarTarefas({ executorId: todas ? undefined : sessao.conta.id }),
+    membrosOrg(),
+    tarefaId && UUID.test(tarefaId) ? tarefaPorId(tarefaId) : Promise.resolve(null),
   ]);
+  if (tarefaId && !aberta) notFound();
   const hoje = hojeSP();
 
-  const href = (v: boolean, t: boolean) =>
-    `/org/tarefas?${new URLSearchParams({ ...(v ? { vista: "quadro" } : {}), ...(t ? { quem: "todas" } : {}) })}`;
-
-  const porStatus = (s: StatusTarefa): TarefaDb[] =>
-    s === "concluida" ? concluidas : abertas.filter((t) => t.status === s);
+  const emAberto = tarefas.filter((t) => t.status !== "concluida");
+  const concluidas = tarefas.filter((t) => t.status === "concluida");
+  const novaTarefaHref = `/org/tarefas?${qs ? `${qs}&` : ""}nova=1`;
 
   return (
     <div className="flex flex-col gap-6">
@@ -64,7 +69,7 @@ export default async function TarefasPage({
         <h1 className="text-3xl font-black tracking-tighter md:text-4xl">
           {todas ? "Todas as tarefas" : "Minhas tarefas"}
         </h1>
-        <Botao href="/org/tarefas/nova">
+        <Botao href={novaTarefaHref}>
           <Plus size={16} aria-hidden="true" />
           Nova tarefa
         </Botao>
@@ -91,16 +96,16 @@ export default async function TarefasPage({
 
       {quadro ? (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          {COLUNAS.map(({ status, rotulo }) => {
-            const itens = porStatus(status);
+          {STATUS_OPCOES.map(({ valor, rotulo }) => {
+            const itens: TarefaDb[] = tarefas.filter((t) => t.status === valor);
             return (
-              <section key={status} aria-label={rotulo} className="flex flex-col gap-3 bg-creme-claro/50 p-3">
+              <section key={valor} aria-label={rotulo} className="flex flex-col gap-3 bg-creme-claro/50 p-3">
                 <h2 className="font-mono text-[11px] font-bold uppercase tracking-widest text-cinza">
                   {rotulo} · {itens.length}
                 </h2>
                 <ul className="flex flex-col gap-3">
                   {itens.map((t) => (
-                    <CartaoTarefa key={t.id} t={t} hoje={hoje} />
+                    <CartaoTarefa key={t.id} t={t} membros={membros} hoje={hoje} qs={qs} />
                   ))}
                 </ul>
                 {itens.length === 0 && <p className="px-1 text-sm text-cinza">Nada por aqui.</p>}
@@ -112,21 +117,19 @@ export default async function TarefasPage({
         <>
           <Card>
             <h2 className="font-mono text-[11px] uppercase tracking-widest text-cinza">
-              Em aberto · {abertas.length}
+              Em aberto · {emAberto.length}
             </h2>
-            {abertas.length === 0 ? (
+            {emAberto.length === 0 ? (
               <p className="mt-3 text-[15px]">
                 Nenhuma tarefa em aberto.{" "}
-                <Link href="/org/tarefas/nova" className="font-bold text-laranja-texto underline">
+                <Link href={novaTarefaHref} className="font-bold text-laranja-texto underline">
                   Criar tarefa
                 </Link>
               </p>
             ) : (
-              <ul className="mt-2">
-                {abertas.map((t) => (
-                  <LinhaTarefa key={t.id} t={t} hoje={hoje} />
-                ))}
-              </ul>
+              <div className="mt-3">
+                <TabelaTarefas tarefas={emAberto} membros={membros} hoje={hoje} qs={qs} />
+              </div>
             )}
           </Card>
 
@@ -135,14 +138,24 @@ export default async function TarefasPage({
               <h2 className="font-mono text-[11px] uppercase tracking-widest text-cinza">
                 Concluídas · {concluidas.length}
               </h2>
-              <ul className="mt-2">
-                {concluidas.map((t) => (
-                  <LinhaTarefa key={t.id} t={t} hoje={hoje} />
-                ))}
-              </ul>
+              <div className="mt-3">
+                <TabelaTarefas tarefas={concluidas} membros={membros} hoje={hoje} qs={qs} />
+              </div>
             </Card>
           )}
         </>
+      )}
+
+      {aberta && (
+        <Modal key={aberta.id} fecharHref={base} rotulo={`Tarefa: ${aberta.titulo}`}>
+          <DetalheTarefa tarefa={aberta} membros={membros} qs={qs} />
+        </Modal>
+      )}
+      {!aberta && nova === "1" && (
+        <Modal fecharHref={base} rotulo="Nova tarefa">
+          <h2 className="mb-5 pr-10 text-2xl font-black tracking-tighter">Nova tarefa</h2>
+          <FormNovaTarefa membros={membros} euId={sessao.conta.id} fecharHref={base} />
+        </Modal>
       )}
     </div>
   );
