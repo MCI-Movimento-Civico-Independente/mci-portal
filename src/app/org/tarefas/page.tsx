@@ -10,6 +10,7 @@ import { Botao } from "@/components/ui/Botao";
 import { Card } from "@/components/ui/Card";
 import { getSessao } from "@/lib/auth/sessao";
 import { hojeSP } from "@/lib/datas";
+import { listarFormularios } from "@/lib/formularios";
 import { comitesBasicos, projetosBasicos } from "@/lib/organizacao";
 import { listarTarefas, membrosOrg, tarefaPorId, type TarefaDb } from "@/lib/tarefas";
 import { STATUS_OPCOES } from "@/lib/tarefas-campos";
@@ -44,7 +45,12 @@ export default async function TarefasPage({
   const quadro = vista === "quadro";
   const todas = quem === "todas";
 
-  const [membros, comites, projetos] = await Promise.all([membrosOrg(), comitesBasicos(), projetosBasicos()]);
+  const [membros, comites, projetos, formularios] = await Promise.all([
+    membrosOrg(),
+    comitesBasicos(),
+    projetosBasicos(),
+    listarFormularios(),
+  ]);
   // Só aceita filtros que existem de verdade.
   const comite = comites.find((c) => c.slug === comiteParam)?.slug;
   const projeto = projetos.find((p) => p.id === projetoParam)?.id;
@@ -204,6 +210,7 @@ export default async function TarefasPage({
             membros={membros}
             comites={comites}
             projetos={projetos}
+            formularios={formularios}
             qs={qs}
             euId={sessao.conta.id}
             souAdmin={sessao.conta.papel === "admin"}
@@ -213,7 +220,14 @@ export default async function TarefasPage({
       {!aberta && nova === "1" && (
         <Modal fecharHref={base} rotulo="Nova tarefa">
           <h2 className="mb-5 pr-10 text-2xl font-black tracking-tighter">Nova tarefa</h2>
-          <FormNovaTarefa membros={membros} comites={comites} projetos={projetos} euId={sessao.conta.id} fecharHref={base} />
+          <FormNovaTarefa
+            membros={membros}
+            comites={comites}
+            projetos={projetos}
+            formularios={formularios}
+            euId={sessao.conta.id}
+            fecharHref={base}
+          />
         </Modal>
       )}
     </div>

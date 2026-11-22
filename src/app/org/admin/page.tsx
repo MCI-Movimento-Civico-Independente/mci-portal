@@ -1,4 +1,4 @@
-import { ArrowUpRight, UsersRound, UserCog } from "lucide-react";
+import { ArrowUpRight, ClipboardList, UsersRound, UserCog } from "lucide-react";
 import Link from "next/link";
 
 export const metadata = { title: "Administração · MCi" };
@@ -9,6 +9,12 @@ const itens = [
     titulo: "Membros e acessos",
     texto: "Veja todas as contas e defina quem é membro, da organização ou admin.",
     icone: UserCog,
+  },
+  {
+    href: "/org/admin/formularios",
+    titulo: "Formulários",
+    texto: "Defina quais campos cada formulário tem e qual é o padrão de cada comitê.",
+    icone: ClipboardList,
   },
   {
     href: "/org/admin/comites",

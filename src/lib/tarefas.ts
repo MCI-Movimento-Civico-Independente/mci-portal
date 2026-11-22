@@ -14,6 +14,7 @@ export type TarefaDb = {
   prazo: string | null;
   pai_id: string | null;
   comite_slug: string | null;
+  formulario_id: string | null;
   projeto_id: string | null;
   solicitante_id: string | null;
   responsavel_id: string | null;
@@ -35,7 +36,7 @@ export type TarefaDb = {
 // essa conferência na borda é o que protege estes dados.
 
 const COLUNAS =
-  "id, titulo, descricao, status, prioridade, data_inicio, prazo, pai_id, comite_slug, projeto_id, solicitante_id, responsavel_id, criado_em, concluida_em, " +
+  "id, titulo, descricao, status, prioridade, data_inicio, prazo, pai_id, comite_slug, formulario_id, projeto_id, solicitante_id, responsavel_id, criado_em, concluida_em, " +
   "projeto:projetos!projeto_id(id, nome), solicitante:contas!solicitante_id(id, nome), responsavel:contas!responsavel_id(id, nome)";
 
 type Linha = Omit<TarefaDb, "subtarefas" | "paiTitulo">;
@@ -177,6 +178,7 @@ export type NovaTarefa = {
   titulo: string;
   descricao: string | null;
   comite_slug?: string | null;
+  formulario_id?: string | null;
   projeto_id?: string | null;
   prioridade: Prioridade | null;
   solicitante_id: string | null;
@@ -208,6 +210,7 @@ export type Alteracao = Partial<
     | "solicitante_id"
     | "responsavel_id"
     | "comite_slug"
+    | "formulario_id"
     | "projeto_id"
   >
 >;

@@ -3,6 +3,7 @@
 import { Check, Pencil } from "lucide-react";
 import Link from "next/link";
 import { useRef, useState } from "react";
+import type { FormularioView } from "@/lib/formularios-tipos";
 import type { ComiteBasico, ProjetoBasico } from "@/lib/organizacao";
 import type { Pessoa, TarefaDb } from "@/lib/tarefas";
 import {
@@ -126,6 +127,37 @@ export function CelulaData({
           alerta ? "font-bold text-laranja-texto" : ""
         }`}
       />
+      <MensagemErro erro={erro} />
+    </div>
+  );
+}
+
+/** Seletor de formulário da tarefa. */
+export function CelulaFormulario({
+  id,
+  valor: valorServidor,
+  formularios,
+}: {
+  id: string;
+  valor: string;
+  formularios: FormularioView[];
+}) {
+  const { valor, salvar, pendente, erro } = useCampo(id, "formulario_id", valorServidor);
+  return (
+    <div className="min-w-0">
+      <select
+        aria-label="Formulário"
+        value={valor}
+        disabled={pendente}
+        onChange={(e) => salvar(e.target.value)}
+        className="min-h-11 w-full truncate border border-transparent bg-transparent px-1.5 text-sm font-medium hover:border-linha hover:bg-creme-claro disabled:opacity-60"
+      >
+        {formularios.map((f) => (
+          <option key={f.id} value={f.id}>
+            {f.nome}
+          </option>
+        ))}
+      </select>
       <MensagemErro erro={erro} />
     </div>
   );
@@ -330,6 +362,7 @@ export function CampoEditavel({
   membros,
   comites,
   projetos,
+  formularios,
   hoje,
 }: {
   campo: CampoTarefa;
@@ -337,6 +370,7 @@ export function CampoEditavel({
   membros: Pessoa[];
   comites: ComiteBasico[];
   projetos: ProjetoBasico[];
+  formularios: FormularioView[];
   hoje: string;
 }) {
   const bruto = (tarefa as unknown as Record<string, string | null>)[campo.chave] ?? "";
@@ -357,6 +391,8 @@ export function CampoEditavel({
       );
     case "comite":
       return <CelulaComite id={tarefa.id} valor={bruto} comites={comites} />;
+    case "formulario":
+      return <CelulaFormulario id={tarefa.id} valor={bruto} formularios={formularios} />;
     case "projeto":
       return (
         <CelulaProjeto

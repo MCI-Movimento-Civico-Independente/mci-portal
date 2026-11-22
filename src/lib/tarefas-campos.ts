@@ -26,6 +26,7 @@ export const PRIORIDADE_OPCOES: Opcao[] = [
 export type ChaveCampo =
   | "titulo"
   | "comite_slug"
+  | "formulario_id"
   | "projeto_id"
   | "solicitante_id"
   | "responsavel_id"
@@ -37,21 +38,28 @@ export type ChaveCampo =
 export type CampoTarefa = {
   chave: ChaveCampo;
   rotulo: string;
-  tipo: "texto" | "opcao" | "pessoa" | "data" | "comite" | "projeto";
+  tipo: "texto" | "opcao" | "pessoa" | "data" | "comite" | "projeto" | "formulario";
   obrigatorio?: boolean;
+  /** Campo que existe em todo formulário (não dá para remover). */
+  fixo?: boolean;
   opcoes?: Opcao[];
 };
 
 export const CAMPOS: CampoTarefa[] = [
-  { chave: "titulo", rotulo: "Tarefa", tipo: "texto", obrigatorio: true },
-  { chave: "comite_slug", rotulo: "Comitê", tipo: "comite" },
+  { chave: "titulo", rotulo: "Tarefa", tipo: "texto", obrigatorio: true, fixo: true },
+  { chave: "comite_slug", rotulo: "Comitê", tipo: "comite", fixo: true },
+  { chave: "formulario_id", rotulo: "Formulário", tipo: "formulario", fixo: true },
   { chave: "projeto_id", rotulo: "Projeto", tipo: "projeto" },
   { chave: "solicitante_id", rotulo: "Solicitante", tipo: "pessoa" },
   { chave: "responsavel_id", rotulo: "Executor", tipo: "pessoa" },
-  { chave: "status", rotulo: "Status", tipo: "opcao", obrigatorio: true, opcoes: STATUS_OPCOES },
+  { chave: "status", rotulo: "Status", tipo: "opcao", obrigatorio: true, fixo: true, opcoes: STATUS_OPCOES },
   { chave: "prioridade", rotulo: "Prioridade", tipo: "opcao", opcoes: PRIORIDADE_OPCOES },
   { chave: "data_inicio", rotulo: "Início", tipo: "data" },
   { chave: "prazo", rotulo: "Entrega", tipo: "data" },
 ];
 
 export const campoPorChave = (chave: string) => CAMPOS.find((c) => c.chave === chave);
+
+/** Campos que cada formulário pode adicionar ou remover. */
+export const CAMPOS_CONFIGURAVEIS = CAMPOS.filter((c) => !c.fixo);
+export const CHAVES_CONFIGURAVEIS: string[] = CAMPOS_CONFIGURAVEIS.map((c) => c.chave);

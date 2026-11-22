@@ -13,6 +13,8 @@ import {
 } from "@/lib/admin";
 import { buscarConta } from "@/lib/auth/contas";
 import { getSessao } from "@/lib/auth/sessao";
+import { criarFormulario, excluirFormulario, salvarFormulario } from "@/lib/formularios";
+import { comitesBasicos } from "@/lib/organizacao";
 
 export type EstadoAdmin = { erro?: string; ok?: boolean; n?: number };
 
@@ -115,4 +117,68 @@ export async function excluirComiteAction(slug: string): Promise<void> {
     console.error("Falha ao excluir comitê:", erro);
   }
   revalidatePath("/org", "layout");
+}
+
+// ---------- Formulários ----------
+
+export async function criarFormularioAction(_anterior: EstadoAdmin, form: FormData): Promise<EstadoAdmin> {
+  const sessao = await exigirAdmin();
+  const nome = texto(form.get("nome"));
+  if (!nome) return { erro: "Dê um nome ao formulário." };
+  if (nome.length > 80) return { erro: "O nome pode ter no máximo 80 caracteres." };
+
+  let id: string;
+  try {
+    const r = await criarFormulario(nome);
+    if (r === "nome_em_uso") return { erro: "Já existe um formulário com esse nome." };
+    id = r.id;
+    await auditar(sessao.conta.id, "formulario_criado", id, { nome });
+  } catch (erro) {
+    console.error("Falha ao criar formulário:", erro);
+    return { erro: "Não foi possível criar o formulário. Tente de novo." };
+  }
+  revalidatePath("/org", "layout");
+  redirect(`/org/admin/formularios/${id}`);
+}
+
+export async function salvarFormularioAction(id: string, _anterior: EstadoAdmin, form: FormData): Promise<EstadoAdmin> {
+  const sessao = await exigirAdmin();
+  if (!UUID.test(id)) return { erro: "Pedido inválido." };
+  const nome = texto(form.get("nome"));
+  const descricao = texto(form.get("descricao"));
+  if (!nome) return { erro: "O nome não pode ficar vazio." };
+  if (nome.length > 80) return { erro: "O nome pode ter no máximo 80 caracteres." };
+  if (descricao.length > 500) return { erro: "A descrição pode ter no máximo 500 caracteres." };
+
+  const campos = form.getAll("campo").filter((v): v is string => typeof v === "string");
+  const comites = form.getAll("comite").filter((v): v is string => typeof v === "string");
+
+  try {
+    const validos = new Set((await comitesBasicos()).map((c) => c.slug));
+    if (comites.some((c) => !validos.has(c))) return { erro: "Comitê inválido." };
+
+    const r = await salvarFormulario(id, { nome, descricao: descricao || null, campos, comites });
+    if (r === "nome_em_uso") return { erro: "Já existe um formulário com esse nome." };
+    if (r === "nao_achou") return { erro: "Formulário não encontrado." };
+    await auditar(sessao.conta.id, "formulario_salvo", id, { nome, campos, comites });
+  } catch (erro) {
+    console.error("Falha ao salvar formulário:", erro);
+    return { erro: "Não foi possível salvar. Tente de novo." };
+  }
+  revalidatePath("/org", "layout");
+  return { ok: true };
+}
+
+export async function excluirFormularioAction(id: string): Promise<void> {
+  const sessao = await exigirAdmin();
+  if (!UUID.test(id)) return;
+  try {
+    if ((await excluirFormulario(id)) === "ok") {
+      await auditar(sessao.conta.id, "formulario_excluido", id);
+    }
+  } catch (erro) {
+    console.error("Falha ao excluir formulário:", erro);
+  }
+  revalidatePath("/org", "layout");
+  redirect("/org/admin/formularios");
 }

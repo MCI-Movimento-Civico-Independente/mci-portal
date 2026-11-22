@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 import { listarComentarios, listarHistorico, type Evento } from "@/lib/atividade";
 import { formatarDataHora, hojeSP } from "@/lib/datas";
+import { resolverFormulario, type FormularioView } from "@/lib/formularios-tipos";
 import type { ComiteBasico, ProjetoBasico } from "@/lib/organizacao";
 import type { Pessoa, TarefaDb } from "@/lib/tarefas";
 import { CAMPOS } from "@/lib/tarefas-campos";
@@ -35,6 +36,7 @@ export async function DetalheTarefa({
   membros,
   comites,
   projetos,
+  formularios,
   qs,
   euId,
   souAdmin,
@@ -43,6 +45,7 @@ export async function DetalheTarefa({
   membros: Pessoa[];
   comites: ComiteBasico[];
   projetos: ProjetoBasico[];
+  formularios: FormularioView[];
   qs: string;
   euId: string;
   souAdmin: boolean;
@@ -52,8 +55,15 @@ export async function DetalheTarefa({
   const hoje = hojeSP();
   const feitas = tarefa.subtarefas.filter((s) => s.status === "concluida").length;
   const total = tarefa.subtarefas.length;
-  // Subtarefa segue o comitê e o projeto da tarefa original.
-  const campos = CAMPOS.filter((c) => c.chave !== "titulo" && !(ehSub && (c.chave === "comite_slug" || c.chave === "projeto_id")));
+  // O formulário da tarefa decide quais campos aparecem (os fixos aparecem sempre).
+  // Tarefa sem formulário usa o do comitê ou o Padrão geral; a subtarefa usa o Padrão geral.
+  const formulario = ehSub
+    ? resolverFormulario(formularios, null)
+    : (formularios.find((f) => f.id === tarefa.formulario_id) ?? resolverFormulario(formularios, tarefa.comite_slug));
+  const incluidos = new Set(formulario?.campos ?? []);
+  // Subtarefa segue o comitê, o projeto e o formulário da tarefa original.
+  const semHerdados = (chave: string) => !(ehSub && (chave === "comite_slug" || chave === "projeto_id" || chave === "formulario_id"));
+  const campos = CAMPOS.filter((c) => c.chave !== "titulo" && semHerdados(c.chave) && (c.fixo || incluidos.has(c.chave)));
 
   return (
     <div className="flex flex-col gap-6">
@@ -80,7 +90,15 @@ export async function DetalheTarefa({
           <div key={c.chave} className="grid grid-cols-[110px_1fr] items-center">
             <dt className="font-mono text-[11px] uppercase tracking-widest text-cinza">{c.rotulo}</dt>
             <dd>
-              <CampoEditavel campo={c} tarefa={tarefa} membros={membros} comites={comites} projetos={projetos} hoje={hoje} />
+              <CampoEditavel
+                campo={c}
+                tarefa={{ ...tarefa, formulario_id: tarefa.formulario_id ?? formulario?.id ?? null }}
+                membros={membros}
+                comites={comites}
+                projetos={projetos}
+                formularios={formularios}
+                hoje={hoje}
+              />
             </dd>
           </div>
         ))}

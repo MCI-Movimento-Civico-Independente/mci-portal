@@ -5,6 +5,8 @@ import { redirect } from "next/navigation";
 import { criarComentario, excluirComentario, registrarEvento } from "@/lib/atividade";
 import { getSessao } from "@/lib/auth/sessao";
 import { dataValida, formatarDataCurta } from "@/lib/datas";
+import { listarFormularios } from "@/lib/formularios";
+import { resolverFormulario, type FormularioView } from "@/lib/formularios-tipos";
 import { comitesBasicos, projetosBasicos, type ComiteBasico, type ProjetoBasico } from "@/lib/organizacao";
 import {
   atualizarTarefa,
@@ -34,11 +36,21 @@ async function exigirOrg() {
 
 const texto = (v: FormDataEntryValue | null) => (typeof v === "string" ? v.trim() : "");
 
-type Catalogos = { membros: Pessoa[]; comites: ComiteBasico[]; projetos: ProjetoBasico[] };
+type Catalogos = {
+  membros: Pessoa[];
+  comites: ComiteBasico[];
+  projetos: ProjetoBasico[];
+  formularios: FormularioView[];
+};
 
 async function carregarCatalogos(): Promise<Catalogos> {
-  const [membros, comites, projetos] = await Promise.all([membrosOrg(), comitesBasicos(), projetosBasicos()]);
-  return { membros, comites, projetos };
+  const [membros, comites, projetos, formularios] = await Promise.all([
+    membrosOrg(),
+    comitesBasicos(),
+    projetosBasicos(),
+    listarFormularios(),
+  ]);
+  return { membros, comites, projetos, formularios };
 }
 
 type Validado = { erro: string } | { valor: string | null };
@@ -64,6 +76,9 @@ function validarCampo(campo: CampoTarefa, bruto: string, cat: Catalogos): Valida
     case "comite":
       if (!v) return { valor: null };
       return cat.comites.some((c) => c.slug === v) ? { valor: v } : { erro: "Comitê inválido." };
+    case "formulario":
+      if (!v) return { valor: null };
+      return cat.formularios.some((f) => f.id === v) ? { valor: v } : { erro: "Formulário inválido." };
     case "projeto":
       if (!v) return { valor: null };
       return cat.projetos.some((p) => p.id === v && p.status === "ativo")
@@ -86,6 +101,8 @@ function descrever(campo: CampoTarefa, valor: string | null, cat: Catalogos): st
       return cat.comites.find((c) => c.slug === valor)?.nome ?? valor;
     case "projeto":
       return cat.projetos.find((p) => p.id === valor)?.nome ?? null;
+    case "formulario":
+      return cat.formularios.find((f) => f.id === valor)?.nome ?? null;
     default:
       return valor;
   }
@@ -101,8 +118,8 @@ export async function atualizarCampoAction(id: string, chave: string, valor: str
 
   const [atual, cat] = await Promise.all([tarefaPorId(id), carregarCatalogos()]);
   if (!atual) return { erro: "Tarefa não encontrada." };
-  if (atual.pai_id && (chave === "comite_slug" || chave === "projeto_id")) {
-    return { erro: "A subtarefa segue o comitê e o projeto da tarefa original." };
+  if (atual.pai_id && (chave === "comite_slug" || chave === "projeto_id" || chave === "formulario_id")) {
+    return { erro: "A subtarefa segue o comitê, o projeto e o formulário da tarefa original." };
   }
 
   const validado = validarCampo(campo, valor, cat);
@@ -155,7 +172,7 @@ export async function criarTarefaAction(_anterior: EstadoForm, form: FormData): 
   const cat = await carregarCatalogos();
 
   const lido: Record<string, string | null> = {};
-  for (const chave of ["titulo", "comite_slug", "projeto_id", "solicitante_id", "responsavel_id", "prioridade", "data_inicio", "prazo"]) {
+  for (const chave of ["titulo", "comite_slug", "formulario_id", "projeto_id", "solicitante_id", "responsavel_id", "prioridade", "data_inicio", "prazo"]) {
     const v = validarCampo(campoPorChave(chave)!, texto(form.get(chave)), cat);
     if ("erro" in v) return { erro: v.erro };
     lido[chave] = v.valor;
@@ -167,6 +184,8 @@ export async function criarTarefaAction(_anterior: EstadoForm, form: FormData): 
 
   // O projeto manda: escolher um projeto define o comitê.
   if (lido.projeto_id) lido.comite_slug = cat.projetos.find((p) => p.id === lido.projeto_id)!.comite_slug;
+  // Sem formulário escolhido, vale o do comitê (ou o Padrão geral).
+  const formularioId = lido.formulario_id ?? resolverFormulario(cat.formularios, lido.comite_slug)?.id ?? null;
 
   let id: string;
   try {
@@ -174,6 +193,7 @@ export async function criarTarefaAction(_anterior: EstadoForm, form: FormData): 
       titulo: lido.titulo!,
       descricao,
       comite_slug: lido.comite_slug,
+      formulario_id: formularioId,
       projeto_id: lido.projeto_id,
       prioridade: lido.prioridade as Prioridade | null,
       solicitante_id: lido.solicitante_id,
