@@ -44,3 +44,32 @@ body {
   outline: 2px solid var(--laranja-texto);
   outline-offset: 2px;
 }
+
+/* O reset do Tailwind v4 tira o cursor de mão dos botões: devolvemos aqui. */
+button:not(:disabled),
+[role="button"],
+a[href],
+summary,
+select:not(:disabled),
+label[for],
+input[type="checkbox"],
+input[type="date"] {
+  cursor: pointer;
+}
+
+button:disabled,
+select:disabled {
+  cursor: not-allowed;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  button,
+  a[href],
+  select {
+    transition:
+      background-color 120ms ease,
+      color 120ms ease,
+      border-color 120ms ease,
+      opacity 120ms ease;
+  }
+}

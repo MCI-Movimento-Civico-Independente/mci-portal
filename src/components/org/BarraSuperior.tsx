@@ -26,7 +26,7 @@ export function BarraSuperior({ sessao }: { sessao: Sessao }) {
           <button
             type="button"
             aria-label="Buscar"
-            className="flex size-11 items-center justify-center text-creme"
+            className="flex size-11 items-center justify-center text-creme hover:text-amarelo"
           >
             <Search size={20} aria-hidden="true" />
           </button>
@@ -51,14 +51,14 @@ export function BarraSuperior({ sessao }: { sessao: Sessao }) {
         </label>
 
         <div className="ml-auto flex items-center gap-3">
-          <Botao>
+          <Botao href="/org/tarefas/nova">
             <Plus size={16} aria-hidden="true" />
             Nova tarefa
           </Botao>
           <button
             type="button"
             aria-label="Notificações"
-            className="relative flex size-11 items-center justify-center border border-linha bg-creme-claro"
+            className="relative flex size-11 items-center justify-center border border-linha bg-creme-claro hover:border-preto"
           >
             <Bell size={18} aria-hidden="true" />
             <span

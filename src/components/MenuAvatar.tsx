@@ -44,7 +44,7 @@ export function MenuAvatar({ inicial, nome, podeOrg, temGoogle }: Props) {
         aria-haspopup="menu"
         aria-expanded={aberto}
         onClick={() => setAberto(!aberto)}
-        className="flex size-11 shrink-0 items-center justify-center rounded-full bg-laranja text-lg font-extrabold text-preto"
+        className="flex size-11 shrink-0 items-center justify-center rounded-full bg-laranja text-lg font-extrabold text-preto hover:bg-laranja-texto hover:text-creme-claro"
       >
         {inicial}
       </button>

@@ -21,7 +21,7 @@ export function NavegacaoInferior() {
             href={item.href}
             aria-current={ativo ? "page" : undefined}
             className={`flex min-h-[72px] flex-col items-center justify-center gap-1.5 text-xs font-semibold ${
-              ativo ? "text-amarelo" : "text-creme"
+              ativo ? "text-amarelo" : "text-creme hover:text-amarelo"
             }`}
           >
             <Icone size={20} aria-hidden="true" />

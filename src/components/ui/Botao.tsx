@@ -4,9 +4,11 @@ import type { ButtonHTMLAttributes, ReactNode } from "react";
 export type VarianteBotao = "primario" | "destaque" | "secundario";
 
 const estilos: Record<VarianteBotao, string> = {
-  primario: "bg-preto text-creme-claro border-preto",
-  destaque: "bg-laranja text-preto border-laranja",
-  secundario: "bg-transparent text-preto border-preto border-2",
+  primario:
+    "bg-preto text-creme-claro border-preto hover:bg-laranja-texto hover:border-laranja-texto",
+  destaque: "bg-laranja text-preto border-laranja hover:bg-preto hover:border-preto hover:text-creme-claro",
+  secundario:
+    "bg-transparent text-preto border-preto border-2 hover:bg-preto hover:text-creme-claro",
 };
 
 type BaseProps = {
@@ -28,7 +30,7 @@ export function Botao({
   className = "",
   ...resto
 }: BotaoProps) {
-  const classes = `inline-flex min-h-11 min-w-11 items-center justify-center gap-2 border px-5 text-sm font-bold ${estilos[variante]} ${className}`;
+  const classes = `inline-flex min-h-11 min-w-11 items-center justify-center gap-2 border px-5 text-sm font-bold active:translate-y-px disabled:pointer-events-none disabled:opacity-60 ${estilos[variante]} ${className}`;
 
   if (resto.href !== undefined) {
     return (

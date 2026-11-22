@@ -5,7 +5,9 @@ import { Card } from "@/components/ui/Card";
 import { EtiquetaStatus } from "@/components/ui/EtiquetaStatus";
 import { redirect } from "next/navigation";
 import { getSessao } from "@/lib/auth/sessao";
-import { comites, proximos, saudacao, tarefas } from "@/lib/mock";
+import { formatarPrazo, hojeSP } from "@/lib/datas";
+import { listarTarefas } from "@/lib/tarefas";
+import { comites, proximos, saudacao } from "@/lib/mock";
 
 const rotuloMono = "font-mono text-[11px] uppercase tracking-widest";
 
@@ -13,6 +15,9 @@ export default async function InicioPage() {
   const sessao = await getSessao();
   if (!sessao) redirect("/login?next=/org");
   const { nivel } = sessao;
+  const abertas = await listarTarefas({ responsavelId: sessao.conta.id, situacao: "abertas" });
+  const tarefas = abertas.slice(0, 4);
+  const hoje = hojeSP();
 
   return (
     <div className="flex flex-col gap-5 md:gap-7">
@@ -44,8 +49,8 @@ export default async function InicioPage() {
             </span>
           </h1>
           <p className="mt-3 max-w-md text-base leading-snug text-creme/90 md:text-lg">
-            Você tem {tarefas.length} tarefas nesta semana e {saudacao.reunioes}{" "}
-            reunião do comitê de {saudacao.comiteReuniao}.
+            Você tem {abertas.length} {abertas.length === 1 ? "tarefa em aberto" : "tarefas em aberto"} e{" "}
+            {saudacao.reunioes} reunião do comitê de {saudacao.comiteReuniao}.
           </p>
           <div className="mt-5 hidden md:block">
             <Botao href="/org/tarefas" variante="secundario" className="border-creme-claro bg-creme-claro">
@@ -117,23 +122,39 @@ export default async function InicioPage() {
               <span className="hidden md:inline">Ver todas</span>
             </Link>
           </div>
+          {tarefas.length === 0 && (
+            <p className="mt-3 border-t border-linha pt-4 text-[15px]">
+              Nenhuma tarefa em aberto.{" "}
+              <Link href="/org/tarefas/nova" className="font-bold text-laranja-texto underline">
+                Criar tarefa
+              </Link>
+            </p>
+          )}
           <ul className="mt-1 border-t border-linha">
             {tarefas.map((t) => (
               <li
                 key={t.id}
-                className="flex min-h-11 items-start gap-4 border-b border-linha py-3.5 last:border-b-0"
+                className="flex min-h-11 items-start gap-4 border-b border-linha py-3.5 last:border-b-0 hover:bg-creme/60"
               >
                 <span
                   aria-hidden="true"
                   className="mt-0.5 size-5 shrink-0 border-2 border-preto"
                 />
                 <div className="min-w-0 flex-1">
-                  <p className="text-[15px] font-bold leading-snug">{t.titulo}</p>
+                  <Link
+                    href={`/org/tarefas/${t.id}`}
+                    className="text-[15px] font-bold leading-snug hover:text-laranja-texto hover:underline"
+                  >
+                    {t.titulo}
+                  </Link>
                   <p className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-[11px] uppercase tracking-wider text-cinza">
-                    <span>{t.comite}</span>
-                    <span aria-hidden="true">·</span>
-                    <span className="hidden md:inline">{t.projeto} ·</span>
-                    <span>{t.prazo}</span>
+                    {t.comite_slug && (
+                      <>
+                        <span>{t.comite_slug}</span>
+                        <span aria-hidden="true">·</span>
+                      </>
+                    )}
+                    <span>{formatarPrazo(t.prazo, hoje)}</span>
                     {t.status === "em_andamento" && (
                       <span className="md:hidden">
                         <EtiquetaStatus status={t.status} />

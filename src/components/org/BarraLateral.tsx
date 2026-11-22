@@ -29,7 +29,7 @@ export function BarraLateral() {
                 href={item.href}
                 aria-current={ativo ? "page" : undefined}
                 className={`flex min-h-11 items-center gap-3 px-3.5 text-[15px] font-medium ${
-                  ativo ? "bg-amarelo font-bold text-preto" : "text-creme"
+                  ativo ? "bg-amarelo font-bold text-preto" : "text-creme hover:bg-creme/10"
                 }`}
               >
                 <Icone size={18} aria-hidden="true" />
@@ -41,7 +41,7 @@ export function BarraLateral() {
 
         <Link
           href="/"
-          className="mt-auto flex min-h-11 items-center gap-3 border border-creme/30 px-3.5 font-mono text-[11px] uppercase tracking-widest text-creme"
+          className="mt-auto flex min-h-11 items-center gap-3 border border-creme/30 px-3.5 font-mono text-[11px] uppercase tracking-widest text-creme hover:border-creme hover:bg-creme/10"
         >
           <ChevronLeft size={16} aria-hidden="true" />
           Voltar ao portal

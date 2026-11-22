@@ -1,6 +1,4 @@
-import type { StatusTarefa } from "@/components/ui/EtiquetaStatus";
-
-// Dados provisórios do Início (nome e nível já vêm da sessão real). Serão trocados por consultas ao Supabase.
+// Dados provisórios do Início (nome, nível e tarefas já vêm do banco). Serão trocados por consultas ao Supabase.
 // As datas são texto fixo de propósito: com cacheComponents ativo, ler a hora
 // atual em um Server Component exige tratamento especial.
 
@@ -11,50 +9,6 @@ export const saudacao = {
   reunioes: 1,
   comiteReuniao: "TI",
 };
-
-export type Tarefa = {
-  id: string;
-  titulo: string;
-  comite: string;
-  projeto: string;
-  prazo: string;
-  status: StatusTarefa;
-};
-
-export const tarefas: Tarefa[] = [
-  {
-    id: "t1",
-    titulo: "Revisar o fluxo de cadastro do Carcará",
-    comite: "TI",
-    projeto: "Bot Carcará",
-    prazo: "Hoje",
-    status: "em_andamento",
-  },
-  {
-    id: "t2",
-    titulo: "Publicar a tela Meu perfil no Mini App",
-    comite: "TI",
-    projeto: "Mini App",
-    prazo: "Seg, 23/11",
-    status: "a_fazer",
-  },
-  {
-    id: "t3",
-    titulo: "Definir os ícones das conquistas",
-    comite: "Design",
-    projeto: "Níveis",
-    prazo: "Qua, 25/11",
-    status: "em_revisao",
-  },
-  {
-    id: "t4",
-    titulo: "Escrever o texto da página Como funciona",
-    comite: "Conteúdo",
-    projeto: "Níveis",
-    prazo: "Sex, 27/11",
-    status: "a_fazer",
-  },
-];
 
 export const proximos = [
   {
