@@ -4,12 +4,15 @@ import { Botao } from "@/components/ui/Botao";
 import { Card } from "@/components/ui/Card";
 import { Logo } from "@/components/ui/Logo";
 import { nextSeguro } from "@/lib/auth/destino";
+import { oidcConfigurado } from "@/lib/auth/telegram-oidc";
 
 export const metadata = { title: "Entrar · MCi" };
 
 const ERROS: Record<string, string> = {
   google: "Não foi possível entrar com o Google. Tente de novo.",
   falha: "Algo deu errado ao entrar. Tente de novo.",
+  telegram: "Não foi possível entrar com o Telegram. Tente de novo.",
+  config: "O portal está com a configuração do Supabase incompleta. Avise a equipe técnica.",
 };
 
 export default function LoginPage({
@@ -54,7 +57,14 @@ async function Formas({
         <p className="mb-4 mt-2 text-sm">
           Use a mesma conta do Telegram que você usa no grupo do MCi.
         </p>
-        {bot ? (
+        {oidcConfigurado() ? (
+          <form action="/auth/telegram/iniciar" method="post">
+            {next && <input type="hidden" name="next" value={next} />}
+            <Botao type="submit" className="w-full">
+              Entrar com Telegram
+            </Botao>
+          </form>
+        ) : bot ? (
           <TelegramLogin bot={bot} next={next} />
         ) : (
           <p className="text-sm font-bold text-laranja-texto">

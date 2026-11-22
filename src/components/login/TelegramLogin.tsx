@@ -24,6 +24,15 @@ export function TelegramLogin({ bot, next }: { bot: string; next?: string }) {
     const el = ref.current;
     if (!el) return;
 
+    // O Telegram só desenha o botão no domínio cadastrado no BotFather (HTTPS).
+    const host = window.location.hostname;
+    if (host === "localhost" || host === "127.0.0.1" || /^\d+\.\d+\.\d+\.\d+$/.test(host)) {
+      el.textContent =
+        "O login pelo Telegram só funciona no domínio do portal (HTTPS) cadastrado no BotFather. Em ambiente local, use o Google.";
+      el.className = "text-sm font-bold text-cinza";
+      return;
+    }
+
     window.onTelegramAuth = async (user) => {
       setErro(null);
       setEntrando(true);

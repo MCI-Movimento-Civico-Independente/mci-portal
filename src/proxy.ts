@@ -9,6 +9,16 @@ import { podeAcessarOrg } from "@/lib/auth/destino";
 const ehRota = (caminho: string, base: string) =>
   caminho === base || caminho.startsWith(`${base}/`);
 
+function urlValida(valor: string | undefined): valor is string {
+  if (!valor) return false;
+  try {
+    const { protocol } = new URL(valor);
+    return protocol === "http:" || protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
 export async function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
   const protegida = ehRota(pathname, "/org") || ehRota(pathname, "/comunidade");
@@ -20,7 +30,13 @@ export async function proxy(request: NextRequest) {
     destino.searchParams.set("next", pathname + search);
     return NextResponse.redirect(destino);
   };
-  if (!url || !chave) return protegida ? paraLogin() : NextResponse.next();
+  if (!urlValida(url) || !chave) {
+    // Configuração quebrada não pode derrubar as páginas públicas.
+    console.error(
+      "Supabase mal configurado: NEXT_PUBLIC_SUPABASE_URL precisa ser uma URL http(s) e NEXT_PUBLIC_SUPABASE_ANON_KEY a chave anônima (confira se não estão trocadas).",
+    );
+    return protegida ? paraLogin() : NextResponse.next();
+  }
 
   let resposta = NextResponse.next({ request });
   const supabase = createServerClient(url, chave, {
