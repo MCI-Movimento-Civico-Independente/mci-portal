@@ -13,7 +13,13 @@ import {
 } from "@/lib/admin";
 import { buscarConta } from "@/lib/auth/contas";
 import { getSessao } from "@/lib/auth/sessao";
-import { criarFormulario, excluirFormulario, salvarFormulario } from "@/lib/formularios";
+import {
+  arquivarCampoPersonalizado,
+  atualizarCampoPersonalizado,
+  criarCampoPersonalizado,
+} from "@/lib/campos-personalizados";
+import { chaveFormulario, lerOpcoes, TIPOS_PERSONALIZADOS, type TipoCampoPersonalizado } from "@/lib/campos-personalizados-tipos";
+import { adicionarCampoAoFormulario, criarFormulario, excluirFormulario, salvarFormulario } from "@/lib/formularios";
 import { comitesBasicos } from "@/lib/organizacao";
 
 export type EstadoAdmin = { erro?: string; ok?: boolean; n?: number };
@@ -181,4 +187,86 @@ export async function excluirFormularioAction(id: string): Promise<void> {
   }
   revalidatePath("/org", "layout");
   redirect("/org/admin/formularios");
+}
+
+// ---------- Campos personalizados ----------
+
+/** Lê opções do formulário: só o tipo "lista" tem opções. */
+function lerOpcoesDoForm(tipo: TipoCampoPersonalizado, form: FormData): { opcoes: string[] } | { erro: string } {
+  return tipo === "lista" ? lerOpcoes(texto(form.get("opcoes"))) : { opcoes: [] };
+}
+
+/**
+ * Cria um campo personalizado. Com `formularioId`, já o inclui nesse formulário
+ * (é o que acontece quando se cria o campo de dentro do editor de um formulário).
+ */
+export async function criarCampoPersonalizadoAction(
+  formularioId: string,
+  anterior: EstadoAdmin,
+  form: FormData,
+): Promise<EstadoAdmin> {
+  const sessao = await exigirAdmin();
+  const rotulo = texto(form.get("rotulo"));
+  const tipo = texto(form.get("tipo")) as TipoCampoPersonalizado;
+  if (!rotulo) return { erro: "Dê um nome ao campo." };
+  if (rotulo.length > 60) return { erro: "O nome pode ter no máximo 60 caracteres." };
+  if (!TIPOS_PERSONALIZADOS.some((t) => t.valor === tipo)) return { erro: "Escolha o tipo do campo." };
+  if (formularioId && !UUID.test(formularioId)) return { erro: "Pedido inválido." };
+  const opcoes = lerOpcoesDoForm(tipo, form);
+  if ("erro" in opcoes) return { erro: opcoes.erro };
+  // Uma caixa de marcação "obrigatória" não faz sentido: forçaria sempre marcar.
+  const obrigatorio = tipo !== "caixa" && form.get("obrigatorio") === "on";
+
+  try {
+    const r = await criarCampoPersonalizado(sessao.conta.id, { rotulo, tipo, opcoes: opcoes.opcoes, obrigatorio });
+    if (r === "nome_em_uso") return { erro: "Já existe um campo com esse nome." };
+    if (formularioId) await adicionarCampoAoFormulario(formularioId, chaveFormulario(r.id));
+    await auditar(sessao.conta.id, "campo_criado", r.id, { rotulo, tipo, formularioId: formularioId || null });
+  } catch (erro) {
+    console.error("Falha ao criar campo personalizado:", erro);
+    return { erro: "Não foi possível criar o campo. Tente de novo." };
+  }
+  revalidatePath("/org", "layout");
+  return { ok: true, n: (anterior.n ?? 0) + 1 };
+}
+
+export async function atualizarCampoPersonalizadoAction(
+  id: string,
+  tipo: TipoCampoPersonalizado,
+  _anterior: EstadoAdmin,
+  form: FormData,
+): Promise<EstadoAdmin> {
+  const sessao = await exigirAdmin();
+  if (!UUID.test(id)) return { erro: "Pedido inválido." };
+  const rotulo = texto(form.get("rotulo"));
+  if (!rotulo) return { erro: "O nome não pode ficar vazio." };
+  if (rotulo.length > 60) return { erro: "O nome pode ter no máximo 60 caracteres." };
+  const opcoes = lerOpcoesDoForm(tipo, form);
+  if ("erro" in opcoes) return { erro: opcoes.erro };
+  const obrigatorio = tipo !== "caixa" && form.get("obrigatorio") === "on";
+
+  try {
+    const r = await atualizarCampoPersonalizado(id, { rotulo, opcoes: opcoes.opcoes, obrigatorio });
+    if (r === "nome_em_uso") return { erro: "Já existe um campo com esse nome." };
+    if (r === "nao_achou") return { erro: "Campo não encontrado." };
+    await auditar(sessao.conta.id, "campo_editado", id, { rotulo });
+  } catch (erro) {
+    console.error("Falha ao editar campo personalizado:", erro);
+    return { erro: "Não foi possível salvar. Tente de novo." };
+  }
+  revalidatePath("/org", "layout");
+  return { ok: true };
+}
+
+export async function arquivarCampoPersonalizadoAction(id: string, arquivar: boolean): Promise<void> {
+  const sessao = await exigirAdmin();
+  if (!UUID.test(id)) return;
+  try {
+    if ((await arquivarCampoPersonalizado(id, arquivar)) === "ok") {
+      await auditar(sessao.conta.id, arquivar ? "campo_arquivado" : "campo_reativado", id);
+    }
+  } catch (erro) {
+    console.error("Falha ao arquivar campo personalizado:", erro);
+  }
+  revalidatePath("/org", "layout");
 }

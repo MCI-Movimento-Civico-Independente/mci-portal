@@ -20,6 +20,8 @@ export type TarefaDb = {
   responsavel_id: string | null;
   criado_em: string;
   concluida_em: string | null;
+  /** Valores dos campos personalizados: {"<id do campo>": valor}. */
+  campos: Record<string, string | number | boolean>;
   projeto: { id: string; nome: string } | null;
   solicitante: Pessoa | null;
   /** O "Executor" na tela. */
@@ -36,7 +38,7 @@ export type TarefaDb = {
 // essa conferência na borda é o que protege estes dados.
 
 const COLUNAS =
-  "id, titulo, descricao, status, prioridade, data_inicio, prazo, pai_id, comite_slug, formulario_id, projeto_id, solicitante_id, responsavel_id, criado_em, concluida_em, " +
+  "id, titulo, descricao, status, prioridade, data_inicio, prazo, pai_id, comite_slug, formulario_id, projeto_id, solicitante_id, responsavel_id, criado_em, concluida_em, campos, " +
   "projeto:projetos!projeto_id(id, nome), solicitante:contas!solicitante_id(id, nome), responsavel:contas!responsavel_id(id, nome)";
 
 type Linha = Omit<TarefaDb, "subtarefas" | "paiTitulo">;
@@ -180,6 +182,7 @@ export type NovaTarefa = {
   comite_slug?: string | null;
   formulario_id?: string | null;
   projeto_id?: string | null;
+  campos?: Record<string, string | number | boolean>;
   prioridade: Prioridade | null;
   solicitante_id: string | null;
   responsavel_id: string | null;

@@ -2,12 +2,18 @@ import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 import { listarComentarios, listarHistorico, type Evento } from "@/lib/atividade";
 import { formatarDataHora, hojeSP } from "@/lib/datas";
+import {
+  chaveFormulario,
+  valorComoTexto,
+  type CampoPersonalizado,
+} from "@/lib/campos-personalizados-tipos";
 import { resolverFormulario, type FormularioView } from "@/lib/formularios-tipos";
 import type { ComiteBasico, ProjetoBasico } from "@/lib/organizacao";
 import type { Pessoa, TarefaDb } from "@/lib/tarefas";
 import { CAMPOS } from "@/lib/tarefas-campos";
 import { Atividade } from "./Atividade";
 import { BotaoExcluir } from "./BotaoExcluir";
+import { CampoPersonalizadoInline } from "./CampoPersonalizado";
 import { CampoEditavel, CelulaTitulo } from "./Celulas";
 import { FormDescricao } from "./FormDescricao";
 import { NovaSubtarefa } from "./NovaSubtarefa";
@@ -37,6 +43,7 @@ export async function DetalheTarefa({
   comites,
   projetos,
   formularios,
+  camposPersonalizados,
   qs,
   euId,
   souAdmin,
@@ -46,6 +53,7 @@ export async function DetalheTarefa({
   comites: ComiteBasico[];
   projetos: ProjetoBasico[];
   formularios: FormularioView[];
+  camposPersonalizados: CampoPersonalizado[];
   qs: string;
   euId: string;
   souAdmin: boolean;
@@ -63,6 +71,7 @@ export async function DetalheTarefa({
   const incluidos = new Set(formulario?.campos ?? []);
   // Subtarefa segue o comitê, o projeto e o formulário da tarefa original.
   const semHerdados = (chave: string) => !(ehSub && (chave === "comite_slug" || chave === "projeto_id" || chave === "formulario_id"));
+  const personalizados = camposPersonalizados.filter((c) => incluidos.has(chaveFormulario(c.id)));
   const campos = CAMPOS.filter((c) => c.chave !== "titulo" && semHerdados(c.chave) && (c.fixo || incluidos.has(c.chave)));
 
   return (
@@ -99,6 +108,20 @@ export async function DetalheTarefa({
                 formularios={formularios}
                 hoje={hoje}
               />
+            </dd>
+          </div>
+        ))}
+        {personalizados.map((c) => (
+          <div
+            key={c.id}
+            className={`grid grid-cols-[110px_1fr] items-start ${c.tipo === "texto_longo" ? "sm:col-span-2" : "items-center"}`}
+          >
+            <dt className="pt-3 font-mono text-[11px] uppercase tracking-widest text-cinza">
+              {c.rotulo}
+              {c.obrigatorio && <span aria-hidden="true"> *</span>}
+            </dt>
+            <dd>
+              <CampoPersonalizadoInline tarefaId={tarefa.id} campo={c} valor={valorComoTexto(tarefa.campos?.[c.id])} />
             </dd>
           </div>
         ))}

@@ -5,6 +5,13 @@ import { redirect } from "next/navigation";
 import { criarComentario, excluirComentario, registrarEvento } from "@/lib/atividade";
 import { getSessao } from "@/lib/auth/sessao";
 import { dataValida, formatarDataCurta } from "@/lib/datas";
+import { definirValorPersonalizado, listarCamposPersonalizados } from "@/lib/campos-personalizados";
+import {
+  chaveFormulario,
+  descreverValorPersonalizado,
+  validarValorPersonalizado,
+  type ValorPersonalizado,
+} from "@/lib/campos-personalizados-tipos";
 import { listarFormularios } from "@/lib/formularios";
 import { resolverFormulario, type FormularioView } from "@/lib/formularios-tipos";
 import { comitesBasicos, projetosBasicos, type ComiteBasico, type ProjetoBasico } from "@/lib/organizacao";
@@ -185,7 +192,19 @@ export async function criarTarefaAction(_anterior: EstadoForm, form: FormData): 
   // O projeto manda: escolher um projeto define o comitê.
   if (lido.projeto_id) lido.comite_slug = cat.projetos.find((p) => p.id === lido.projeto_id)!.comite_slug;
   // Sem formulário escolhido, vale o do comitê (ou o Padrão geral).
-  const formularioId = lido.formulario_id ?? resolverFormulario(cat.formularios, lido.comite_slug)?.id ?? null;
+  const formularioEscolhido = cat.formularios.find((f) => f.id === lido.formulario_id) ?? resolverFormulario(cat.formularios, lido.comite_slug);
+  const formularioId = formularioEscolhido?.id ?? null;
+
+  // Campos personalizados: só os do formulário escolhido (campos de outros formulários são ignorados).
+  const personalizados = (await listarCamposPersonalizados()).filter((c) =>
+    formularioEscolhido?.campos.includes(chaveFormulario(c.id)),
+  );
+  const camposValores: Record<string, ValorPersonalizado> = {};
+  for (const c of personalizados) {
+    const r = validarValorPersonalizado(c, texto(form.get(`p_${c.id}`)));
+    if ("erro" in r) return { erro: r.erro };
+    if (r.valor !== null) camposValores[c.id] = r.valor;
+  }
 
   let id: string;
   try {
@@ -194,6 +213,7 @@ export async function criarTarefaAction(_anterior: EstadoForm, form: FormData): 
       descricao,
       comite_slug: lido.comite_slug,
       formulario_id: formularioId,
+      campos: camposValores,
       projeto_id: lido.projeto_id,
       prioridade: lido.prioridade as Prioridade | null,
       solicitante_id: lido.solicitante_id,
@@ -322,4 +342,37 @@ export async function excluirComentarioAction(id: string): Promise<void> {
     console.error("Falha ao excluir o comentário:", erro);
   }
   revalidatePath("/org", "layout");
+}
+
+/** Edição inline de um campo personalizado na janela da tarefa. */
+export async function atualizarCampoPersonalizadoTarefaAction(
+  tarefaId: string,
+  campoId: string,
+  valor: string,
+): Promise<EstadoForm> {
+  const sessao = await exigirOrg();
+  if (!UUID.test(tarefaId) || !UUID.test(campoId)) return { erro: "Pedido inválido." };
+
+  const campo = (await listarCamposPersonalizados()).find((c) => c.id === campoId);
+  if (!campo) return { erro: "Campo não encontrado." };
+  const validado = validarValorPersonalizado(campo, valor);
+  if ("erro" in validado) return { erro: validado.erro };
+
+  let anterior: unknown;
+  try {
+    const r = await definirValorPersonalizado(tarefaId, campoId, validado.valor);
+    if (!r) return { erro: "Tarefa não encontrada." };
+    anterior = r.antes;
+  } catch (erro) {
+    console.error("Falha ao salvar o campo personalizado:", erro);
+    return { erro: "Não foi possível salvar. Tente de novo." };
+  }
+
+  const de = descreverValorPersonalizado(campo, anterior);
+  const para = descreverValorPersonalizado(campo, validado.valor);
+  if (de !== para) {
+    await registrarEvento({ tarefa_id: tarefaId, autor_id: sessao.conta.id, tipo: "campo", campo: campo.rotulo, de, para });
+  }
+  revalidatePath("/org", "layout");
+  return {};
 }

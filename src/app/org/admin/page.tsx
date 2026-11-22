@@ -1,4 +1,4 @@
-import { ArrowUpRight, ClipboardList, UsersRound, UserCog } from "lucide-react";
+import { ArrowUpRight, ClipboardList, ListPlus, UsersRound, UserCog } from "lucide-react";
 import Link from "next/link";
 
 export const metadata = { title: "Administração · MCi" };
@@ -15,6 +15,12 @@ const itens = [
     titulo: "Formulários",
     texto: "Defina quais campos cada formulário tem e qual é o padrão de cada comitê.",
     icone: ClipboardList,
+  },
+  {
+    href: "/org/admin/campos",
+    titulo: "Campos personalizados",
+    texto: "Crie campos de texto, número, data, lista e caixa de marcação para usar nos formulários.",
+    icone: ListPlus,
   },
   {
     href: "/org/admin/comites",

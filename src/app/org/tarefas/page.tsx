@@ -10,6 +10,7 @@ import { Botao } from "@/components/ui/Botao";
 import { Card } from "@/components/ui/Card";
 import { getSessao } from "@/lib/auth/sessao";
 import { hojeSP } from "@/lib/datas";
+import { listarCamposPersonalizados } from "@/lib/campos-personalizados";
 import { listarFormularios } from "@/lib/formularios";
 import { comitesBasicos, projetosBasicos } from "@/lib/organizacao";
 import { listarTarefas, membrosOrg, tarefaPorId, type TarefaDb } from "@/lib/tarefas";
@@ -45,11 +46,12 @@ export default async function TarefasPage({
   const quadro = vista === "quadro";
   const todas = quem === "todas";
 
-  const [membros, comites, projetos, formularios] = await Promise.all([
+  const [membros, comites, projetos, formularios, camposPersonalizados] = await Promise.all([
     membrosOrg(),
     comitesBasicos(),
     projetosBasicos(),
     listarFormularios(),
+    listarCamposPersonalizados(),
   ]);
   // Só aceita filtros que existem de verdade.
   const comite = comites.find((c) => c.slug === comiteParam)?.slug;
@@ -211,6 +213,7 @@ export default async function TarefasPage({
             comites={comites}
             projetos={projetos}
             formularios={formularios}
+            camposPersonalizados={camposPersonalizados}
             qs={qs}
             euId={sessao.conta.id}
             souAdmin={sessao.conta.papel === "admin"}
@@ -225,6 +228,7 @@ export default async function TarefasPage({
             comites={comites}
             projetos={projetos}
             formularios={formularios}
+            camposPersonalizados={camposPersonalizados}
             euId={sessao.conta.id}
             fecharHref={base}
           />

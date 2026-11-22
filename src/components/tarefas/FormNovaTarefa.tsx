@@ -3,6 +3,7 @@
 import { useActionState, useState } from "react";
 import { criarTarefaAction, type EstadoForm } from "@/app/org/tarefas/acoes";
 import { Botao } from "@/components/ui/Botao";
+import { chaveFormulario, type CampoPersonalizado } from "@/lib/campos-personalizados-tipos";
 import { resolverFormulario, type FormularioView } from "@/lib/formularios-tipos";
 import type { ComiteBasico, ProjetoBasico } from "@/lib/organizacao";
 import type { Pessoa } from "@/lib/tarefas";
@@ -14,6 +15,7 @@ export function FormNovaTarefa({
   comites,
   projetos,
   formularios,
+  camposPersonalizados,
   euId,
   fecharHref,
 }: {
@@ -21,6 +23,7 @@ export function FormNovaTarefa({
   comites: ComiteBasico[];
   projetos: ProjetoBasico[];
   formularios: FormularioView[];
+  camposPersonalizados: CampoPersonalizado[];
   euId: string;
   fecharHref: string;
 }) {
@@ -31,6 +34,7 @@ export function FormNovaTarefa({
   const formularioId = formManual ?? resolverFormulario(formularios, comite)?.id ?? "";
   const incluidos = new Set(formularios.find((f) => f.id === formularioId)?.campos ?? []);
   const tem = (chave: string) => incluidos.has(chave);
+  const personalizados = camposPersonalizados.filter((c) => tem(chaveFormulario(c.id)));
   const opcional = <span className="font-normal text-cinza">(opcional)</span>;
 
   const seletorPessoa = (id: string, rotuloCampo: string) => (
@@ -184,6 +188,51 @@ export function FormNovaTarefa({
             )}
           </div>
         )}
+
+        {personalizados.map((c) => {
+          const nome = `p_${c.id}`;
+          const sufixo = c.obrigatorio || c.tipo === "caixa" ? null : opcional;
+          return (
+            <div key={c.id} className={c.tipo === "texto_longo" ? "sm:col-span-2" : ""}>
+              {c.tipo === "caixa" ? (
+                <label className="mt-6 flex min-h-11 items-center gap-3 text-sm font-bold">
+                  <input type="checkbox" name={nome} value="true" className="size-5 accent-preto" />
+                  {c.rotulo}
+                </label>
+              ) : (
+                <>
+                  <label htmlFor={nome} className={rotulo}>
+                    {c.rotulo} {sufixo}
+                  </label>
+                  {c.tipo === "texto_longo" ? (
+                    <textarea id={nome} name={nome} rows={3} maxLength={2000} required={c.obrigatorio} className={`${campo} py-2`} />
+                  ) : c.tipo === "lista" ? (
+                    <select id={nome} name={nome} defaultValue="" required={c.obrigatorio} className={campo}>
+                      <option value="">{c.obrigatorio ? "Escolha" : "—"}</option>
+                      {c.opcoes.map((o) => (
+                        <option key={o} value={o}>
+                          {o}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      id={nome}
+                      name={nome}
+                      type={c.tipo === "numero" ? "number" : c.tipo === "data" ? "date" : "text"}
+                      step={c.tipo === "numero" ? "any" : undefined}
+                      min={c.tipo === "data" ? "2000-01-01" : undefined}
+                      max={c.tipo === "data" ? "2100-12-31" : undefined}
+                      maxLength={c.tipo === "texto" ? 200 : undefined}
+                      required={c.obrigatorio}
+                      className={campo}
+                    />
+                  )}
+                </>
+              )}
+            </div>
+          );
+        })}
       </div>
 
       {estado.erro && (

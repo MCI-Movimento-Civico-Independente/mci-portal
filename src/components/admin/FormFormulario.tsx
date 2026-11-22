@@ -5,6 +5,7 @@ import { useActionState } from "react";
 import { criarFormularioAction, salvarFormularioAction, type EstadoAdmin } from "@/app/org/admin/acoes";
 import { campo, rotulo } from "@/components/tarefas/estilos";
 import { Botao } from "@/components/ui/Botao";
+import { chaveFormulario, rotuloDoTipo, type CampoPersonalizado } from "@/lib/campos-personalizados-tipos";
 import type { FormularioView } from "@/lib/formularios-tipos";
 import type { ComiteBasico } from "@/lib/organizacao";
 import { CAMPOS, CAMPOS_CONFIGURAVEIS } from "@/lib/tarefas-campos";
@@ -43,10 +44,12 @@ export function FormNovoFormulario() {
 export function FormEditarFormulario({
   formulario,
   comites,
+  personalizados,
   formularioDoComite,
 }: {
   formulario: FormularioView;
   comites: ComiteBasico[];
+  personalizados: CampoPersonalizado[];
   /** Nome do formulário que cada comitê usa hoje como padrão (se algum). */
   formularioDoComite: Record<string, string | undefined>;
 }) {
@@ -103,6 +106,31 @@ export function FormEditarFormulario({
             </li>
           ))}
         </ul>
+        {personalizados.length > 0 && (
+          <>
+            <h3 className="mt-5 font-mono text-[11px] uppercase tracking-widest text-cinza">Campos personalizados</h3>
+            <ul className="mt-1 grid gap-x-6 sm:grid-cols-2">
+              {personalizados.map((c) => (
+                <li key={c.id}>
+                  <label className="flex min-h-11 cursor-pointer items-center gap-3 hover:bg-creme-claro">
+                    <input
+                      type="checkbox"
+                      name="campo"
+                      value={chaveFormulario(c.id)}
+                      defaultChecked={formulario.campos.includes(chaveFormulario(c.id))}
+                      className="size-5 shrink-0 accent-preto"
+                    />
+                    <span className="text-[15px] font-bold">
+                      {c.rotulo}
+                      {c.obrigatorio && <span aria-hidden="true"> *</span>}
+                    </span>
+                    <span className="font-mono text-[11px] uppercase text-cinza">{rotuloDoTipo(c.tipo)}</span>
+                  </label>
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
       </fieldset>
 
       {formulario.padrao ? (

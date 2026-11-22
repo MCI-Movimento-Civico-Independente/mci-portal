@@ -3,8 +3,10 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { excluirFormularioAction } from "@/app/org/admin/acoes";
 import { FormEditarFormulario } from "@/components/admin/FormFormulario";
+import { FormNovoCampo } from "@/components/admin/FormCampoPersonalizado";
 import { BotaoAcao } from "@/components/ui/BotaoAcao";
 import { Card } from "@/components/ui/Card";
+import { listarCamposPersonalizados } from "@/lib/campos-personalizados";
 import { listarFormularios } from "@/lib/formularios";
 import { comitesBasicos } from "@/lib/organizacao";
 
@@ -13,7 +15,11 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export default async function FormularioAdminPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   if (!UUID.test(id)) notFound();
-  const [formularios, comites] = await Promise.all([listarFormularios(), comitesBasicos()]);
+  const [formularios, comites, personalizados] = await Promise.all([
+    listarFormularios(),
+    comitesBasicos(),
+    listarCamposPersonalizados(),
+  ]);
   const formulario = formularios.find((f) => f.id === id);
   if (!formulario) notFound();
 
@@ -32,7 +38,16 @@ export default async function FormularioAdminPage({ params }: { params: Promise<
       <h1 className="text-2xl font-black tracking-tighter md:text-3xl">{formulario.nome}</h1>
 
       <Card>
-        <FormEditarFormulario formulario={formulario} comites={comites} formularioDoComite={formularioDoComite} />
+        <FormEditarFormulario
+          formulario={formulario}
+          comites={comites}
+          personalizados={personalizados}
+          formularioDoComite={formularioDoComite}
+        />
+      </Card>
+
+      <Card>
+        <FormNovoCampo formularioId={formulario.id} />
       </Card>
 
       {!formulario.padrao && (

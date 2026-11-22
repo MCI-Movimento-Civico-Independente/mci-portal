@@ -1,6 +1,7 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { FormularioView } from "./formularios-tipos";
+import { chaveFormulario } from "./campos-personalizados-tipos";
 import { CHAVES_CONFIGURAVEIS } from "./tarefas-campos";
 
 // Mesmo modelo de acesso das demais áreas: quem chama já conferiu a sessão
@@ -59,7 +60,17 @@ export async function salvarFormulario(
   dados: { nome: string; descricao: string | null; campos: string[]; comites: string[] },
 ): Promise<"ok" | "nome_em_uso" | "nao_achou"> {
   const db = createAdminClient();
-  const campos = dados.campos.filter((c) => CHAVES_CONFIGURAVEIS.includes(c));
+  // Campos válidos: os configuráveis do sistema e os personalizados que existem e não estão arquivados.
+  const { data: personalizados, error: erroPers } = await db
+    .from("campos_personalizados")
+    .select("id")
+    .eq("arquivado", false);
+  if (erroPers) throw erroPers;
+  const chavesValidas = new Set([
+    ...CHAVES_CONFIGURAVEIS,
+    ...((personalizados ?? []) as { id: string }[]).map((c) => chaveFormulario(c.id)),
+  ]);
+  const campos = dados.campos.filter((c) => chavesValidas.has(c));
 
   const { data, error } = await db
     .from("formularios")
@@ -106,4 +117,12 @@ export async function excluirFormulario(id: string): Promise<"ok" | "padrao_gera
   const { error } = await db.from("formularios").delete().eq("id", id);
   if (error) throw error;
   return "ok";
+}
+
+/** Inclui um campo num formulário (sem erro se já estiver). */
+export async function adicionarCampoAoFormulario(formularioId: string, chave: string): Promise<void> {
+  const { error } = await createAdminClient()
+    .from("formulario_campos")
+    .upsert({ formulario_id: formularioId, chave }, { onConflict: "formulario_id,chave", ignoreDuplicates: true });
+  if (error) throw error;
 }
