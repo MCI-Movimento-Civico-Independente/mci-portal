@@ -10,7 +10,8 @@ import type { ComiteBasico, ProjetoBasico } from "@/lib/organizacao";
 import type { GrupoBasico } from "@/lib/grupos-tipos";
 import type { Pessoa, TarefaDb } from "@/lib/tarefas";
 import { PRIORIDADE_OPCOES, STATUS_OPCOES } from "@/lib/tarefas-campos";
-import { CelulaOpcao, CelulaPessoa, CelulaProjeto, CelulaTitulo } from "./Celulas";
+import { CelulaOpcao, CelulaProjeto, CelulaTitulo } from "./Celulas";
+import { CelulaPessoa } from "./CelulaPessoa";
 import { CelulaPeriodo } from "./CelulaPeriodo";
 import { LinhaNovaSubtarefa } from "./LinhaNovaSubtarefa";
 import { Progresso } from "./Progresso";
@@ -25,9 +26,9 @@ import { Progresso } from "./Progresso";
  * A partir de @6xl entra a coluna "Solicitante".
  */
 const GRID_PROJETO =
-  "@3xl:grid @3xl:grid-cols-[20px_24px_minmax(160px,1fr)_120px_96px_84px_150px] @6xl:grid-cols-[20px_24px_minmax(160px,1fr)_108px_120px_96px_84px_150px] @3xl:items-center @3xl:gap-x-1";
+  "@3xl:grid @3xl:grid-cols-[20px_24px_minmax(160px,1fr)_84px_96px_84px_150px] @6xl:grid-cols-[20px_24px_minmax(160px,1fr)_84px_84px_96px_84px_150px] @3xl:items-center @3xl:gap-x-1";
 const GRID_LISTA =
-  "@4xl:grid @4xl:grid-cols-[24px_minmax(160px,1fr)_130px_120px_96px_84px_150px] @6xl:grid-cols-[24px_minmax(160px,1fr)_130px_108px_120px_96px_84px_150px] @4xl:items-center @4xl:gap-x-1";
+  "@4xl:grid @4xl:grid-cols-[24px_minmax(160px,1fr)_130px_84px_96px_84px_150px] @6xl:grid-cols-[24px_minmax(160px,1fr)_130px_84px_84px_96px_84px_150px] @4xl:items-center @4xl:gap-x-1";
 
 type Props = {
   tarefas: TarefaDb[];
@@ -106,7 +107,7 @@ function Linha({ t, membros, comites, projetos, hoje, qs, caminho = "/org/tarefa
           <CelulaPessoa id={t.id} chave="solicitante_id" valor={t.solicitante_id ?? ""} membros={membros} rotulo="Solicitante" />
         </div>
         <div className={`w-36 ${c.auto}`}>
-          <CelulaPessoa id={t.id} chave="responsavel_id" valor={t.responsavel_id ?? ""} membros={membros} rotulo="Executor" />
+          <CelulaPessoa id={t.id} chave="responsavel_id" valor={t.responsavel_id ?? ""} extras={t.executores_extra} membros={membros} rotulo="Executor" />
         </div>
         <div className={`w-36 ${c.auto}`}>
           <CelulaOpcao id={t.id} chave="status" valor={t.status} opcoes={STATUS_OPCOES} rotulo="Status" />
@@ -184,8 +185,8 @@ export function TabelaTarefas({ tarefas, membros, comites, projetos, hoje, qs, c
   const { setNodeRef } = useDroppable({ id: `grupo:${grupoId ?? "-"}`, disabled: !arrastavel });
   const modoProjeto = !!grupos;
   const cabecalho = modoProjeto
-    ? "@3xl:grid @3xl:grid-cols-[20px_24px_minmax(160px,1fr)_120px_96px_84px_150px] @6xl:grid-cols-[20px_24px_minmax(160px,1fr)_108px_120px_96px_84px_150px] @3xl:gap-x-1"
-    : "@4xl:grid @4xl:grid-cols-[24px_minmax(160px,1fr)_130px_120px_96px_84px_150px] @6xl:grid-cols-[24px_minmax(160px,1fr)_130px_108px_120px_96px_84px_150px] @4xl:gap-x-1";
+    ? "@3xl:grid @3xl:grid-cols-[20px_24px_minmax(160px,1fr)_84px_96px_84px_150px] @6xl:grid-cols-[20px_24px_minmax(160px,1fr)_84px_84px_96px_84px_150px] @3xl:gap-x-1"
+    : "@4xl:grid @4xl:grid-cols-[24px_minmax(160px,1fr)_130px_84px_96px_84px_150px] @6xl:grid-cols-[24px_minmax(160px,1fr)_130px_84px_84px_96px_84px_150px] @4xl:gap-x-1";
   const mostrar = modoProjeto ? "@3xl:grid" : "@4xl:grid";
 
   const itens = tarefas.map((t) => {

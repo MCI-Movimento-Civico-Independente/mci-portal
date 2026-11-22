@@ -26,6 +26,8 @@ export const metadata: Metadata = { title: "Design · MCi", robots: { index: fal
 const pessoa = (id: string, nome: string) => ({ id, nome });
 const vitor = pessoa("p1", "Vitor Moraes");
 const ana = pessoa("p2", "Ana Souza");
+const rafa = pessoa("p3", "Rafaela");
+const caio = pessoa("p4", "Caio Henrique de Lima");
 
 function tarefa(p: Partial<TarefaDb> & Pick<TarefaDb, "id" | "titulo">): TarefaDb {
   return {
@@ -41,6 +43,7 @@ function tarefa(p: Partial<TarefaDb> & Pick<TarefaDb, "id" | "titulo">): TarefaD
     grupo_id: null,
     solicitante_id: vitor.id,
     responsavel_id: vitor.id,
+    executores_extra: [],
     criado_em: "2026-11-20T12:00:00Z",
     ordem: 1,
     concluida_em: null,
@@ -66,6 +69,7 @@ const TAREFAS: TarefaDb[] = [
     projeto_id: "pr1",
     data_inicio: "2026-11-20",
     prazo: "2026-11-24",
+    executores_extra: [ana.id, rafa.id],
     subtarefas: [sub("s1", "Testar o login pelo Telegram", "concluida"), sub("s2", "Revisar mensagens de erro", "a_fazer")],
   }),
   tarefa({
@@ -76,6 +80,7 @@ const TAREFAS: TarefaDb[] = [
     prazo: "2026-11-27",
     responsavel: ana,
     responsavel_id: ana.id,
+    executores_extra: [caio.id],
   }),
   tarefa({
     id: "t3",
@@ -294,7 +299,7 @@ export default function DesignPage() {
             hrefNovaTarefa="#"
             primeiro
           >
-            <TabelaTarefas tarefas={TAREFAS.slice(0, 2)} membros={[vitor, ana]} comites={COMITES} projetos={PROJETOS} grupos={[{ id: "g1", projeto_id: "pr1", nome: "Esta semana", cor: "#d54a24", ordem: 1 }]} hoje="2026-11-22" qs="" />
+            <TabelaTarefas tarefas={TAREFAS.slice(0, 2)} membros={[vitor, ana, rafa, caio]} comites={COMITES} projetos={PROJETOS} grupos={[{ id: "g1", projeto_id: "pr1", nome: "Esta semana", cor: "#d54a24", ordem: 1 }]} hoje="2026-11-22" qs="" />
           </GrupoRecolhivel>
           <GrupoRecolhivel grupo={{ id: "g2", projeto_id: "pr1", nome: "Backlog", cor: "#cfbe48", ordem: 2 }} total={0} feitas={0} hrefNovaTarefa="#" ultimo>
             <p className="px-2 py-3 text-[15px] text-suave">Nenhuma tarefa neste grupo.</p>
@@ -304,7 +309,7 @@ export default function DesignPage() {
 
       <Secao titulo="Lista de tarefas (sem caixa de marcação: o status conclui)">
         <Card className="p-3 md:p-4">
-          <TabelaTarefas tarefas={TAREFAS} membros={[vitor, ana]} comites={COMITES} projetos={PROJETOS} hoje="2026-11-22" qs="" />
+          <TabelaTarefas tarefas={TAREFAS} membros={[vitor, ana, rafa, caio]} comites={COMITES} projetos={PROJETOS} hoje="2026-11-22" qs="" />
         </Card>
       </Secao>
 
@@ -317,7 +322,7 @@ export default function DesignPage() {
               </h3>
               <ul className="flex flex-col gap-3">
                 {TAREFAS.filter((t) => t.status === st).map((t) => (
-                  <CartaoTarefa key={t.id} t={t} membros={[vitor, ana]} hoje="2026-11-22" qs="" />
+                  <CartaoTarefa key={t.id} t={t} membros={[vitor, ana, rafa, caio]} hoje="2026-11-22" qs="" />
                 ))}
               </ul>
             </div>

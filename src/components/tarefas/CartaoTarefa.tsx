@@ -3,7 +3,8 @@
 import Link from "next/link";
 import type { Pessoa, TarefaDb } from "@/lib/tarefas";
 import { PRIORIDADE_OPCOES, STATUS_OPCOES } from "@/lib/tarefas-campos";
-import { CelulaOpcao, CelulaPessoa } from "./Celulas";
+import { CelulaOpcao } from "./Celulas";
+import { CelulaPessoa } from "./CelulaPessoa";
 import { Progresso } from "./Progresso";
 import { formatarPrazo } from "@/lib/datas";
 
@@ -29,7 +30,7 @@ export function CartaoTarefa({ t, membros, hoje, qs }: { t: TarefaDb; membros: P
           </span>
         )}
       </div>
-      <CelulaPessoa id={t.id} chave="responsavel_id" valor={t.responsavel_id ?? ""} membros={membros} rotulo="Executor" />
+      <CelulaPessoa id={t.id} chave="responsavel_id" valor={t.responsavel_id ?? ""} extras={t.executores_extra} membros={membros} rotulo="Executor" />
       <div className="grid grid-cols-2 gap-2">
         <CelulaOpcao id={t.id} chave="status" valor={t.status} opcoes={STATUS_OPCOES} rotulo="Status" />
         <CelulaOpcao id={t.id} chave="prioridade" valor={t.prioridade ?? ""} opcoes={PRIORIDADE_OPCOES} rotulo="Prioridade" />

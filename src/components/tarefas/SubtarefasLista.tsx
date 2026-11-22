@@ -2,8 +2,9 @@
 
 import type { Pessoa, TarefaDb } from "@/lib/tarefas";
 import { STATUS_OPCOES } from "@/lib/tarefas-campos";
+import { CelulaPessoa } from "./CelulaPessoa";
 import { CelulaPeriodo } from "./CelulaPeriodo";
-import { CelulaOpcao, CelulaPessoa, CelulaTitulo } from "./Celulas";
+import { CelulaOpcao, CelulaTitulo } from "./Celulas";
 
 /** Subtarefas dentro da janela da tarefa: campos editáveis na linha. */
 export function SubtarefasLista({ subtarefas, membros, hoje }: { subtarefas: TarefaDb[]; membros: Pessoa[]; hoje: string }) {
@@ -16,7 +17,7 @@ export function SubtarefasLista({ subtarefas, membros, hoje }: { subtarefas: Tar
           </div>
           <div className="flex basis-full flex-wrap items-start gap-2 pb-3 pl-3 md:basis-auto md:flex-nowrap md:pb-0 md:pl-0">
             <div className="w-36">
-              <CelulaPessoa id={s.id} chave="responsavel_id" valor={s.responsavel_id ?? ""} membros={membros} rotulo="Executor" />
+              <CelulaPessoa id={s.id} chave="responsavel_id" valor={s.responsavel_id ?? ""} extras={s.executores_extra} membros={membros} rotulo="Executor" />
             </div>
             <div className="w-36">
               <CelulaOpcao id={s.id} chave="status" valor={s.status} opcoes={STATUS_OPCOES} rotulo="Status" />

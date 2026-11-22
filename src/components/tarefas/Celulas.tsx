@@ -14,6 +14,7 @@ import {
   type Opcao,
 } from "@/lib/tarefas-campos";
 import { CelulaPeriodo } from "./CelulaPeriodo";
+import { CelulaPessoa } from "./CelulaPessoa";
 import { useCampo } from "./useCampo";
 
 function MensagemErro({ erro }: { erro: string | null }) {
@@ -52,42 +53,6 @@ export function CelulaOpcao({
         {opcoes.map((o) => (
           <option key={o.valor} value={o.valor} className="bg-superficie text-texto">
             {o.rotulo}
-          </option>
-        ))}
-      </select>
-      <MensagemErro erro={erro} />
-    </div>
-  );
-}
-
-/** Seletor de pessoa (solicitante, executor), discreto até o mouse passar. */
-export function CelulaPessoa({
-  id,
-  chave,
-  valor: valorServidor,
-  membros,
-  rotulo,
-}: {
-  id: string;
-  chave: ChaveCampo;
-  valor: string;
-  membros: Pessoa[];
-  rotulo: string;
-}) {
-  const { valor, salvar, pendente, erro } = useCampo(id, chave, valorServidor);
-  return (
-    <div className="min-w-0">
-      <select
-        aria-label={rotulo}
-        value={valor}
-        disabled={pendente}
-        onChange={(e) => salvar(e.target.value)}
-        className="min-h-11 md:min-h-8 w-full truncate rounded-lg border border-transparent bg-transparent px-1.5 text-sm md:text-[13px] font-medium hover:border-borda hover:bg-sutil disabled:opacity-60"
-      >
-        <option value="">—</option>
-        {membros.map((m) => (
-          <option key={m.id} value={m.id}>
-            {m.nome}
           </option>
         ))}
       </select>
@@ -391,7 +356,7 @@ export function CampoEditavel({
     case "opcao":
       return <CelulaOpcao id={tarefa.id} chave={campo.chave} valor={bruto} opcoes={campo.opcoes ?? []} rotulo={campo.rotulo} />;
     case "pessoa":
-      return <CelulaPessoa id={tarefa.id} chave={campo.chave} valor={bruto} membros={membros} rotulo={campo.rotulo} />;
+      return <CelulaPessoa id={tarefa.id} chave={campo.chave} valor={bruto} extras={campo.chave === "responsavel_id" ? tarefa.executores_extra : []} membros={membros} rotulo={campo.rotulo} />;
     case "data":
       return (
         <CelulaPeriodo

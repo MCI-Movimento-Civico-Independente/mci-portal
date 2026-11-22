@@ -468,3 +468,38 @@ export async function atualizarPeriodoAction(id: string, inicio: string, fim: st
   revalidatePath("/org", "layout");
   return {};
 }
+
+/** Executores da tarefa (vários). O primeiro é o responsável principal; os demais ficam em "executores_extra". */
+export async function atualizarExecutoresAction(id: string, ids: string[]): Promise<EstadoForm> {
+  const sessao = await exigirOrg();
+  if (!UUID.test(id) || !Array.isArray(ids) || ids.length > 30 || ids.some((i) => typeof i !== "string" || !UUID.test(i))) {
+    return { erro: "Pedido inválido." };
+  }
+  const lista = [...new Set(ids)];
+  const [atual, cat] = await Promise.all([tarefaPorId(id), carregarCatalogos()]);
+  if (!atual) return { erro: "Tarefa não encontrada." };
+  if (!lista.every((i) => cat.membros.some((m) => m.id === i))) return { erro: "Executor: pessoa inválida." };
+
+  try {
+    await atualizarTarefa(id, { responsavel_id: lista[0] ?? null, executores_extra: lista.slice(1) });
+  } catch (erro) {
+    console.error("Falha ao atualizar os executores:", erro);
+    return { erro: "Algo deu errado. Tente de novo em alguns minutos." };
+  }
+
+  const nomes = (conjunto: string[]) =>
+    conjunto.length ? conjunto.map((i) => cat.membros.find((m) => m.id === i)?.nome?.trim() || "Membro").join(", ") : null;
+  const antes = [atual.responsavel_id, ...atual.executores_extra].filter((i): i is string => !!i);
+  if (antes.join() !== lista.join()) {
+    await registrarEvento({
+      tarefa_id: id,
+      autor_id: sessao.conta.id,
+      tipo: "campo",
+      campo: "Executor",
+      de: nomes(antes),
+      para: nomes(lista),
+    });
+  }
+  revalidatePath("/org", "layout");
+  return {};
+}

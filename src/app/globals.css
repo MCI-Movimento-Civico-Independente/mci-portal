@@ -151,6 +151,11 @@
   --font-impacto: var(--font-anton), var(--font-inter-tight), ui-sans-serif, sans-serif; /* números e títulos de impacto, caixa alta */
 }
 
+html {
+  scrollbar-width: thin;
+  scrollbar-color: var(--borda) var(--fundo);
+}
+
 body {
   background-color: var(--fundo);
   color: var(--texto);
@@ -223,6 +228,27 @@ summary {
 }
 summary::-webkit-details-marker {
   display: none;
+}
+
+/* Dica com os nomes (popover): sobe 4px e aparece em 150ms. */
+.dica-pessoas {
+  opacity: 0;
+  translate: 0 4px;
+}
+.dica-pessoas:popover-open {
+  opacity: 1;
+  translate: 0 0;
+  @starting-style {
+    opacity: 0;
+    translate: 0 4px;
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .dica-pessoas {
+    transition:
+      opacity 150ms ease,
+      translate 150ms ease;
+  }
 }
 
 @media (prefers-reduced-motion: no-preference) {

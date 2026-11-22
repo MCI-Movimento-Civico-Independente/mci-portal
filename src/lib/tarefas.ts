@@ -19,6 +19,8 @@ export type TarefaDb = {
   grupo_id: string | null;
   solicitante_id: string | null;
   responsavel_id: string | null;
+  /** Demais executores (o primeiro é o responsavel_id). */
+  executores_extra: string[];
   criado_em: string;
   /** Posição dentro do grupo (arrastar e soltar). */
   ordem: number;
@@ -41,7 +43,7 @@ export type TarefaDb = {
 // essa conferência na borda é o que protege estes dados.
 
 const COLUNAS =
-  "id, titulo, descricao, status, prioridade, data_inicio, prazo, pai_id, comite_slug, formulario_id, projeto_id, grupo_id, solicitante_id, responsavel_id, criado_em, ordem, concluida_em, campos, " +
+  "id, titulo, descricao, status, prioridade, data_inicio, prazo, pai_id, comite_slug, formulario_id, projeto_id, grupo_id, solicitante_id, responsavel_id, executores_extra, criado_em, ordem, concluida_em, campos, " +
   "projeto:projetos!projeto_id(id, nome), solicitante:contas!solicitante_id(id, nome), responsavel:contas!responsavel_id(id, nome)";
 
 type Linha = Omit<TarefaDb, "subtarefas" | "paiTitulo">;
@@ -100,7 +102,7 @@ export async function listarTarefas(filtro: FiltroTarefas = {}): Promise<TarefaD
   const { data, error } = await admin
     .from("tarefas")
     .select(COLUNAS)
-    .eq("responsavel_id", filtro.executorId)
+    .or(`responsavel_id.eq.${filtro.executorId},executores_extra.cs.{${filtro.executorId}}`)
     .limit(500);
   if (error) throw error;
   const minhas = comoLinhas(data);
@@ -132,7 +134,7 @@ export async function tarefasAbertasDe(contaId: string, limite = 50): Promise<Ta
   const { data, error } = await createAdminClient()
     .from("tarefas")
     .select(COLUNAS)
-    .eq("responsavel_id", contaId)
+    .or(`responsavel_id.eq.${contaId},executores_extra.cs.{${contaId}}`)
     .neq("status", "concluida")
     .order("prazo", { ascending: true, nullsFirst: false })
     .order("criado_em", { ascending: false })
@@ -216,6 +218,7 @@ export type Alteracao = Partial<
     | "prazo"
     | "solicitante_id"
     | "responsavel_id"
+    | "executores_extra"
     | "comite_slug"
     | "formulario_id"
     | "projeto_id"
