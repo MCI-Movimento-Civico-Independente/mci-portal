@@ -25,6 +25,8 @@ export const PRIORIDADE_OPCOES: Opcao[] = [
 
 export type ChaveCampo =
   | "titulo"
+  | "comite_slug"
+  | "projeto_id"
   | "solicitante_id"
   | "responsavel_id"
   | "status"
@@ -35,13 +37,15 @@ export type ChaveCampo =
 export type CampoTarefa = {
   chave: ChaveCampo;
   rotulo: string;
-  tipo: "texto" | "opcao" | "pessoa" | "data";
+  tipo: "texto" | "opcao" | "pessoa" | "data" | "comite" | "projeto";
   obrigatorio?: boolean;
   opcoes?: Opcao[];
 };
 
 export const CAMPOS: CampoTarefa[] = [
   { chave: "titulo", rotulo: "Tarefa", tipo: "texto", obrigatorio: true },
+  { chave: "comite_slug", rotulo: "Comitê", tipo: "comite" },
+  { chave: "projeto_id", rotulo: "Projeto", tipo: "projeto" },
   { chave: "solicitante_id", rotulo: "Solicitante", tipo: "pessoa" },
   { chave: "responsavel_id", rotulo: "Executor", tipo: "pessoa" },
   { chave: "status", rotulo: "Status", tipo: "opcao", obrigatorio: true, opcoes: STATUS_OPCOES },

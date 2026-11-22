@@ -10,6 +10,7 @@ import { Botao } from "@/components/ui/Botao";
 import { Card } from "@/components/ui/Card";
 import { getSessao } from "@/lib/auth/sessao";
 import { hojeSP } from "@/lib/datas";
+import { comitesBasicos, projetosBasicos } from "@/lib/organizacao";
 import { listarTarefas, membrosOrg, tarefaPorId, type TarefaDb } from "@/lib/tarefas";
 import { STATUS_OPCOES } from "@/lib/tarefas-campos";
 
@@ -34,26 +35,39 @@ function Aba({ href, ativa, children }: { href: string; ativa: boolean; children
 export default async function TarefasPage({
   searchParams,
 }: {
-  searchParams: Promise<{ vista?: string; quem?: string; tarefa?: string; nova?: string }>;
+  searchParams: Promise<{ vista?: string; quem?: string; tarefa?: string; nova?: string; comite?: string; projeto?: string }>;
 }) {
   const sessao = await getSessao();
   if (!sessao) redirect("/login?next=/org/tarefas");
 
-  const { vista, quem, tarefa: tarefaId, nova } = await searchParams;
+  const { vista, quem, tarefa: tarefaId, nova, comite: comiteParam, projeto: projetoParam } = await searchParams;
   const quadro = vista === "quadro";
   const todas = quem === "todas";
 
+  const [membros, comites, projetos] = await Promise.all([membrosOrg(), comitesBasicos(), projetosBasicos()]);
+  // Só aceita filtros que existem de verdade.
+  const comite = comites.find((c) => c.slug === comiteParam)?.slug;
+  const projeto = projetos.find((p) => p.id === projetoParam)?.id;
+
   // Query que a janela da tarefa conserva ao abrir e ao fechar.
-  const qs = new URLSearchParams({ ...(quadro ? { vista: "quadro" } : {}), ...(todas ? { quem: "todas" } : {}) }).toString();
+  const montarQs = (v: boolean, t: boolean) =>
+    new URLSearchParams({
+      ...(v ? { vista: "quadro" } : {}),
+      ...(t ? { quem: "todas" } : {}),
+      ...(comite ? { comite } : {}),
+      ...(projeto ? { projeto } : {}),
+    }).toString();
+  const qs = montarQs(quadro, todas);
   const base = `/org/tarefas${qs ? `?${qs}` : ""}`;
+  const semFiltrosQs = new URLSearchParams({ ...(quadro ? { vista: "quadro" } : {}), ...(todas ? { quem: "todas" } : {}) }).toString();
+  const semFiltros = `/org/tarefas${semFiltrosQs ? `?${semFiltrosQs}` : ""}`;
   const href = (v: boolean, t: boolean) => {
-    const p = new URLSearchParams({ ...(v ? { vista: "quadro" } : {}), ...(t ? { quem: "todas" } : {}) }).toString();
+    const p = montarQs(v, t);
     return `/org/tarefas${p ? `?${p}` : ""}`;
   };
 
-  const [tarefas, membros, aberta] = await Promise.all([
-    listarTarefas({ executorId: todas ? undefined : sessao.conta.id }),
-    membrosOrg(),
+  const [tarefas, aberta] = await Promise.all([
+    listarTarefas({ executorId: todas ? undefined : sessao.conta.id, comite, projetoId: projeto }),
     tarefaId && UUID.test(tarefaId) ? tarefaPorId(tarefaId) : Promise.resolve(null),
   ]);
   if (tarefaId && !aberta) notFound();
@@ -94,6 +108,43 @@ export default async function TarefasPage({
         </nav>
       </div>
 
+      <form method="get" action="/org/tarefas" className="flex flex-wrap items-end gap-3">
+        {quadro && <input type="hidden" name="vista" value="quadro" />}
+        {todas && <input type="hidden" name="quem" value="todas" />}
+        <label className="flex flex-col gap-1 text-xs font-bold">
+          Comitê
+          <select name="comite" defaultValue={comite ?? ""} className="min-h-11 w-64 max-w-full border border-linha bg-creme-claro px-2 text-sm font-medium hover:border-preto">
+            <option value="">Todos os comitês</option>
+            {comites.map((c) => (
+              <option key={c.slug} value={c.slug}>
+                {c.nome}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="flex flex-col gap-1 text-xs font-bold">
+          Projeto
+          <select name="projeto" defaultValue={projeto ?? ""} className="min-h-11 w-64 max-w-full border border-linha bg-creme-claro px-2 text-sm font-medium hover:border-preto">
+            <option value="">Todos os projetos</option>
+            {projetos
+              .filter((p) => p.status === "ativo" || p.id === projeto)
+              .map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.nome}
+                </option>
+              ))}
+          </select>
+        </label>
+        <Botao type="submit" variante="secundario">
+          Filtrar
+        </Botao>
+        {(comite || projeto) && (
+          <Link href={semFiltros} className="inline-flex min-h-11 items-center px-2 text-sm font-bold text-laranja-texto underline">
+            Limpar filtros
+          </Link>
+        )}
+      </form>
+
       {quadro ? (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           {STATUS_OPCOES.map(({ valor, rotulo }) => {
@@ -128,7 +179,7 @@ export default async function TarefasPage({
               </p>
             ) : (
               <div className="mt-3">
-                <TabelaTarefas tarefas={emAberto} membros={membros} hoje={hoje} qs={qs} />
+                <TabelaTarefas tarefas={emAberto} membros={membros} comites={comites} projetos={projetos} hoje={hoje} qs={qs} />
               </div>
             )}
           </Card>
@@ -139,7 +190,7 @@ export default async function TarefasPage({
                 Concluídas · {concluidas.length}
               </h2>
               <div className="mt-3">
-                <TabelaTarefas tarefas={concluidas} membros={membros} hoje={hoje} qs={qs} />
+                <TabelaTarefas tarefas={concluidas} membros={membros} comites={comites} projetos={projetos} hoje={hoje} qs={qs} />
               </div>
             </Card>
           )}
@@ -148,13 +199,21 @@ export default async function TarefasPage({
 
       {aberta && (
         <Modal key={aberta.id} fecharHref={base} rotulo={`Tarefa: ${aberta.titulo}`}>
-          <DetalheTarefa tarefa={aberta} membros={membros} qs={qs} />
+          <DetalheTarefa
+            tarefa={aberta}
+            membros={membros}
+            comites={comites}
+            projetos={projetos}
+            qs={qs}
+            euId={sessao.conta.id}
+            souAdmin={sessao.conta.papel === "admin"}
+          />
         </Modal>
       )}
       {!aberta && nova === "1" && (
         <Modal fecharHref={base} rotulo="Nova tarefa">
           <h2 className="mb-5 pr-10 text-2xl font-black tracking-tighter">Nova tarefa</h2>
-          <FormNovaTarefa membros={membros} euId={sessao.conta.id} fecharHref={base} />
+          <FormNovaTarefa membros={membros} comites={comites} projetos={projetos} euId={sessao.conta.id} fecharHref={base} />
         </Modal>
       )}
     </div>

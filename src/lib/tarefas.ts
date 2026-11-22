@@ -13,10 +13,13 @@ export type TarefaDb = {
   data_inicio: string | null;
   prazo: string | null;
   pai_id: string | null;
+  comite_slug: string | null;
+  projeto_id: string | null;
   solicitante_id: string | null;
   responsavel_id: string | null;
   criado_em: string;
   concluida_em: string | null;
+  projeto: { id: string; nome: string } | null;
   solicitante: Pessoa | null;
   /** O "Executor" na tela. */
   responsavel: Pessoa | null;
@@ -32,8 +35,8 @@ export type TarefaDb = {
 // essa conferência na borda é o que protege estes dados.
 
 const COLUNAS =
-  "id, titulo, descricao, status, prioridade, data_inicio, prazo, pai_id, solicitante_id, responsavel_id, criado_em, concluida_em, " +
-  "solicitante:contas!solicitante_id(id, nome), responsavel:contas!responsavel_id(id, nome)";
+  "id, titulo, descricao, status, prioridade, data_inicio, prazo, pai_id, comite_slug, projeto_id, solicitante_id, responsavel_id, criado_em, concluida_em, " +
+  "projeto:projetos!projeto_id(id, nome), solicitante:contas!solicitante_id(id, nome), responsavel:contas!responsavel_id(id, nome)";
 
 type Linha = Omit<TarefaDb, "subtarefas" | "paiTitulo">;
 const comoLinhas = (dados: unknown) => (dados ?? []) as Linha[];
@@ -66,8 +69,17 @@ function montar(topo: Linha[], subs: Linha[]): TarefaDb[] {
  * Com `executorId`: as tarefas desse executor e também as tarefas-pai de
  * subtarefas dele (para a subtarefa aparecer no contexto da tarefa original).
  */
-export async function listarTarefas(filtro: { executorId?: string } = {}): Promise<TarefaDb[]> {
+export type FiltroTarefas = {
+  executorId?: string;
+  comite?: string;
+  projetoId?: string;
+};
+
+export async function listarTarefas(filtro: FiltroTarefas = {}): Promise<TarefaDb[]> {
   const admin = createAdminClient();
+  // Subtarefas herdam o comitê e o projeto da tarefa original, então o filtro vale para ela.
+  const passa = (t: Linha) =>
+    (!filtro.comite || t.comite_slug === filtro.comite) && (!filtro.projetoId || t.projeto_id === filtro.projetoId);
 
   if (!filtro.executorId) {
     const [topo, subs] = await Promise.all([
@@ -76,7 +88,7 @@ export async function listarTarefas(filtro: { executorId?: string } = {}): Promi
     ]);
     if (topo.error) throw topo.error;
     if (subs.error) throw subs.error;
-    return montar(comoLinhas(topo.data), comoLinhas(subs.data));
+    return montar(comoLinhas(topo.data).filter(passa), comoLinhas(subs.data));
   }
 
   const { data, error } = await admin
@@ -97,15 +109,16 @@ export async function listarTarefas(filtro: { executorId?: string } = {}): Promi
     if (erroPais) throw erroPais;
     topo.push(...comoLinhas(pais));
   }
-  if (topo.length === 0) return [];
+  const visiveis = topo.filter(passa);
+  if (visiveis.length === 0) return [];
 
   const { data: subs, error: erroSubs } = await admin
     .from("tarefas")
     .select(COLUNAS)
-    .in("pai_id", topo.map((t) => t.id))
+    .in("pai_id", visiveis.map((t) => t.id))
     .order("criado_em");
   if (erroSubs) throw erroSubs;
-  return montar(topo, comoLinhas(subs));
+  return montar(visiveis, comoLinhas(subs));
 }
 
 /** Tarefas (de qualquer nível) em aberto atribuídas à conta, para o Início. */
@@ -163,6 +176,8 @@ export async function membrosOrg(): Promise<Pessoa[]> {
 export type NovaTarefa = {
   titulo: string;
   descricao: string | null;
+  comite_slug?: string | null;
+  projeto_id?: string | null;
   prioridade: Prioridade | null;
   solicitante_id: string | null;
   responsavel_id: string | null;
@@ -184,7 +199,16 @@ export async function criarTarefa(criadoPor: string, dados: NovaTarefa): Promise
 export type Alteracao = Partial<
   Pick<
     Linha,
-    "titulo" | "descricao" | "status" | "prioridade" | "data_inicio" | "prazo" | "solicitante_id" | "responsavel_id"
+    | "titulo"
+    | "descricao"
+    | "status"
+    | "prioridade"
+    | "data_inicio"
+    | "prazo"
+    | "solicitante_id"
+    | "responsavel_id"
+    | "comite_slug"
+    | "projeto_id"
   >
 >;
 

@@ -1,5 +1,27 @@
-export default function ProjetosPage() {
+import { FormNovoProjeto } from "@/components/projetos/FormNovoProjeto";
+import { ListaProjetos } from "@/components/projetos/ListaProjetos";
+import { Card } from "@/components/ui/Card";
+import { comitesBasicos, projetosComResumo } from "@/lib/organizacao";
+
+export const metadata = { title: "Projetos · MCi" };
+
+export default async function ProjetosPage() {
+  const [comites, projetos] = await Promise.all([comitesBasicos(), projetosComResumo()]);
   return (
-    <h1 className="text-3xl font-black tracking-tighter md:text-4xl">Projetos</h1>
+    <div className="flex max-w-3xl flex-col gap-6">
+      <h1 className="text-3xl font-black tracking-tighter md:text-4xl">Projetos</h1>
+      {comites.map((c) => {
+        const doComite = projetos.filter((p) => p.comite_slug === c.slug);
+        return (
+          <Card key={c.slug}>
+            <h2 className="mb-2 font-mono text-[11px] uppercase tracking-widest text-cinza">{c.nome}</h2>
+            <ListaProjetos projetos={doComite} />
+          </Card>
+        );
+      })}
+      <Card>
+        <FormNovoProjeto comites={comites} />
+      </Card>
+    </div>
   );
 }

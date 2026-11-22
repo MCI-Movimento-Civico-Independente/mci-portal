@@ -1,4 +1,4 @@
-import { ArrowUpRight, Plus } from "lucide-react";
+import { ArrowUpRight } from "lucide-react";
 import Link from "next/link";
 import { Botao } from "@/components/ui/Botao";
 import { Card } from "@/components/ui/Card";
@@ -7,7 +7,8 @@ import { redirect } from "next/navigation";
 import { getSessao } from "@/lib/auth/sessao";
 import { formatarPrazo, hojeSP } from "@/lib/datas";
 import { tarefasAbertasDe } from "@/lib/tarefas";
-import { comites, proximos, saudacao } from "@/lib/mock";
+import { comitesComResumo } from "@/lib/organizacao";
+import { proximos, saudacao } from "@/lib/mock";
 
 const rotuloMono = "font-mono text-[11px] uppercase tracking-widest";
 
@@ -17,6 +18,7 @@ export default async function InicioPage() {
   const { nivel } = sessao;
   const abertas = await tarefasAbertasDe(sessao.conta.id);
   const tarefas = abertas.slice(0, 4);
+  const comites = await comitesComResumo();
   const hoje = hojeSP();
 
   return (
@@ -191,53 +193,35 @@ export default async function InicioPage() {
       {/* Comitês */}
       <section aria-labelledby="titulo-comites">
         <div className="mb-3 flex items-baseline justify-between">
-          <h2
-            id="titulo-comites"
-            className="hidden text-2xl font-black tracking-tight md:block"
-          >
-            Meus comitês
+          <h2 id="titulo-comites" className="text-xl font-black tracking-tight md:text-2xl">
+            Comitês
           </h2>
           <Link
             href="/org/comites"
-            className={`${rotuloMono} ml-auto hidden min-h-11 items-center text-laranja-texto underline md:inline-flex`}
+            className={`${rotuloMono} ml-auto inline-flex min-h-11 items-center text-laranja-texto underline`}
           >
             Todos os comitês
           </Link>
         </div>
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-3 md:gap-4">
-          {comites.map((c) => (
+        <div className="grid gap-3 md:grid-cols-3 md:gap-4">
+          {comites.map((c, i) => (
             <Link
-              key={c.id}
-              href="/org/comites"
-              className={`relative flex min-h-[112px] flex-col justify-between p-4 md:min-h-[150px] md:p-5 ${
-                c.cor === "preto" ? "bg-preto text-creme" : "bg-laranja text-preto"
+              key={c.slug}
+              href={`/org/comites/${c.slug}`}
+              className={`relative flex min-h-[112px] flex-col justify-between p-4 hover:brightness-110 md:min-h-[150px] md:p-5 ${
+                i % 2 === 0 ? "bg-preto text-creme" : "bg-laranja text-preto"
               }`}
             >
-              <span className="text-2xl font-black uppercase tracking-tighter md:text-3xl">
+              <span className="pr-6 text-lg font-black uppercase leading-tight tracking-tight md:text-xl">
                 {c.nome}
               </span>
-              <ArrowUpRight
-                size={16}
-                aria-hidden="true"
-                className="absolute right-4 top-4 hidden text-amarelo md:block"
-              />
+              <ArrowUpRight size={16} aria-hidden="true" className="absolute right-4 top-4" />
               <span className="font-mono text-[11px] tracking-wide">
-                {c.projetosAtivos} {c.projetosAtivos === 1 ? "projeto" : "projetos"}
-                <span className="hidden md:inline">
-                  {" "}
-                  ativo{c.projetosAtivos === 1 ? "" : "s"}
-                  {c.coordena && " · você coordena"}
-                </span>
+                {c.projetosAtivos} {c.projetosAtivos === 1 ? "projeto ativo" : "projetos ativos"} · {c.tarefasAbertas}{" "}
+                {c.tarefasAbertas === 1 ? "tarefa" : "tarefas"}
               </span>
             </Link>
           ))}
-          <Link
-            href="/org/comites"
-            className="hidden min-h-[150px] flex-col justify-end gap-2 border border-dashed border-cinza p-5 md:flex"
-          >
-            <Plus size={20} aria-hidden="true" />
-            <span className="text-[15px] font-bold">Entrar em outro comitê</span>
-          </Link>
         </div>
       </section>
     </div>

@@ -20,6 +20,7 @@ export function CartaoTarefa({ t, membros, hoje, qs }: { t: TarefaDb; membros: P
       >
         {t.titulo}
       </Link>
+      {t.projeto && <p className="truncate font-mono text-[11px] uppercase text-cinza">{t.projeto.nome}</p>}
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
         <Progresso feitas={feitas} total={t.subtarefas.length} />
         {t.prazo && (

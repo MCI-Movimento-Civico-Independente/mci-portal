@@ -29,7 +29,3 @@ export const proximos = [
   },
 ];
 
-export const comites = [
-  { id: "ti", nome: "TI", projetosAtivos: 2, coordena: true, cor: "preto" as const },
-  { id: "design", nome: "Design", projetosAtivos: 1, coordena: false, cor: "laranja" as const },
-];

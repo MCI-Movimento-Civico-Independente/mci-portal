@@ -2,18 +2,21 @@
 
 import { ChevronRight } from "lucide-react";
 import { useState } from "react";
+import type { ComiteBasico, ProjetoBasico } from "@/lib/organizacao";
 import type { Pessoa, TarefaDb } from "@/lib/tarefas";
 import { PRIORIDADE_OPCOES, STATUS_OPCOES } from "@/lib/tarefas-campos";
-import { CaixaConcluir, CelulaData, CelulaOpcao, CelulaPessoa, CelulaTitulo } from "./Celulas";
+import { CaixaConcluir, CelulaData, CelulaOpcao, CelulaPessoa, CelulaProjeto, CelulaTitulo } from "./Celulas";
 import { Progresso } from "./Progresso";
 
-// Colunas: expandir | caixa | tarefa | solicitante | executor | status | prioridade | período
+// Colunas: expandir | caixa | tarefa | projeto | solicitante | executor | status | prioridade | período
 const GRID =
-  "md:grid md:grid-cols-[28px_44px_minmax(240px,1fr)_130px_130px_150px_120px_290px] md:items-center md:gap-x-1";
+  "md:grid md:grid-cols-[28px_44px_minmax(240px,1fr)_190px_130px_130px_150px_120px_290px] md:items-center md:gap-x-1";
 
 type Props = {
   tarefas: TarefaDb[];
   membros: Pessoa[];
+  comites: ComiteBasico[];
+  projetos: ProjetoBasico[];
   hoje: string;
   /** Query atual (vista, quem) para o link da janela da tarefa conservá-la. */
   qs: string;
@@ -22,6 +25,8 @@ type Props = {
 function Linha({
   t,
   membros,
+  comites,
+  projetos,
   hoje,
   qs,
   sub = false,
@@ -59,6 +64,13 @@ function Linha({
       </div>
 
       <div className="flex basis-full flex-wrap items-start gap-2 pb-3 pl-12 md:contents">
+        <div className="w-full sm:w-52 md:w-auto">
+          {sub ? (
+            <span aria-hidden="true" />
+          ) : (
+            <CelulaProjeto id={t.id} valor={t.projeto_id ?? ""} comites={comites} projetos={projetos} comiteFiltro={t.comite_slug} />
+          )}
+        </div>
         <div className="w-36 md:w-auto">
           <CelulaPessoa id={t.id} chave="solicitante_id" valor={t.solicitante_id ?? ""} membros={membros} rotulo="Solicitante" />
         </div>
@@ -95,17 +107,18 @@ function Grupo(props: Omit<Props, "tarefas"> & { t: TarefaDb }) {
 }
 
 /** Lista no estilo Monday: campos editáveis na própria linha e subtarefas em lista suspensa. */
-export function TabelaTarefas({ tarefas, membros, hoje, qs }: Props) {
+export function TabelaTarefas({ tarefas, membros, comites, projetos, hoje, qs }: Props) {
   return (
     <div className="overflow-x-auto">
-      <div className="md:min-w-[1180px]">
+      <div className="md:min-w-[1400px]">
         <div
           aria-hidden="true"
-          className={`hidden border-b-2 border-preto pb-2 font-mono text-[11px] uppercase tracking-widest text-cinza md:grid md:grid-cols-[28px_44px_minmax(240px,1fr)_130px_130px_150px_120px_290px] md:gap-x-1`}
+          className={`hidden border-b-2 border-preto pb-2 font-mono text-[11px] uppercase tracking-widest text-cinza md:grid md:grid-cols-[28px_44px_minmax(240px,1fr)_190px_130px_130px_150px_120px_290px] md:gap-x-1`}
         >
           <span />
           <span />
           <span>Tarefa</span>
+          <span className="pl-1.5">Projeto</span>
           <span className="pl-1.5">Solicitante</span>
           <span className="pl-1.5">Executor</span>
           <span>Status</span>
@@ -114,7 +127,7 @@ export function TabelaTarefas({ tarefas, membros, hoje, qs }: Props) {
         </div>
         <ul>
           {tarefas.map((t) => (
-            <Grupo key={t.id} t={t} membros={membros} hoje={hoje} qs={qs} />
+            <Grupo key={t.id} t={t} membros={membros} comites={comites} projetos={projetos} hoje={hoje} qs={qs} />
           ))}
         </ul>
       </div>

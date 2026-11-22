@@ -1,28 +1,59 @@
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
-import { CAMPOS } from "@/lib/tarefas-campos";
-import { hojeSP } from "@/lib/datas";
+import { listarComentarios, listarHistorico, type Evento } from "@/lib/atividade";
+import { formatarDataHora, hojeSP } from "@/lib/datas";
+import type { ComiteBasico, ProjetoBasico } from "@/lib/organizacao";
 import type { Pessoa, TarefaDb } from "@/lib/tarefas";
+import { CAMPOS } from "@/lib/tarefas-campos";
+import { Atividade } from "./Atividade";
 import { BotaoExcluir } from "./BotaoExcluir";
 import { CampoEditavel, CelulaTitulo } from "./Celulas";
 import { FormDescricao } from "./FormDescricao";
 import { NovaSubtarefa } from "./NovaSubtarefa";
 import { SubtarefasLista } from "./SubtarefasLista";
 
-/** Conteúdo da janela da tarefa: campos editáveis, descrição e subtarefas. */
-export function DetalheTarefa({
+function fraseDoEvento(e: Evento): string {
+  switch (e.tipo) {
+    case "criada":
+      return "criou a tarefa";
+    case "descricao":
+      return "editou a descrição";
+    case "subtarefa_adicionada":
+      return `adicionou a subtarefa "${e.para_texto ?? ""}"`;
+    case "subtarefa_removida":
+      return `removeu a subtarefa "${e.de_texto ?? ""}"`;
+    case "campo":
+      if (!e.de_texto) return `definiu ${e.campo} como ${e.para_texto}`;
+      if (!e.para_texto) return `removeu ${e.campo} (era ${e.de_texto})`;
+      return `alterou ${e.campo}: ${e.de_texto} → ${e.para_texto}`;
+  }
+}
+
+/** Conteúdo da janela da tarefa: campos editáveis, descrição, subtarefas e atividade. */
+export async function DetalheTarefa({
   tarefa,
   membros,
+  comites,
+  projetos,
   qs,
+  euId,
+  souAdmin,
 }: {
   tarefa: TarefaDb;
   membros: Pessoa[];
+  comites: ComiteBasico[];
+  projetos: ProjetoBasico[];
   qs: string;
+  euId: string;
+  souAdmin: boolean;
 }) {
+  const [comentarios, historico] = await Promise.all([listarComentarios(tarefa.id), listarHistorico(tarefa.id)]);
   const ehSub = tarefa.pai_id !== null;
   const hoje = hojeSP();
   const feitas = tarefa.subtarefas.filter((s) => s.status === "concluida").length;
   const total = tarefa.subtarefas.length;
+  // Subtarefa segue o comitê e o projeto da tarefa original.
+  const campos = CAMPOS.filter((c) => c.chave !== "titulo" && !(ehSub && (c.chave === "comite_slug" || c.chave === "projeto_id")));
 
   return (
     <div className="flex flex-col gap-6">
@@ -45,11 +76,11 @@ export function DetalheTarefa({
       </div>
 
       <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-2">
-        {CAMPOS.filter((c) => c.chave !== "titulo").map((c) => (
+        {campos.map((c) => (
           <div key={c.chave} className="grid grid-cols-[110px_1fr] items-center">
             <dt className="font-mono text-[11px] uppercase tracking-widest text-cinza">{c.rotulo}</dt>
             <dd>
-              <CampoEditavel campo={c} tarefa={tarefa} membros={membros} hoje={hoje} />
+              <CampoEditavel campo={c} tarefa={tarefa} membros={membros} comites={comites} projetos={projetos} hoje={hoje} />
             </dd>
           </div>
         ))}
@@ -91,6 +122,25 @@ export function DetalheTarefa({
           <NovaSubtarefa paiId={tarefa.id} membros={membros} responsavelPadrao={tarefa.responsavel_id} />
         </section>
       )}
+
+      <Atividade
+        tarefaId={tarefa.id}
+        euId={euId}
+        souAdmin={souAdmin}
+        comentarios={comentarios.map((c) => ({
+          id: c.id,
+          texto: c.texto,
+          quando: formatarDataHora(c.criado_em),
+          autor: c.autor?.nome?.trim() || "Membro removido",
+          autorId: c.autor_id,
+        }))}
+        historico={historico.map((e) => ({
+          id: e.id,
+          quando: formatarDataHora(e.criado_em),
+          autor: e.autor?.nome?.trim() || "Membro removido",
+          frase: fraseDoEvento(e),
+        }))}
+      />
 
       <div className="flex justify-end border-t border-linha pt-3">
         <BotaoExcluir

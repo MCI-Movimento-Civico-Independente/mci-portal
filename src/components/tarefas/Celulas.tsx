@@ -3,6 +3,7 @@
 import { Check, Pencil } from "lucide-react";
 import Link from "next/link";
 import { useRef, useState } from "react";
+import type { ComiteBasico, ProjetoBasico } from "@/lib/organizacao";
 import type { Pessoa, TarefaDb } from "@/lib/tarefas";
 import {
   campoPorChave,
@@ -105,19 +106,107 @@ export function CelulaData({
   rotulo: string;
   alerta?: boolean;
 }) {
-  const { valor, salvar, pendente, erro } = useCampo(id, chave, valorServidor);
+  const { salvar, pendente, erro } = useCampo(id, chave, valorServidor);
+  // Salva ao terminar de editar (sair do campo), não a cada tecla: digitar o ano
+  // passa por valores como 0002 e 0020. O campo recomeça do valor do servidor
+  // quando ele muda ou quando o servidor recusa (por isso o key).
   return (
     <div className="min-w-0">
       <input
+        key={`${valorServidor}|${erro ?? ""}`}
         type="date"
         aria-label={rotulo}
-        value={valor}
+        defaultValue={valorServidor}
+        min="2000-01-01"
+        max="2100-12-31"
         disabled={pendente}
-        onChange={(e) => salvar(e.target.value)}
+        onBlur={(e) => salvar(e.target.value)}
+        onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
         className={`min-h-11 w-[8.5rem] border border-transparent bg-transparent px-1 font-mono text-xs hover:border-linha hover:bg-creme-claro disabled:opacity-60 ${
           alerta ? "font-bold text-laranja-texto" : ""
         }`}
       />
+      <MensagemErro erro={erro} />
+    </div>
+  );
+}
+
+/** Seletor de comitê. */
+export function CelulaComite({
+  id,
+  valor: valorServidor,
+  comites,
+}: {
+  id: string;
+  valor: string;
+  comites: ComiteBasico[];
+}) {
+  const { valor, salvar, pendente, erro } = useCampo(id, "comite_slug", valorServidor);
+  return (
+    <div className="min-w-0">
+      <select
+        aria-label="Comitê"
+        value={valor}
+        disabled={pendente}
+        onChange={(e) => salvar(e.target.value)}
+        className="min-h-11 w-full truncate border border-transparent bg-transparent px-1.5 text-sm font-medium hover:border-linha hover:bg-creme-claro disabled:opacity-60"
+      >
+        <option value="">— sem comitê</option>
+        {comites.map((c) => (
+          <option key={c.slug} value={c.slug}>
+            {c.nome}
+          </option>
+        ))}
+      </select>
+      <MensagemErro erro={erro} />
+    </div>
+  );
+}
+
+/**
+ * Seletor de projeto, agrupado por comitê. Escolher um projeto define o comitê da
+ * tarefa. Projetos arquivados só aparecem se forem o atual.
+ */
+export function CelulaProjeto({
+  id,
+  valor: valorServidor,
+  comites,
+  projetos,
+  comiteFiltro = null,
+}: {
+  id: string;
+  valor: string;
+  comites: ComiteBasico[];
+  projetos: ProjetoBasico[];
+  comiteFiltro?: string | null;
+}) {
+  const { valor, salvar, pendente, erro } = useCampo(id, "projeto_id", valorServidor);
+  const visiveis = projetos.filter((p) => (p.status === "ativo" || p.id === valor) && (!comiteFiltro || p.comite_slug === comiteFiltro));
+  return (
+    <div className="min-w-0">
+      <select
+        aria-label="Projeto"
+        value={valor}
+        disabled={pendente}
+        onChange={(e) => salvar(e.target.value)}
+        className="min-h-11 w-full truncate border border-transparent bg-transparent px-1.5 text-sm font-medium hover:border-linha hover:bg-creme-claro disabled:opacity-60"
+      >
+        <option value="">— sem projeto</option>
+        {comites.map((c) => {
+          const doComite = visiveis.filter((p) => p.comite_slug === c.slug);
+          if (doComite.length === 0) return null;
+          return (
+            <optgroup key={c.slug} label={c.nome}>
+              {doComite.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.nome}
+                  {p.status === "arquivado" ? " (arquivado)" : ""}
+                </option>
+              ))}
+            </optgroup>
+          );
+        })}
+      </select>
       <MensagemErro erro={erro} />
     </div>
   );
@@ -239,11 +328,15 @@ export function CampoEditavel({
   campo,
   tarefa,
   membros,
+  comites,
+  projetos,
   hoje,
 }: {
   campo: CampoTarefa;
   tarefa: TarefaDb;
   membros: Pessoa[];
+  comites: ComiteBasico[];
+  projetos: ProjetoBasico[];
   hoje: string;
 }) {
   const bruto = (tarefa as unknown as Record<string, string | null>)[campo.chave] ?? "";
@@ -260,6 +353,18 @@ export function CampoEditavel({
           valor={bruto}
           rotulo={campo.rotulo}
           alerta={campo.chave === "prazo" && !!bruto && bruto < hoje && tarefa.status !== "concluida"}
+        />
+      );
+    case "comite":
+      return <CelulaComite id={tarefa.id} valor={bruto} comites={comites} />;
+    case "projeto":
+      return (
+        <CelulaProjeto
+          id={tarefa.id}
+          valor={bruto}
+          comites={comites}
+          projetos={projetos}
+          comiteFiltro={tarefa.comite_slug}
         />
       );
     case "texto":

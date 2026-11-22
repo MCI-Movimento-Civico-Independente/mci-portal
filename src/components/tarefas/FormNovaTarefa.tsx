@@ -3,11 +3,24 @@
 import { useActionState } from "react";
 import { criarTarefaAction, type EstadoForm } from "@/app/org/tarefas/acoes";
 import { Botao } from "@/components/ui/Botao";
+import type { ComiteBasico, ProjetoBasico } from "@/lib/organizacao";
 import type { Pessoa } from "@/lib/tarefas";
 import { PRIORIDADE_OPCOES } from "@/lib/tarefas-campos";
 import { campo, rotulo } from "./estilos";
 
-export function FormNovaTarefa({ membros, euId, fecharHref }: { membros: Pessoa[]; euId: string; fecharHref: string }) {
+export function FormNovaTarefa({
+  membros,
+  comites,
+  projetos,
+  euId,
+  fecharHref,
+}: {
+  membros: Pessoa[];
+  comites: ComiteBasico[];
+  projetos: ProjetoBasico[];
+  euId: string;
+  fecharHref: string;
+}) {
   const [estado, acao, pendente] = useActionState<EstadoForm, FormData>(criarTarefaAction, {});
   const opcional = <span className="font-normal text-cinza">(opcional)</span>;
 
@@ -44,6 +57,40 @@ export function FormNovaTarefa({ membros, euId, fecharHref }: { membros: Pessoa[
       </div>
 
       <div className="grid gap-5 sm:grid-cols-2">
+        <div>
+          <label htmlFor="comite_slug" className={rotulo}>
+            Comitê {opcional}
+          </label>
+          <select id="comite_slug" name="comite_slug" defaultValue="" className={campo}>
+            <option value="">Sem comitê</option>
+            {comites.map((c) => (
+              <option key={c.slug} value={c.slug}>
+                {c.nome}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label htmlFor="projeto_id" className={rotulo}>
+            Projeto {opcional}
+          </label>
+          <select id="projeto_id" name="projeto_id" defaultValue="" className={campo}>
+            <option value="">Sem projeto</option>
+            {comites.map((c) => {
+              const doComite = projetos.filter((p) => p.comite_slug === c.slug && p.status === "ativo");
+              return doComite.length === 0 ? null : (
+                <optgroup key={c.slug} label={c.nome}>
+                  {doComite.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.nome}
+                    </option>
+                  ))}
+                </optgroup>
+              );
+            })}
+          </select>
+          <p className="mt-1 text-xs text-cinza">Escolher um projeto define o comitê dele.</p>
+        </div>
         <div>
           <label htmlFor="solicitante_id" className={rotulo}>
             Solicitante {opcional}
