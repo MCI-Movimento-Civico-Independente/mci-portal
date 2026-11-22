@@ -18,8 +18,8 @@ const curta = (iso: string, comAno: boolean) => {
 };
 const completa = (iso?: string) => (iso ? iso.split("-").reverse().join("/") : "");
 
-const LARGURA = 296;
-const ALTURA = 400;
+const LARGURA = 252;
+const ALTURA = 330;
 
 /**
  * Período da tarefa (início → entrega) escolhido num calendário só, como na Monday:
@@ -44,6 +44,10 @@ export function CelulaPeriodo({
   const [intervalo, setIntervalo] = useState<DateRange | undefined>();
   const botao = useRef<HTMLButtonElement>(null);
   const painel = useRef<HTMLDivElement>(null);
+  // O calendário só é montado com o painel aberto: ele lê a data de hoje, e isso não pode
+  // acontecer durante a pré-renderização da página.
+  const [aberto, setAberto] = useState(false);
+  const [sobre, setSobre] = useState<Date | undefined>();
   const [posicao, setPosicao] = useState({ top: 0, left: 0 });
 
   function abrir() {
@@ -53,6 +57,8 @@ export function CelulaPeriodo({
     setPosicao({ left, top: cabeAbaixo ? r.bottom + 4 : Math.max(8, r.top - ALTURA - 4) });
     setIntervalo({ from: atual.inicio ? paraData(atual.inicio) : undefined, to: atual.fim ? paraData(atual.fim) : undefined });
     setErro(null);
+    setSobre(undefined);
+    setAberto(true);
     painel.current?.showPopover();
   }
 
@@ -78,6 +84,14 @@ export function CelulaPeriodo({
     setIntervalo({ from: a, to: b });
     salvar(paraIso(a), paraIso(b));
   }
+
+  // Com só o início marcado, o intervalo acompanha o mouse até o dia sobre o qual ele passa.
+  const previa: DateRange | undefined =
+    intervalo?.from && !intervalo.to && sobre
+      ? sobre < intervalo.from
+        ? { from: sobre, to: intervalo.from }
+        : { from: intervalo.from, to: sobre }
+      : intervalo;
 
   const anoAtual = hoje.slice(0, 4);
   const comAno = [atual.inicio, atual.fim].some((d) => d && d.slice(0, 4) !== anoAtual);
@@ -112,23 +126,24 @@ export function CelulaPeriodo({
       <div
         ref={painel}
         popover="auto"
+        onToggle={(e) => !e.nativeEvent.newState.startsWith("open") && setAberto(false)}
         role="dialog"
         aria-label="Definir período"
         style={{ top: posicao.top, left: posicao.left, width: LARGURA }}
-        className="fixed m-0 border-2 border-inverso bg-superficie p-3 text-texto"
+        className="fixed m-0 border-2 border-inverso bg-superficie p-2.5 text-texto"
       >
-        <div className="mb-2 grid grid-cols-2 gap-2 text-center">
-          <p className={`border-2 px-2 py-1.5 text-sm ${!intervalo?.to && intervalo?.from ? "border-texto" : "border-borda-forte"}`}>
-            <span className="rotulo block text-[10px] text-suave">Início</span>
-            {intervalo?.from ? completa(paraIso(intervalo.from)) : "—"}
-          </p>
-          <p className={`border-2 px-2 py-1.5 text-sm ${!intervalo?.from ? "border-borda-forte" : intervalo.to ? "border-borda-forte" : "border-dashed border-borda-forte"}`}>
-            <span className="rotulo block text-[10px] text-suave">Entrega</span>
-            {intervalo?.to ? completa(paraIso(intervalo.to)) : "—"}
-          </p>
-        </div>
+        <p className="mb-1 flex items-center justify-between text-xs">
+          <span className="rotulo text-[10px] text-suave">
+            {intervalo?.from && !intervalo.to ? "Escolha a entrega" : "Escolha o início"}
+          </span>
+          <span className="font-mono text-[11px]">
+            {previa?.from ? completa(paraIso(previa.from)).slice(0, 5) : "—"} → {previa?.to ? completa(paraIso(previa.to)).slice(0, 5) : "—"}
+          </span>
+        </p>
 
+        {aberto && (
         <DayPicker
+          today={paraData(hoje)}
           mode="range"
           locale={ptBR}
           weekStartsOn={1}
@@ -137,8 +152,10 @@ export function CelulaPeriodo({
           startMonth={new Date(2000, 0)}
           endMonth={new Date(2100, 11)}
           defaultMonth={intervalo?.from ?? (atual.inicio ? paraData(atual.inicio) : paraData(hoje))}
-          selected={intervalo}
+          selected={previa}
           onDayClick={aoClicar}
+          onDayMouseEnter={(dia) => setSobre(dia)}
+          onDayMouseLeave={() => setSobre(undefined)}
           components={{
             Chevron: ({ orientation }) =>
               orientation === "left" ? <TbChevronLeft size={16} aria-hidden="true" /> : <TbChevronRight size={16} aria-hidden="true" />,
@@ -146,40 +163,39 @@ export function CelulaPeriodo({
           classNames={{
             root: "w-full",
             months: "relative",
-            month_caption: "flex h-9 items-center justify-center",
-            caption_label: "font-titulo text-sm font-extrabold uppercase tracking-tight",
-            nav: "absolute inset-x-0 top-0 flex h-9 items-center justify-between",
-            button_previous: "flex size-9 items-center justify-center hover:bg-sutil",
-            button_next: "flex size-9 items-center justify-center hover:bg-sutil",
+            month_caption: "flex h-8 items-center justify-center",
+            caption_label: "font-titulo text-xs font-extrabold uppercase tracking-tight",
+            nav: "absolute inset-x-0 top-0 flex h-8 items-center justify-between",
+            button_previous: "flex size-8 items-center justify-center text-suave hover:text-texto",
+            button_next: "flex size-8 items-center justify-center text-suave hover:text-texto",
             month_grid: "w-full border-collapse",
-            weekday: "rotulo h-8 text-[10px] font-normal text-suave",
-            day: "p-0 text-center text-sm",
-            day_button: "flex size-10 w-full items-center justify-center hover:bg-sutil",
-            today: "font-extrabold text-marca-texto underline underline-offset-4",
-            outside: "text-suave opacity-50",
-            selected: "bg-ouro-suave",
-            range_start: "[&>button]:bg-marca [&>button]:text-sobre-marca [&>button]:hover:bg-marca",
-            range_end: "[&>button]:bg-marca [&>button]:text-sobre-marca [&>button]:hover:bg-marca",
-            range_middle: "bg-ouro-suave",
+            weekday: "rotulo h-7 text-[9px] font-normal text-suave",
+            day: "p-0 text-center text-xs",
+            day_button: "flex size-8 w-full items-center justify-center hover:bg-sutil",
+            today: "font-extrabold text-marca-texto",
+            outside: "text-suave opacity-40",
+            selected: "bg-marca text-sobre-marca [&>button]:hover:bg-transparent",
           }}
         />
+        )}
 
-        <div className="mt-2 flex items-center justify-between border-t border-borda pt-2">
+        <div className="mt-1 flex items-center justify-between">
           <button
             type="button"
             onClick={() => salvar("", "")}
-            className="rotulo inline-flex min-h-11 items-center px-2 font-bold text-marca-texto hover:underline md:min-h-8"
+            className="rotulo inline-flex min-h-11 items-center px-1 text-[10px] text-suave hover:text-marca-texto md:min-h-7"
           >
-            Limpar datas
+            Limpar
           </button>
-          <button
-            type="button"
-            disabled={!intervalo?.from}
-            onClick={() => salvar(intervalo?.from ? paraIso(intervalo.from) : "", intervalo?.to ? paraIso(intervalo.to) : "")}
-            className="rotulo inline-flex min-h-11 items-center bg-inverso px-3 font-bold text-sobre-inverso hover:opacity-90 disabled:opacity-40 md:min-h-8"
-          >
-            {intervalo?.to ? "Aplicar" : "Só início"}
-          </button>
+          {intervalo?.from && !intervalo.to && (
+            <button
+              type="button"
+              onClick={() => salvar(paraIso(intervalo.from!), "")}
+              className="rotulo inline-flex min-h-11 items-center px-1 text-[10px] font-bold hover:text-marca-texto md:min-h-7"
+            >
+              Só início
+            </button>
+          )}
         </div>
       </div>
     </div>
