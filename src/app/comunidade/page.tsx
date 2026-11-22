@@ -21,28 +21,28 @@ export default async function ComunidadePage({
   return (
     <div className="flex flex-col gap-6">
       {aviso && AVISOS[aviso] && (
-        <p role="status" className="border-l-4 border-amarelo bg-creme-claro p-3 text-sm font-bold">
+        <p role="status" className="rounded-lg border border-ouro/40 bg-ouro-suave p-3 text-sm font-medium text-ouro-texto">
           {AVISOS[aviso]}
         </p>
       )}
-      <h1 className="text-4xl font-black uppercase leading-none tracking-tighter md:text-5xl">
+      <h1 className="font-serif text-4xl leading-none md:text-5xl">
         Olá,{" "}
         <span className="font-serif font-normal normal-case italic">{sessao.primeiroNome}.</span>
       </h1>
       <Card>
-        <p className="font-mono text-[11px] uppercase tracking-widest text-cinza">Seu perfil</p>
+        <p className="text-[11px] uppercase tracking-widest text-suave">Seu perfil</p>
         <dl className="mt-4 grid grid-cols-3 gap-4">
           <div>
-            <dt className="font-mono text-[11px] uppercase text-cinza">Nível</dt>
-            <dd className="text-3xl font-black">{sessao.nivel.numero}</dd>
+            <dt className="text-[11px] uppercase text-suave">Nível</dt>
+            <dd className="font-serif text-4xl">{sessao.nivel.numero}</dd>
           </div>
           <div>
-            <dt className="font-mono text-[11px] uppercase text-cinza">Título</dt>
-            <dd className="text-xl font-black uppercase">{sessao.nivel.nome}</dd>
+            <dt className="text-[11px] uppercase text-suave">Título</dt>
+            <dd className="text-xl font-semibold">{sessao.nivel.nome}</dd>
           </div>
           <div>
-            <dt className="font-mono text-[11px] uppercase text-cinza">XP</dt>
-            <dd className="text-3xl font-black">{sessao.xp}</dd>
+            <dt className="text-[11px] uppercase text-suave">XP</dt>
+            <dd className="font-serif text-4xl">{sessao.xp}</dd>
           </div>
         </dl>
         {sessao.nivel.proximo && (
@@ -51,7 +51,7 @@ export default async function ComunidadePage({
           </p>
         )}
       </Card>
-      <p className="text-sm text-cinza">Página provisória da comunidade.</p>
+      <p className="text-sm text-suave">Página provisória da comunidade.</p>
     </div>
   );
 }

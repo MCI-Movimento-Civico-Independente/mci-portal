@@ -1,19 +1,38 @@
+import Link from "next/link";
+import { TbArrowUpRight } from "react-icons/tb";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { Botao } from "@/components/ui/Botao";
 import { Logo } from "@/components/ui/Logo";
 
 export default function PortalPage() {
   return (
-    <main className="mx-auto flex min-h-dvh max-w-3xl flex-col justify-center gap-8 px-[18px] py-16">
-      <Logo className="self-start text-[88px]" />
-      <p className="font-mono text-xs uppercase tracking-widest text-cinza">
-        Portal MCi · em construção
-      </p>
-      <h1 className="text-4xl font-black uppercase leading-none tracking-tighter md:text-6xl">
-        Fluxo <span className="font-serif font-normal normal-case italic">cívico</span>
-        -apartidário
-      </h1>
-      <div>
-        <Botao href="/org">Área da organização</Botao>
+    <main className="relative mx-auto flex min-h-dvh max-w-4xl flex-col justify-center gap-10 px-[18px] py-16">
+      <div className="fixed right-5 top-5 z-10">
+        <ThemeToggle />
+      </div>
+      <Logo className="self-start text-7xl md:text-8xl" />
+      <div className="flex flex-col gap-5">
+        <p className="text-xs font-semibold uppercase tracking-widest text-marca-texto">
+          Movimento Cívico Independente
+        </p>
+        <h1 className="font-serif text-5xl leading-[1.05] md:text-7xl">
+          Pensar. Agir. <span className="italic text-marca-texto">Transformar.</span>
+        </h1>
+        <p className="max-w-xl text-lg text-suave">
+          Ação ética, pensamento livre, futuro coletivo. O portal do MCI está em construção.
+        </p>
+      </div>
+      <div className="flex flex-wrap gap-3">
+        <Botao href="/org">
+          Área da organização
+          <TbArrowUpRight size={17} aria-hidden="true" />
+        </Botao>
+        <Link
+          href="/login"
+          className="inline-flex min-h-11 items-center rounded-lg px-4 text-sm font-semibold text-suave hover:bg-sutil hover:text-texto"
+        >
+          Entrar
+        </Link>
       </div>
     </main>
   );

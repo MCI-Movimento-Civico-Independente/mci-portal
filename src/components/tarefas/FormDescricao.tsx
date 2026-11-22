@@ -10,7 +10,7 @@ export function FormDescricao({ id, descricao, obrigatoria }: { id: string; desc
   return (
     <form action={acao} className="flex flex-col gap-3">
       <label htmlFor="descricao" className="text-sm font-bold">
-        Descrição {!obrigatoria && <span className="font-normal text-cinza">(opcional)</span>}
+        Descrição {!obrigatoria && <span className="font-normal text-suave">(opcional)</span>}
       </label>
       <textarea
         id="descricao"
@@ -22,7 +22,7 @@ export function FormDescricao({ id, descricao, obrigatoria }: { id: string; desc
         className={`${campo} py-2`}
       />
       {estado.erro && (
-        <p role="alert" className="text-sm font-bold text-laranja-texto">
+        <p role="alert" className="text-sm font-bold text-marca-texto">
           {estado.erro}
         </p>
       )}
@@ -31,7 +31,7 @@ export function FormDescricao({ id, descricao, obrigatoria }: { id: string; desc
           {pendente ? "Salvando…" : "Salvar descrição"}
         </Botao>
         {estado.ok && !pendente && (
-          <span role="status" className="font-mono text-xs font-bold uppercase text-cinza">
+          <span role="status" className="text-xs font-bold uppercase text-suave">
             Salvo
           </span>
         )}

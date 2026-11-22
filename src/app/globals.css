@@ -1,48 +1,137 @@
 @import "tailwindcss";
 
+/* O tema escuro é a classe .dark no <html> (next-themes). */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+ * Sistema de design MCi.
+ * Os componentes usam só os nomes semânticos abaixo (fundo, superficie, texto,
+ * marca...). Claro e escuro trocam os valores aqui; nenhum componente precisa
+ * saber em que tema está.
+ *
+ * Marca: laranja #EB3C11, ouro #C7AC00, grafite #2A2A2D, claro #ECEEF3.
+ * O laranja puro não tem contraste suficiente com texto (4,0:1), então o
+ * preenchimento de botões usa um tom um pouco mais fechado no claro e mais
+ * aberto no escuro. Todos os pares texto/fundo abaixo passam de 4,5:1 (WCAG AA).
+ */
 :root {
-  --creme: #ecddd9;
-  --creme-claro: #f6eeeb;
-  --linha: #cdbdb8;
-  --preto: #000001;
-  --laranja: #d54a24;
-  --laranja-texto: #a8361a;
-  --amarelo: #cfbe48;
-  --cinza: #5e5452;
+  color-scheme: light;
+
+  --fundo: #f2f3f7;
+  --superficie: #ffffff;
+  --sutil: #eceef3;
+  --borda: #e1e4ec;
+  --borda-forte: #c5cad6;
+
+  --texto: #1c1c20;
+  --suave: #5d616d;
+  --inverso: #1c1c20;
+  --sobre-inverso: #ffffff;
+
+  --marca: #d2330a;
+  --sobre-marca: #ffffff;
+  --marca-texto: #b82b05;
+  --marca-suave: #fde8e1;
+
+  --ouro: #c7ac00;
+  --sobre-ouro: #1c1c20;
+  --ouro-suave: #fbf3c4;
+  --ouro-texto: #735f00;
+
+  --verde: #1f9d55;
+  --verde-suave: #def5e7;
+  --verde-texto: #17703e;
+
+  --sombra-sm: 0 1px 2px rgb(16 24 40 / 0.06), 0 1px 3px rgb(16 24 40 / 0.08);
+  --sombra-md: 0 4px 10px -2px rgb(16 24 40 / 0.1), 0 2px 4px -2px rgb(16 24 40 / 0.06);
+  --sombra-lg: 0 24px 48px -12px rgb(16 24 40 / 0.28);
+
+  --brilho: color-mix(in srgb, #eb3c11 9%, transparent);
+}
+
+.dark {
+  color-scheme: dark;
+
+  --fundo: #141417;
+  --superficie: #1e1e22;
+  --sutil: #28282d;
+  --borda: #34343a;
+  --borda-forte: #4a4a53;
+
+  --texto: #f3f3f6;
+  --suave: #a3a3ae;
+  --inverso: #f3f3f6;
+  --sobre-inverso: #141417;
+
+  --marca: #ff5a2e;
+  --sobre-marca: #1a1a1d;
+  --marca-texto: #ff8a66;
+  --marca-suave: #3b2019;
+
+  --ouro: #e0c200;
+  --sobre-ouro: #1c1c20;
+  --ouro-suave: #3a3510;
+  --ouro-texto: #ecd54a;
+
+  --verde: #3fcf7d;
+  --verde-suave: #16301f;
+  --verde-texto: #6fe3a0;
+
+  --sombra-sm: 0 1px 2px rgb(0 0 0 / 0.5);
+  --sombra-md: 0 8px 18px -6px rgb(0 0 0 / 0.6);
+  --sombra-lg: 0 28px 56px -14px rgb(0 0 0 / 0.75);
+
+  --brilho: color-mix(in srgb, #eb3c11 20%, transparent);
 }
 
 @theme inline {
-  --color-creme: var(--creme);
-  --color-creme-claro: var(--creme-claro);
-  --color-linha: var(--linha);
-  --color-preto: var(--preto);
-  --color-laranja: var(--laranja);
-  --color-laranja-texto: var(--laranja-texto);
-  --color-amarelo: var(--amarelo);
-  --color-cinza: var(--cinza);
+  --color-fundo: var(--fundo);
+  --color-superficie: var(--superficie);
+  --color-sutil: var(--sutil);
+  --color-borda: var(--borda);
+  --color-borda-forte: var(--borda-forte);
+  --color-texto: var(--texto);
+  --color-suave: var(--suave);
+  --color-inverso: var(--inverso);
+  --color-sobre-inverso: var(--sobre-inverso);
+  --color-marca: var(--marca);
+  --color-sobre-marca: var(--sobre-marca);
+  --color-marca-texto: var(--marca-texto);
+  --color-marca-suave: var(--marca-suave);
+  --color-ouro: var(--ouro);
+  --color-sobre-ouro: var(--sobre-ouro);
+  --color-ouro-suave: var(--ouro-suave);
+  --color-ouro-texto: var(--ouro-texto);
+  --color-verde: var(--verde);
+  --color-verde-suave: var(--verde-suave);
+  --color-verde-texto: var(--verde-texto);
 
-  --font-sans: var(--font-inter-tight), ui-sans-serif, system-ui, sans-serif;
-  --font-serif: var(--font-instrument-serif), ui-serif, Georgia, serif;
-  --font-mono: var(--font-plex-mono), ui-monospace, monospace;
-}
+  --shadow-suave: var(--sombra-sm);
+  --shadow-elevado: var(--sombra-md);
+  --shadow-flutuante: var(--sombra-lg);
 
-/* Identidade MCi: cantos retos e nenhuma sombra. Não usamos classes rounded-*
-   nem shadow-*; as únicas formas redondas são os círculos da marca (rounded-full). */
-*,
-*::before,
-*::after {
-  box-shadow: none !important;
+  /* DM Serif Display nos títulos, Space Grotesk na interface (quadro da marca). */
+  --font-sans: var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-dm-serif), ui-serif, Georgia, serif;
 }
 
 body {
-  background: var(--creme);
-  color: var(--preto);
+  background-color: var(--fundo);
+  /* Brilho laranja no topo, como na referência escura (discreto no claro). */
+  background-image: radial-gradient(1100px 420px at 78% -140px, var(--brilho), transparent);
+  background-repeat: no-repeat;
+  color: var(--texto);
   font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
 }
 
 :focus-visible {
-  outline: 2px solid var(--laranja-texto);
+  outline: 2px solid var(--marca-texto);
   outline-offset: 2px;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--marca) 30%, transparent);
 }
 
 /* O reset do Tailwind v4 tira o cursor de mão dos botões: devolvemos aqui. */
@@ -65,11 +154,15 @@ select:disabled {
 @media (prefers-reduced-motion: no-preference) {
   button,
   a[href],
-  select {
+  select,
+  input,
+  textarea {
     transition:
-      background-color 120ms ease,
-      color 120ms ease,
-      border-color 120ms ease,
-      opacity 120ms ease;
+      background-color 140ms ease,
+      color 140ms ease,
+      border-color 140ms ease,
+      box-shadow 140ms ease,
+      opacity 140ms ease,
+      transform 140ms ease;
   }
 }

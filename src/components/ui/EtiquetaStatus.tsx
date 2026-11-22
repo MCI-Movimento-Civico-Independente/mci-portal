@@ -1,19 +1,16 @@
-export type StatusTarefa = "a_fazer" | "em_andamento" | "em_revisao" | "concluida";
+import { STATUS_OPCOES, type StatusTarefa } from "@/lib/tarefas-campos";
 
-const config: Record<StatusTarefa, { texto: string; classes: string }> = {
-  a_fazer: { texto: "A fazer", classes: "bg-preto text-creme-claro border-preto" },
-  em_andamento: { texto: "Em andamento", classes: "bg-amarelo text-preto border-amarelo" },
-  em_revisao: { texto: "Em revisão", classes: "bg-laranja text-preto border-laranja" },
-  concluida: { texto: "Concluída", classes: "bg-transparent text-preto border-preto" },
-};
+export type { StatusTarefa };
 
+/** Etiqueta de status (a mesma cor do seletor de status da lista). */
 export function EtiquetaStatus({ status }: { status: StatusTarefa }) {
-  const { texto, classes } = config[status];
+  const opcao = STATUS_OPCOES.find((o) => o.valor === status) ?? STATUS_OPCOES[0];
   return (
     <span
-      className={`inline-block whitespace-nowrap border px-2 py-1 font-mono text-[11px] font-bold uppercase leading-none ${classes}`}
+      className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 py-1 text-xs font-semibold leading-none ${opcao.classes}`}
     >
-      {texto}
+      <span aria-hidden="true" className="size-1.5 rounded-full bg-current" />
+      {opcao.rotulo}
     </span>
   );
 }

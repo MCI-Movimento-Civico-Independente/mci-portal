@@ -19,9 +19,9 @@ async function CascaComunidade({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-dvh">
-      <header className="flex h-[72px] items-center justify-between bg-preto px-[18px] md:px-8">
+      <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b border-borda bg-fundo/80 px-[18px] backdrop-blur-md md:px-8">
         <Link href="/comunidade" aria-label="MCi, comunidade">
-          <Logo tom="claro" className="text-[32px]" />
+          <Logo className="text-3xl" />
         </Link>
         <MenuAvatar
           inicial={sessao.inicial}

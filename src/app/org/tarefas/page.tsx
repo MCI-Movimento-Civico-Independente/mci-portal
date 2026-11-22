@@ -1,4 +1,4 @@
-import { Plus } from "lucide-react";
+import { TbPlus } from "react-icons/tb";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { CartaoTarefa } from "@/components/tarefas/CartaoTarefa";
@@ -25,8 +25,10 @@ function Aba({ href, ativa, children }: { href: string; ativa: boolean; children
     <Link
       href={href}
       aria-current={ativa ? "page" : undefined}
-      className={`inline-flex min-h-11 items-center border px-4 text-sm font-bold ${
-        ativa ? "border-preto bg-preto text-creme-claro" : "border-linha bg-creme-claro hover:border-preto"
+      className={`inline-flex min-h-11 items-center rounded-lg border px-4 text-sm font-semibold ${
+        ativa
+          ? "border-inverso bg-inverso text-sobre-inverso shadow-suave"
+          : "border-borda bg-superficie text-suave shadow-suave hover:border-borda-forte hover:text-texto"
       }`}
     >
       {children}
@@ -88,11 +90,11 @@ export default async function TarefasPage({
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-3xl font-black tracking-tighter md:text-4xl">
+        <h1 className="font-serif text-3xl md:text-4xl">
           {todas ? "Todas as tarefas" : "Minhas tarefas"}
         </h1>
         <Botao href={novaTarefaHref}>
-          <Plus size={16} aria-hidden="true" />
+          <TbPlus size={16} aria-hidden="true" />
           Nova tarefa
         </Botao>
       </div>
@@ -121,7 +123,7 @@ export default async function TarefasPage({
         {todas && <input type="hidden" name="quem" value="todas" />}
         <label className="flex flex-col gap-1 text-xs font-bold">
           Comitê
-          <select name="comite" defaultValue={comite ?? ""} className="min-h-11 w-64 max-w-full border border-linha bg-creme-claro px-2 text-sm font-medium hover:border-preto">
+          <select name="comite" defaultValue={comite ?? ""} className="min-h-11 w-64 max-w-full rounded-lg border border-borda bg-superficie px-2 text-sm font-medium hover:border-borda-forte">
             <option value="">Todos os comitês</option>
             {comites.map((c) => (
               <option key={c.slug} value={c.slug}>
@@ -132,7 +134,7 @@ export default async function TarefasPage({
         </label>
         <label className="flex flex-col gap-1 text-xs font-bold">
           Projeto
-          <select name="projeto" defaultValue={projeto ?? ""} className="min-h-11 w-64 max-w-full border border-linha bg-creme-claro px-2 text-sm font-medium hover:border-preto">
+          <select name="projeto" defaultValue={projeto ?? ""} className="min-h-11 w-64 max-w-full rounded-lg border border-borda bg-superficie px-2 text-sm font-medium hover:border-borda-forte">
             <option value="">Todos os projetos</option>
             {projetos
               .filter((p) => p.status === "ativo" || p.id === projeto)
@@ -147,7 +149,7 @@ export default async function TarefasPage({
           Filtrar
         </Botao>
         {(comite || projeto) && (
-          <Link href={semFiltros} className="inline-flex min-h-11 items-center px-2 text-sm font-bold text-laranja-texto underline">
+          <Link href={semFiltros} className="inline-flex min-h-11 items-center px-2 text-sm font-bold text-marca-texto underline">
             Limpar filtros
           </Link>
         )}
@@ -158,8 +160,8 @@ export default async function TarefasPage({
           {STATUS_OPCOES.map(({ valor, rotulo }) => {
             const itens: TarefaDb[] = tarefas.filter((t) => t.status === valor);
             return (
-              <section key={valor} aria-label={rotulo} className="flex flex-col gap-3 bg-creme-claro/50 p-3">
-                <h2 className="font-mono text-[11px] font-bold uppercase tracking-widest text-cinza">
+              <section key={valor} aria-label={rotulo} className="flex flex-col gap-3 rounded-2xl bg-sutil p-3">
+                <h2 className="text-[11px] font-bold uppercase tracking-widest text-suave">
                   {rotulo} · {itens.length}
                 </h2>
                 <ul className="flex flex-col gap-3">
@@ -167,21 +169,21 @@ export default async function TarefasPage({
                     <CartaoTarefa key={t.id} t={t} membros={membros} hoje={hoje} qs={qs} />
                   ))}
                 </ul>
-                {itens.length === 0 && <p className="px-1 text-sm text-cinza">Nada por aqui.</p>}
+                {itens.length === 0 && <p className="px-1 text-sm text-suave">Nada por aqui.</p>}
               </section>
             );
           })}
         </div>
       ) : (
         <>
-          <Card>
-            <h2 className="font-mono text-[11px] uppercase tracking-widest text-cinza">
+          <Card className="p-4 md:p-4">
+            <h2 className="text-[11px] uppercase tracking-widest text-suave">
               Em aberto · {emAberto.length}
             </h2>
             {emAberto.length === 0 ? (
               <p className="mt-3 text-[15px]">
                 Nenhuma tarefa em aberto.{" "}
-                <Link href={novaTarefaHref} className="font-bold text-laranja-texto underline">
+                <Link href={novaTarefaHref} className="font-bold text-marca-texto underline">
                   Criar tarefa
                 </Link>
               </p>
@@ -193,8 +195,8 @@ export default async function TarefasPage({
           </Card>
 
           {concluidas.length > 0 && (
-            <Card>
-              <h2 className="font-mono text-[11px] uppercase tracking-widest text-cinza">
+            <Card className="p-4 md:p-4">
+              <h2 className="text-[11px] uppercase tracking-widest text-suave">
                 Concluídas · {concluidas.length}
               </h2>
               <div className="mt-3">
@@ -222,7 +224,7 @@ export default async function TarefasPage({
       )}
       {!aberta && nova === "1" && (
         <Modal fecharHref={base} rotulo="Nova tarefa">
-          <h2 className="mb-5 pr-10 text-2xl font-black tracking-tighter">Nova tarefa</h2>
+          <h2 className="mb-5 pr-10 text-2xl font-semibold tracking-tighter">Nova tarefa</h2>
           <FormNovaTarefa
             membros={membros}
             comites={comites}

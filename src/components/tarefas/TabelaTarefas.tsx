@@ -1,16 +1,16 @@
 "use client";
 
-import { ChevronRight } from "lucide-react";
+import { TbChevronRight } from "react-icons/tb";
 import { useState } from "react";
 import type { ComiteBasico, ProjetoBasico } from "@/lib/organizacao";
 import type { Pessoa, TarefaDb } from "@/lib/tarefas";
 import { PRIORIDADE_OPCOES, STATUS_OPCOES } from "@/lib/tarefas-campos";
-import { CaixaConcluir, CelulaData, CelulaOpcao, CelulaPessoa, CelulaProjeto, CelulaTitulo } from "./Celulas";
+import { CelulaData, CelulaOpcao, CelulaPessoa, CelulaProjeto, CelulaTitulo } from "./Celulas";
 import { Progresso } from "./Progresso";
 
-// Colunas: expandir | caixa | tarefa | projeto | solicitante | executor | status | prioridade | período
+// Colunas: expandir | tarefa | projeto | solicitante | executor | status | prioridade | período
 const GRID =
-  "md:grid md:grid-cols-[28px_44px_minmax(240px,1fr)_190px_130px_130px_150px_120px_290px] md:items-center md:gap-x-1";
+  "md:grid md:grid-cols-[28px_minmax(220px,1fr)_140px_112px_132px_100px_240px] 2xl:grid-cols-[28px_minmax(220px,1fr)_140px_112px_112px_132px_100px_240px] md:items-center md:gap-x-1";
 
 type Props = {
   tarefas: TarefaDb[];
@@ -41,7 +41,7 @@ function Linha({
   const atrasada = t.status !== "concluida" && !!t.prazo && t.prazo < hoje;
 
   return (
-    <div className={`flex flex-wrap items-center border-b border-linha hover:bg-creme/60 ${GRID} ${sub ? "bg-creme-claro/70" : ""}`}>
+    <div className={`flex flex-wrap items-center border-b border-borda hover:bg-sutil ${GRID} ${sub ? "bg-sutil/60" : ""}`}>
       <div className={`flex size-7 items-center justify-center ${sub ? "hidden md:flex" : ""}`}>
         {expansor && t.subtarefas.length > 0 && (
           <button
@@ -49,21 +49,18 @@ function Linha({
             aria-expanded={expansor.aberto}
             aria-label={expansor.aberto ? "Recolher subtarefas" : "Mostrar subtarefas"}
             onClick={expansor.alternar}
-            className="flex size-7 items-center justify-center hover:bg-creme"
+            className="flex size-7 items-center justify-center hover:bg-sutil"
           >
-            <ChevronRight size={16} aria-hidden="true" className={`transition-transform ${expansor.aberto ? "rotate-90" : ""}`} />
+            <TbChevronRight size={16} aria-hidden="true" className={`transition-transform ${expansor.aberto ? "rotate-90" : ""}`} />
           </button>
         )}
       </div>
-      <div className={sub ? "pl-4 md:pl-3" : ""}>
-        <CaixaConcluir id={t.id} status={t.status} />
-      </div>
-      <div className="flex min-w-0 flex-1 items-center gap-2 md:flex-none">
+      <div className={`flex min-w-0 flex-1 items-center gap-2 md:flex-none ${sub ? "pl-4" : ""}`}>
         <CelulaTitulo id={t.id} valor={t.titulo} href={href} riscado={t.status === "concluida"} />
         <Progresso feitas={feitas} total={t.subtarefas.length} />
       </div>
 
-      <div className="flex basis-full flex-wrap items-start gap-2 pb-3 pl-12 md:contents">
+      <div className="flex basis-full flex-wrap items-start gap-2 pb-3 pl-9 md:contents">
         <div className="w-full sm:w-52 md:w-auto">
           {sub ? (
             <span aria-hidden="true" />
@@ -71,7 +68,7 @@ function Linha({
             <CelulaProjeto id={t.id} valor={t.projeto_id ?? ""} comites={comites} projetos={projetos} comiteFiltro={t.comite_slug} />
           )}
         </div>
-        <div className="w-36 md:w-auto">
+        <div className="w-36 md:hidden md:w-auto 2xl:block">
           <CelulaPessoa id={t.id} chave="solicitante_id" valor={t.solicitante_id ?? ""} membros={membros} rotulo="Solicitante" />
         </div>
         <div className="w-36 md:w-auto">
@@ -85,7 +82,7 @@ function Linha({
         </div>
         <div className="flex items-center gap-1">
           <CelulaData id={t.id} chave="data_inicio" valor={t.data_inicio ?? ""} rotulo="Início" />
-          <span aria-hidden="true" className="text-cinza">
+          <span aria-hidden="true" className="text-suave">
             →
           </span>
           <CelulaData id={t.id} chave="prazo" valor={t.prazo ?? ""} rotulo="Entrega" alerta={atrasada} />
@@ -110,16 +107,15 @@ function Grupo(props: Omit<Props, "tarefas"> & { t: TarefaDb }) {
 export function TabelaTarefas({ tarefas, membros, comites, projetos, hoje, qs }: Props) {
   return (
     <div className="overflow-x-auto">
-      <div className="md:min-w-[1400px]">
+      <div className="md:min-w-[960px] 2xl:min-w-[1070px]">
         <div
           aria-hidden="true"
-          className={`hidden border-b-2 border-preto pb-2 font-mono text-[11px] uppercase tracking-widest text-cinza md:grid md:grid-cols-[28px_44px_minmax(240px,1fr)_190px_130px_130px_150px_120px_290px] md:gap-x-1`}
+          className={`hidden border-b border-borda-forte pb-2 text-[11px] font-semibold uppercase tracking-widest text-suave md:grid md:grid-cols-[28px_minmax(220px,1fr)_140px_112px_132px_100px_240px] 2xl:grid-cols-[28px_minmax(220px,1fr)_140px_112px_112px_132px_100px_240px] md:gap-x-1`}
         >
-          <span />
           <span />
           <span>Tarefa</span>
           <span className="pl-1.5">Projeto</span>
-          <span className="pl-1.5">Solicitante</span>
+          <span className="hidden pl-1.5 2xl:block">Solicitante</span>
           <span className="pl-1.5">Executor</span>
           <span>Status</span>
           <span>Prioridade</span>

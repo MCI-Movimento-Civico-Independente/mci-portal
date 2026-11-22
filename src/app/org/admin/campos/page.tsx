@@ -1,4 +1,4 @@
-import { Archive, ArchiveRestore, ChevronLeft } from "lucide-react";
+import { TbArchive, TbArrowBackUp, TbChevronLeft } from "react-icons/tb";
 import Link from "next/link";
 import { arquivarCampoPersonalizadoAction } from "@/app/org/admin/acoes";
 import { FormEditarCampo, FormNovoCampo } from "@/components/admin/FormCampoPersonalizado";
@@ -20,29 +20,29 @@ export default async function CamposAdminPage() {
     <div className="flex max-w-3xl flex-col gap-6">
       <Link
         href="/org/admin"
-        className="inline-flex min-h-11 w-fit items-center gap-1 font-mono text-[11px] uppercase tracking-widest text-laranja-texto hover:underline"
+        className="inline-flex min-h-11 w-fit items-center gap-1 text-[11px] uppercase tracking-widest text-marca-texto hover:underline"
       >
-        <ChevronLeft size={14} aria-hidden="true" />
+        <TbChevronLeft size={14} aria-hidden="true" />
         Administração
       </Link>
-      <h1 className="text-3xl font-black tracking-tighter md:text-4xl">Campos personalizados</h1>
-      <p className="text-sm text-cinza">
-        Um campo é criado uma vez e pode entrar em vários formulários (em <Link href="/org/admin/formularios" className="font-bold text-laranja-texto underline">Formulários</Link>).
+      <h1 className="font-serif text-3xl md:text-4xl">Campos personalizados</h1>
+      <p className="text-sm text-suave">
+        Um campo é criado uma vez e pode entrar em vários formulários (em <Link href="/org/admin/formularios" className="font-bold text-marca-texto underline">Formulários</Link>).
         Arquivar esconde o campo de todos os formulários, mas os valores já preenchidos nas tarefas continuam guardados.
       </p>
 
       <Card>
         {ativos.length === 0 ? (
-          <p className="text-[15px] text-cinza">Nenhum campo personalizado ainda.</p>
+          <p className="text-[15px] text-suave">Nenhum campo personalizado ainda.</p>
         ) : (
           <ul>
             {ativos.map((c) => {
               const doForm = usadoEm(c.id);
               return (
-                <li key={c.id} className="flex flex-wrap items-start gap-x-3 gap-y-2 border-b border-linha py-4 last:border-b-0">
+                <li key={c.id} className="flex flex-wrap items-start gap-x-3 gap-y-2 border-b border-borda py-4 last:border-b-0">
                   <FormEditarCampo campoPersonalizado={c} />
                   <div className="flex items-center gap-2">
-                    <span className="font-mono text-[11px] uppercase text-cinza">
+                    <span className="text-[11px] uppercase text-suave">
                       {doForm.length
                         ? `em ${doForm.length} ${doForm.length === 1 ? "formulário" : "formulários"}`
                         : "sem formulário"}
@@ -53,7 +53,7 @@ export default async function CamposAdminPage() {
                       perigo
                       rotulo={`Arquivar ${c.rotulo}`}
                     >
-                      <Archive size={16} aria-hidden="true" />
+                      <TbArchive size={16} aria-hidden="true" />
                     </BotaoAcao>
                   </div>
                 </li>
@@ -69,13 +69,13 @@ export default async function CamposAdminPage() {
 
       {arquivados.length > 0 && (
         <Card>
-          <h2 className="font-mono text-[11px] uppercase tracking-widest text-cinza">Arquivados · {arquivados.length}</h2>
+          <h2 className="text-[11px] uppercase tracking-widest text-suave">Arquivados · {arquivados.length}</h2>
           <ul className="mt-2">
             {arquivados.map((c) => (
-              <li key={c.id} className="flex flex-wrap items-center justify-between gap-2 border-b border-linha py-2 last:border-b-0">
-                <span className="text-[15px] font-bold text-cinza line-through">{c.rotulo}</span>
+              <li key={c.id} className="flex flex-wrap items-center justify-between gap-2 border-b border-borda py-2 last:border-b-0">
+                <span className="text-[15px] font-bold text-suave line-through">{c.rotulo}</span>
                 <BotaoAcao acao={arquivarCampoPersonalizadoAction.bind(null, c.id, false)} rotulo={`Reativar ${c.rotulo}`}>
-                  <ArchiveRestore size={16} aria-hidden="true" />
+                  <TbArrowBackUp size={16} aria-hidden="true" />
                   Reativar
                 </BotaoAcao>
               </li>

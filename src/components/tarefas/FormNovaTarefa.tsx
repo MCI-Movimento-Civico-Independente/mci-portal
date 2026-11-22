@@ -35,7 +35,7 @@ export function FormNovaTarefa({
   const incluidos = new Set(formularios.find((f) => f.id === formularioId)?.campos ?? []);
   const tem = (chave: string) => incluidos.has(chave);
   const personalizados = camposPersonalizados.filter((c) => tem(chaveFormulario(c.id)));
-  const opcional = <span className="font-normal text-cinza">(opcional)</span>;
+  const opcional = <span className="font-normal text-suave">(opcional)</span>;
 
   const seletorPessoa = (id: string, rotuloCampo: string) => (
     <div key={id}>
@@ -126,7 +126,7 @@ export function FormNovaTarefa({
               </option>
             ))}
           </select>
-          <p className="mt-1 text-xs text-cinza">Define quais campos aparecem. Segue o padrão do comitê.</p>
+          <p className="mt-1 text-xs text-suave">Define quais campos aparecem. Segue o padrão do comitê.</p>
         </div>
 
         {tem("projeto_id") && (
@@ -149,7 +149,7 @@ export function FormNovaTarefa({
                 );
               })}
             </select>
-            <p className="mt-1 text-xs text-cinza">Escolher um projeto define o comitê dele.</p>
+            <p className="mt-1 text-xs text-suave">Escolher um projeto define o comitê dele.</p>
           </div>
         )}
         {tem("solicitante_id") && seletorPessoa("solicitante_id", "Solicitante")}
@@ -196,7 +196,7 @@ export function FormNovaTarefa({
             <div key={c.id} className={c.tipo === "texto_longo" ? "sm:col-span-2" : ""}>
               {c.tipo === "caixa" ? (
                 <label className="mt-6 flex min-h-11 items-center gap-3 text-sm font-bold">
-                  <input type="checkbox" name={nome} value="true" className="size-5 accent-preto" />
+                  <input type="checkbox" name={nome} value="true" className="size-5 accent-marca" />
                   {c.rotulo}
                 </label>
               ) : (
@@ -236,7 +236,7 @@ export function FormNovaTarefa({
       </div>
 
       {estado.erro && (
-        <p role="alert" className="border-l-4 border-laranja-texto bg-creme-claro p-3 text-sm font-bold">
+        <p role="alert" className="rounded-lg border border-marca/30 bg-marca-suave p-3 text-sm font-medium text-marca-texto">
           {estado.erro}
         </p>
       )}

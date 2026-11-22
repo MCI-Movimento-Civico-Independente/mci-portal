@@ -1,6 +1,6 @@
 "use client";
 
-import { X } from "lucide-react";
+import { TbX } from "react-icons/tb";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, type ReactNode } from "react";
 
@@ -30,16 +30,16 @@ export function Modal({ fecharHref, rotulo, children }: { fecharHref: string; ro
       onClick={(e) => {
         if (e.target === ref.current) ref.current?.close();
       }}
-      className="m-auto max-h-[92dvh] w-[min(100%-1.5rem,60rem)] overflow-y-auto border border-preto bg-creme p-0 text-preto backdrop:bg-preto/60"
+      className="m-auto max-h-[92dvh] w-[min(100%-1.5rem,60rem)] overflow-y-auto rounded-2xl border border-borda bg-superficie p-0 text-texto shadow-flutuante backdrop:bg-black/50 backdrop:backdrop-blur-sm"
     >
       <div className="relative p-5 md:p-8">
         <button
           type="button"
           aria-label="Fechar"
           onClick={() => ref.current?.close()}
-          className="absolute right-2 top-2 flex size-11 items-center justify-center hover:bg-preto hover:text-creme-claro"
+          className="absolute right-3 top-3 flex size-11 items-center justify-center rounded-lg text-suave hover:bg-sutil hover:text-texto"
         >
-          <X size={20} aria-hidden="true" />
+          <TbX size={20} aria-hidden="true" />
         </button>
         {children}
       </div>

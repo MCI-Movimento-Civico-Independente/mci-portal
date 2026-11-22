@@ -29,7 +29,7 @@ export function SeletorPapel({ contaId, papel, nome }: { contaId: string; papel:
             if (r.erro) setErro(r.erro);
           });
         }}
-        className="min-h-11 w-40 border border-linha bg-creme-claro px-2 text-sm font-bold hover:border-preto disabled:opacity-60"
+        className="min-h-11 w-40 rounded-lg border border-borda bg-superficie px-2 text-sm font-bold hover:border-borda-forte disabled:opacity-60"
       >
         {PAPEIS.map((p) => (
           <option key={p.valor} value={p.valor}>
@@ -38,7 +38,7 @@ export function SeletorPapel({ contaId, papel, nome }: { contaId: string; papel:
         ))}
       </select>
       {erro && (
-        <p role="alert" className="mt-1 text-xs font-bold text-laranja-texto">
+        <p role="alert" className="mt-1 text-xs font-bold text-marca-texto">
           {erro}
         </p>
       )}

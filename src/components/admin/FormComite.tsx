@@ -1,6 +1,6 @@
 "use client";
 
-import { Plus } from "lucide-react";
+import { TbPlus } from "react-icons/tb";
 import { useActionState } from "react";
 import { criarComiteAction, renomearComiteAction, type EstadoAdmin } from "@/app/org/admin/acoes";
 import { campo, rotulo } from "@/components/tarefas/estilos";
@@ -16,12 +16,12 @@ export function FormNovoComite() {
       <div className="flex flex-col gap-2 sm:flex-row">
         <input id="novo-comite" name="nome" required maxLength={100} placeholder="Ex.: Comitê de Finanças" className={`${campo} sm:flex-1`} />
         <Botao type="submit" disabled={pendente}>
-          <Plus size={16} aria-hidden="true" />
+          <TbPlus size={16} aria-hidden="true" />
           {pendente ? "Criando…" : "Criar comitê"}
         </Botao>
       </div>
       {estado.erro && (
-        <p role="alert" className="text-sm font-bold text-laranja-texto">
+        <p role="alert" className="text-sm font-bold text-marca-texto">
           {estado.erro}
         </p>
       )}
@@ -43,12 +43,12 @@ export function FormRenomearComite({ slug, nome }: { slug: string; nome: string 
         </Botao>
       </div>
       {estado.erro && (
-        <p role="alert" className="mt-1 text-xs font-bold text-laranja-texto">
+        <p role="alert" className="mt-1 text-xs font-bold text-marca-texto">
           {estado.erro}
         </p>
       )}
       {estado.ok && !pendente && (
-        <p role="status" className="mt-1 font-mono text-[11px] font-bold uppercase text-cinza">
+        <p role="status" className="mt-1 text-[11px] font-bold uppercase text-suave">
           Salvo
         </p>
       )}

@@ -1,6 +1,6 @@
 "use client";
 
-import { Plus } from "lucide-react";
+import { TbPlus } from "react-icons/tb";
 import { useActionState, useState } from "react";
 import {
   atualizarCampoPersonalizadoAction,
@@ -28,7 +28,7 @@ export function FormNovoCampo({ formularioId }: { formularioId?: string }) {
 
   return (
     <form key={estado.n ?? 0} action={acao} className="flex flex-col gap-4">
-      <h2 className="text-xl font-extrabold tracking-tight">Novo campo personalizado</h2>
+      <h2 className="text-xl font-semibold">Novo campo personalizado</h2>
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <label htmlFor="novo-campo-rotulo" className={rotulo}>
@@ -58,25 +58,25 @@ export function FormNovoCampo({ formularioId }: { formularioId?: string }) {
       {tipo === "lista" && (
         <div>
           <label htmlFor="novo-campo-opcoes" className={rotulo}>
-            Opções <span className="font-normal text-cinza">({DICA_OPCOES})</span>
+            Opções <span className="font-normal text-suave">({DICA_OPCOES})</span>
           </label>
           <textarea id="novo-campo-opcoes" name="opcoes" required rows={4} placeholder={"Fonte oficial\nImprensa\nDenúncia"} className={`${campo} py-2`} />
         </div>
       )}
       {tipo !== "caixa" && (
         <label className="flex min-h-11 items-center gap-3 text-sm font-bold">
-          <input type="checkbox" name="obrigatorio" className="size-5 accent-preto" />
+          <input type="checkbox" name="obrigatorio" className="size-5 accent-marca" />
           Obrigatório ao criar a tarefa
         </label>
       )}
       {estado.erro && (
-        <p role="alert" className="text-sm font-bold text-laranja-texto">
+        <p role="alert" className="text-sm font-bold text-marca-texto">
           {estado.erro}
         </p>
       )}
       <div>
         <Botao type="submit" disabled={pendente}>
-          <Plus size={16} aria-hidden="true" />
+          <TbPlus size={16} aria-hidden="true" />
           {pendente ? "Criando…" : formularioId ? "Criar e adicionar ao formulário" : "Criar campo"}
         </Botao>
       </div>
@@ -117,25 +117,25 @@ export function FormEditarCampo({ campoPersonalizado }: { campoPersonalizado: Ca
               defaultValue={c.opcoes.join("\n")}
               className={`${campo} py-2`}
             />
-            <p className="mt-1 text-xs text-cinza">{DICA_OPCOES}. Tirar uma opção não apaga o valor já gravado nas tarefas.</p>
+            <p className="mt-1 text-xs text-suave">{DICA_OPCOES}. Tirar uma opção não apaga o valor já gravado nas tarefas.</p>
           </div>
         )}
         <div className="flex flex-wrap items-center gap-x-4">
-          <span className="font-mono text-[11px] uppercase text-cinza">{rotuloDoTipo(c.tipo)}</span>
+          <span className="text-[11px] uppercase text-suave">{rotuloDoTipo(c.tipo)}</span>
           {c.tipo !== "caixa" && (
             <label className="flex min-h-11 items-center gap-2 text-sm font-bold">
-              <input type="checkbox" name="obrigatorio" defaultChecked={c.obrigatorio} className="size-5 accent-preto" />
+              <input type="checkbox" name="obrigatorio" defaultChecked={c.obrigatorio} className="size-5 accent-marca" />
               Obrigatório
             </label>
           )}
         </div>
         {estado.erro && (
-          <p role="alert" className="text-xs font-bold text-laranja-texto">
+          <p role="alert" className="text-xs font-bold text-marca-texto">
             {estado.erro}
           </p>
         )}
         {estado.ok && !pendente && (
-          <p role="status" className="font-mono text-[11px] font-bold uppercase text-cinza">
+          <p role="status" className="text-[11px] font-bold uppercase text-suave">
             Salvo
           </p>
         )}

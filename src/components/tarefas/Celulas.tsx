@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Pencil } from "lucide-react";
+import { TbPencil } from "react-icons/tb";
 import Link from "next/link";
 import { useRef, useState } from "react";
 import type { FormularioView } from "@/lib/formularios-tipos";
@@ -16,7 +16,7 @@ import { useCampo } from "./useCampo";
 
 function MensagemErro({ erro }: { erro: string | null }) {
   return erro ? (
-    <p role="alert" className="mt-0.5 text-xs font-bold text-laranja-texto">
+    <p role="alert" className="mt-0.5 text-xs font-bold text-marca-texto">
       {erro}
     </p>
   ) : null;
@@ -45,10 +45,10 @@ export function CelulaOpcao({
         value={valor}
         disabled={pendente}
         onChange={(e) => salvar(e.target.value)}
-        className={`min-h-11 w-full border px-2 font-mono text-[11px] font-bold uppercase hover:brightness-95 disabled:opacity-60 ${atual.classes}`}
+        className={`min-h-11 w-full rounded-lg border px-2.5 text-xs font-semibold hover:brightness-95 disabled:opacity-60 dark:hover:brightness-125 ${atual.classes}`}
       >
         {opcoes.map((o) => (
-          <option key={o.valor} value={o.valor} className="bg-creme-claro text-preto">
+          <option key={o.valor} value={o.valor} className="bg-superficie text-texto">
             {o.rotulo}
           </option>
         ))}
@@ -80,7 +80,7 @@ export function CelulaPessoa({
         value={valor}
         disabled={pendente}
         onChange={(e) => salvar(e.target.value)}
-        className="min-h-11 w-full truncate border border-transparent bg-transparent px-1.5 text-sm font-medium hover:border-linha hover:bg-creme-claro disabled:opacity-60"
+        className="min-h-11 w-full truncate rounded-lg border border-transparent bg-transparent px-1.5 text-sm font-medium hover:border-borda hover:bg-sutil disabled:opacity-60"
       >
         <option value="">—</option>
         {membros.map((m) => (
@@ -123,8 +123,8 @@ export function CelulaData({
         disabled={pendente}
         onBlur={(e) => salvar(e.target.value)}
         onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
-        className={`min-h-11 w-[8.5rem] border border-transparent bg-transparent px-1 font-mono text-xs hover:border-linha hover:bg-creme-claro disabled:opacity-60 ${
-          alerta ? "font-bold text-laranja-texto" : ""
+        className={`min-h-11 w-28 border border-transparent bg-transparent px-1 text-xs hover:border-borda hover:bg-sutil disabled:opacity-60 ${
+          alerta ? "font-bold text-marca-texto" : ""
         }`}
       />
       <MensagemErro erro={erro} />
@@ -150,7 +150,7 @@ export function CelulaFormulario({
         value={valor}
         disabled={pendente}
         onChange={(e) => salvar(e.target.value)}
-        className="min-h-11 w-full truncate border border-transparent bg-transparent px-1.5 text-sm font-medium hover:border-linha hover:bg-creme-claro disabled:opacity-60"
+        className="min-h-11 w-full truncate rounded-lg border border-transparent bg-transparent px-1.5 text-sm font-medium hover:border-borda hover:bg-sutil disabled:opacity-60"
       >
         {formularios.map((f) => (
           <option key={f.id} value={f.id}>
@@ -181,7 +181,7 @@ export function CelulaComite({
         value={valor}
         disabled={pendente}
         onChange={(e) => salvar(e.target.value)}
-        className="min-h-11 w-full truncate border border-transparent bg-transparent px-1.5 text-sm font-medium hover:border-linha hover:bg-creme-claro disabled:opacity-60"
+        className="min-h-11 w-full truncate rounded-lg border border-transparent bg-transparent px-1.5 text-sm font-medium hover:border-borda hover:bg-sutil disabled:opacity-60"
       >
         <option value="">— sem comitê</option>
         {comites.map((c) => (
@@ -221,7 +221,7 @@ export function CelulaProjeto({
         value={valor}
         disabled={pendente}
         onChange={(e) => salvar(e.target.value)}
-        className="min-h-11 w-full truncate border border-transparent bg-transparent px-1.5 text-sm font-medium hover:border-linha hover:bg-creme-claro disabled:opacity-60"
+        className="min-h-11 w-full truncate rounded-lg border border-transparent bg-transparent px-1.5 text-sm font-medium hover:border-borda hover:bg-sutil disabled:opacity-60"
       >
         <option value="">— sem projeto</option>
         {comites.map((c) => {
@@ -271,7 +271,7 @@ export function CelulaTitulo({
     if (texto.trim()) salvar(texto.trim());
   }
 
-  const tamanho = grande ? "text-2xl font-black leading-tight tracking-tighter md:text-3xl" : "text-[15px] font-bold leading-snug";
+  const tamanho = grande ? "font-serif text-2xl leading-tight md:text-3xl" : "text-[15px] font-bold leading-snug";
 
   if (editando) {
     return (
@@ -289,7 +289,7 @@ export function CelulaTitulo({
               e.currentTarget.blur();
             }
           }}
-          className={`min-h-11 w-full border border-preto bg-creme-claro px-2 ${tamanho}`}
+          className={`min-h-11 w-full border border-inverso bg-superficie px-2 ${tamanho}`}
         />
         <MensagemErro erro={erro} />
       </div>
@@ -303,7 +303,7 @@ export function CelulaTitulo({
           <Link
             href={href}
             scroll={false}
-            className={`min-w-0 hover:text-laranja-texto hover:underline ${tamanho} ${riscado ? "line-through opacity-60" : ""} ${pendente ? "opacity-60" : ""}`}
+            className={`min-w-0 hover:text-marca-texto hover:underline ${tamanho} ${riscado ? "line-through opacity-60" : ""} ${pendente ? "opacity-60" : ""}`}
           >
             {valor}
           </Link>
@@ -314,44 +314,13 @@ export function CelulaTitulo({
           type="button"
           aria-label="Editar assunto"
           onClick={() => setEditando(true)}
-          className="flex size-11 shrink-0 items-center justify-center text-cinza hover:bg-creme hover:text-preto md:opacity-0 md:focus-visible:opacity-100 md:group-hover/titulo:opacity-100"
+          className="flex size-11 shrink-0 items-center justify-center text-suave hover:bg-sutil hover:text-texto md:opacity-0 md:focus-visible:opacity-100 md:group-hover/titulo:opacity-100"
         >
-          <Pencil size={14} aria-hidden="true" />
+          <TbPencil size={14} aria-hidden="true" />
         </button>
       </div>
       <MensagemErro erro={erro} />
     </div>
-  );
-}
-
-/** Caixa de concluir/reabrir (alvo de toque de 44px). */
-export function CaixaConcluir({ id, status }: { id: string; status: string }) {
-  const { valor, salvar, pendente, erro } = useCampo(id, "status", status);
-  const concluida = valor === "concluida";
-  return (
-    <>
-      <button
-        type="button"
-        disabled={pendente}
-        aria-label={concluida ? "Reabrir tarefa" : "Concluir tarefa"}
-        aria-pressed={concluida}
-        onClick={() => salvar(concluida ? "a_fazer" : "concluida")}
-        className="group flex size-11 shrink-0 items-center justify-center disabled:opacity-50"
-      >
-        <span
-          className={`flex size-5 items-center justify-center border-2 border-preto group-hover:bg-amarelo ${
-            concluida ? "bg-preto text-creme-claro group-hover:bg-laranja-texto" : ""
-          }`}
-        >
-          {concluida && <Check size={14} strokeWidth={3} aria-hidden="true" />}
-        </span>
-      </button>
-      {erro && (
-        <span role="alert" className="sr-only">
-          {erro}
-        </span>
-      )}
-    </>
   );
 }
 

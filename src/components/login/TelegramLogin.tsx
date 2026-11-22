@@ -29,7 +29,7 @@ export function TelegramLogin({ bot, next }: { bot: string; next?: string }) {
     if (host === "localhost" || host === "127.0.0.1" || /^\d+\.\d+\.\d+\.\d+$/.test(host)) {
       el.textContent =
         "O login pelo Telegram só funciona no domínio do portal (HTTPS) cadastrado no BotFather. Em ambiente local, use o Google.";
-      el.className = "text-sm font-bold text-cinza";
+      el.className = "text-sm font-bold text-suave";
       return;
     }
 
@@ -73,9 +73,9 @@ export function TelegramLogin({ bot, next }: { bot: string; next?: string }) {
   return (
     <div>
       <div ref={ref} className="flex min-h-11 items-center" aria-busy={entrando} />
-      {entrando && <p className="mt-2 font-mono text-xs text-cinza">Entrando…</p>}
+      {entrando && <p className="mt-2 text-xs text-suave">Entrando…</p>}
       {erro && (
-        <p role="alert" className="mt-3 text-sm font-bold text-laranja-texto">
+        <p role="alert" className="mt-3 text-sm font-bold text-marca-texto">
           {erro}
         </p>
       )}

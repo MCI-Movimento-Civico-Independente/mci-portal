@@ -1,4 +1,4 @@
-import { ChevronLeft, Trash2 } from "lucide-react";
+import { TbChevronLeft, TbTrash } from "react-icons/tb";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { excluirFormularioAction } from "@/app/org/admin/acoes";
@@ -30,12 +30,12 @@ export default async function FormularioAdminPage({ params }: { params: Promise<
     <div className="flex max-w-3xl flex-col gap-6">
       <Link
         href="/org/admin/formularios"
-        className="inline-flex min-h-11 w-fit items-center gap-1 font-mono text-[11px] uppercase tracking-widest text-laranja-texto hover:underline"
+        className="inline-flex min-h-11 w-fit items-center gap-1 text-[11px] uppercase tracking-widest text-marca-texto hover:underline"
       >
-        <ChevronLeft size={14} aria-hidden="true" />
+        <TbChevronLeft size={14} aria-hidden="true" />
         Formulários
       </Link>
-      <h1 className="text-2xl font-black tracking-tighter md:text-3xl">{formulario.nome}</h1>
+      <h1 className="font-serif text-2xl md:text-3xl">{formulario.nome}</h1>
 
       <Card>
         <FormEditarFormulario
@@ -57,7 +57,7 @@ export default async function FormularioAdminPage({ params }: { params: Promise<
             aviso={`Excluir o formulário "${formulario.nome}"? Os comitês e as tarefas que o usam passam para o Padrão geral.`}
             perigo
           >
-            <Trash2 size={16} aria-hidden="true" />
+            <TbTrash size={16} aria-hidden="true" />
             Excluir formulário
           </BotaoAcao>
         </div>

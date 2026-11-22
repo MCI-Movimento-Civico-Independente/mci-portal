@@ -1,6 +1,6 @@
 "use client";
 
-import { Plus } from "lucide-react";
+import { TbPlus } from "react-icons/tb";
 import { useActionState } from "react";
 import { criarProjetoAction, type EstadoProjeto } from "@/app/org/projetos/acoes";
 import { campo, rotulo } from "@/components/tarefas/estilos";
@@ -13,7 +13,7 @@ export function FormNovoProjeto({ comites, comiteFixo }: { comites: ComiteBasico
 
   return (
     <form key={estado.n ?? 0} action={acao} className="flex flex-col gap-4">
-      <h2 className="text-xl font-extrabold tracking-tight">Novo projeto</h2>
+      <h2 className="text-xl font-semibold">Novo projeto</h2>
       <div className="grid gap-4 md:grid-cols-2">
         {comiteFixo ? (
           <input type="hidden" name="comite" value={comiteFixo} />
@@ -43,18 +43,18 @@ export function FormNovoProjeto({ comites, comiteFixo }: { comites: ComiteBasico
       </div>
       <div>
         <label htmlFor="descricao-projeto" className={rotulo}>
-          Descrição <span className="font-normal text-cinza">(opcional)</span>
+          Descrição <span className="font-normal text-suave">(opcional)</span>
         </label>
         <textarea id="descricao-projeto" name="descricao" rows={2} maxLength={1000} className={`${campo} py-2`} />
       </div>
       {estado.erro && (
-        <p role="alert" className="text-sm font-bold text-laranja-texto">
+        <p role="alert" className="text-sm font-bold text-marca-texto">
           {estado.erro}
         </p>
       )}
       <div>
         <Botao type="submit" disabled={pendente}>
-          <Plus size={16} aria-hidden="true" />
+          <TbPlus size={16} aria-hidden="true" />
           {pendente ? "Criando…" : "Criar projeto"}
         </Botao>
       </div>

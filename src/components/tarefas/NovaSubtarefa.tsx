@@ -1,6 +1,6 @@
 "use client";
 
-import { Plus } from "lucide-react";
+import { TbPlus } from "react-icons/tb";
 import { useActionState } from "react";
 import { criarSubtarefaAction, type EstadoForm } from "@/app/org/tarefas/acoes";
 import { Botao } from "@/components/ui/Botao";
@@ -23,7 +23,7 @@ export function NovaSubtarefa({
   );
 
   return (
-    <form key={estado.n ?? 0} action={acao} className="mt-4 flex flex-col gap-3 border-t border-linha pt-4">
+    <form key={estado.n ?? 0} action={acao} className="mt-4 flex flex-col gap-3 border-t border-borda pt-4">
       <label htmlFor="sub-titulo" className="text-sm font-bold">
         Nova subtarefa
       </label>
@@ -46,12 +46,12 @@ export function NovaSubtarefa({
         </select>
         <input name="prazo" type="date" aria-label="Entrega" className={`${campo} md:w-40`} />
         <Botao type="submit" disabled={pendente}>
-          <Plus size={16} aria-hidden="true" />
+          <TbPlus size={16} aria-hidden="true" />
           {pendente ? "Adicionando…" : "Adicionar"}
         </Botao>
       </div>
       {estado.erro && (
-        <p role="alert" className="text-sm font-bold text-laranja-texto">
+        <p role="alert" className="text-sm font-bold text-marca-texto">
           {estado.erro}
         </p>
       )}

@@ -1,4 +1,4 @@
-import { ChevronLeft } from "lucide-react";
+import { TbChevronLeft } from "react-icons/tb";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { FormNovoProjeto } from "@/components/projetos/FormNovoProjeto";
@@ -18,20 +18,20 @@ export default async function ComitePage({ params }: { params: Promise<{ slug: s
     <div className="flex max-w-3xl flex-col gap-6">
       <Link
         href="/org/comites"
-        className="inline-flex min-h-11 w-fit items-center gap-1 font-mono text-[11px] uppercase tracking-widest text-laranja-texto hover:underline"
+        className="inline-flex min-h-11 w-fit items-center gap-1 text-[11px] uppercase tracking-widest text-marca-texto hover:underline"
       >
-        <ChevronLeft size={14} aria-hidden="true" />
+        <TbChevronLeft size={14} aria-hidden="true" />
         Comitês
       </Link>
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <h1 className="min-w-0 flex-1 text-2xl font-black leading-tight tracking-tighter md:text-3xl">{comite.nome}</h1>
+        <h1 className="font-serif min-w-0 flex-1 text-2xl leading-tight md:text-3xl">{comite.nome}</h1>
         <Botao href={`/org/tarefas?quem=todas&comite=${comite.slug}`} variante="secundario">
           Ver tarefas do comitê
         </Botao>
       </div>
 
       <Card>
-        <h2 className="mb-2 text-xl font-extrabold tracking-tight">Projetos</h2>
+        <h2 className="mb-2 text-xl font-semibold">Projetos</h2>
         <ListaProjetos projetos={projetos} />
       </Card>
       <Card>

@@ -8,19 +8,20 @@ export type Prioridade = "baixa" | "media" | "alta" | "urgente";
 
 export type Opcao = { valor: string; rotulo: string; classes: string };
 
+// Etiquetas suaves (fundo translúcido + texto no tom da cor), legíveis no claro e no escuro.
 export const STATUS_OPCOES: Opcao[] = [
-  { valor: "a_fazer", rotulo: "A fazer", classes: "bg-preto text-creme-claro border-preto" },
-  { valor: "em_andamento", rotulo: "Em andamento", classes: "bg-amarelo text-preto border-amarelo" },
-  { valor: "em_revisao", rotulo: "Em revisão", classes: "bg-laranja text-preto border-laranja" },
-  { valor: "concluida", rotulo: "Concluída", classes: "bg-transparent text-preto border-preto" },
+  { valor: "a_fazer", rotulo: "A fazer", classes: "border-borda bg-sutil text-suave" },
+  { valor: "em_andamento", rotulo: "Em andamento", classes: "border-ouro/40 bg-ouro-suave text-ouro-texto" },
+  { valor: "em_revisao", rotulo: "Em revisão", classes: "border-marca/30 bg-marca-suave text-marca-texto" },
+  { valor: "concluida", rotulo: "Concluída", classes: "border-verde/30 bg-verde-suave text-verde-texto" },
 ];
 
 export const PRIORIDADE_OPCOES: Opcao[] = [
-  { valor: "", rotulo: "—", classes: "bg-transparent text-cinza border-linha" },
-  { valor: "baixa", rotulo: "Baixa", classes: "bg-creme-claro text-preto border-cinza" },
-  { valor: "media", rotulo: "Média", classes: "bg-amarelo/40 text-preto border-amarelo" },
-  { valor: "alta", rotulo: "Alta", classes: "bg-laranja text-preto border-laranja" },
-  { valor: "urgente", rotulo: "Urgente", classes: "bg-laranja-texto text-creme-claro border-laranja-texto" },
+  { valor: "", rotulo: "—", classes: "border-transparent bg-transparent text-suave" },
+  { valor: "baixa", rotulo: "Baixa", classes: "border-borda bg-sutil text-suave" },
+  { valor: "media", rotulo: "Média", classes: "border-ouro/40 bg-ouro-suave text-ouro-texto" },
+  { valor: "alta", rotulo: "Alta", classes: "border-marca/30 bg-marca-suave text-marca-texto" },
+  { valor: "urgente", rotulo: "Urgente", classes: "border-marca bg-marca text-sobre-marca" },
 ];
 
 export type ChaveCampo =

@@ -1,4 +1,4 @@
-import { ChevronLeft } from "lucide-react";
+import { TbChevronLeft } from "react-icons/tb";
 import Link from "next/link";
 import { SeletorPapel } from "@/components/admin/SeletorPapel";
 import { Botao } from "@/components/ui/Botao";
@@ -18,14 +18,14 @@ export default async function MembrosAdminPage({ searchParams }: { searchParams:
     <div className="flex max-w-4xl flex-col gap-6">
       <Link
         href="/org/admin"
-        className="inline-flex min-h-11 w-fit items-center gap-1 font-mono text-[11px] uppercase tracking-widest text-laranja-texto hover:underline"
+        className="inline-flex min-h-11 w-fit items-center gap-1 text-[11px] uppercase tracking-widest text-marca-texto hover:underline"
       >
-        <ChevronLeft size={14} aria-hidden="true" />
+        <TbChevronLeft size={14} aria-hidden="true" />
         Administração
       </Link>
-      <h1 className="text-3xl font-black tracking-tighter md:text-4xl">Membros e acessos</h1>
+      <h1 className="font-serif text-3xl md:text-4xl">Membros e acessos</h1>
 
-      <p className="text-sm text-cinza">
+      <p className="text-sm text-suave">
         <strong>Membro</strong> usa só a comunidade. <strong>Organização</strong> também entra na área de tarefas,
         projetos e comitês. <strong>Admin</strong> ainda gerencia acessos e comitês. A mudança vale na hora, na próxima
         página que a pessoa abrir.
@@ -40,20 +40,20 @@ export default async function MembrosAdminPage({ searchParams }: { searchParams:
           name="q"
           defaultValue={q ?? ""}
           placeholder="Buscar por nome"
-          className="min-h-11 w-full max-w-sm border border-linha bg-creme-claro px-3 text-sm hover:border-cinza"
+          className="min-h-11 w-full max-w-sm rounded-lg border border-borda bg-superficie px-3 text-sm hover:border-borda-forte"
         />
         <Botao type="submit" variante="secundario">
           Buscar
         </Botao>
         {q && (
-          <Link href="/org/admin/membros" className="inline-flex min-h-11 items-center px-2 text-sm font-bold text-laranja-texto underline">
+          <Link href="/org/admin/membros" className="inline-flex min-h-11 items-center px-2 text-sm font-bold text-marca-texto underline">
             Limpar
           </Link>
         )}
       </form>
 
       <Card>
-        <h2 className="font-mono text-[11px] uppercase tracking-widest text-cinza">
+        <h2 className="text-[11px] uppercase tracking-widest text-suave">
           {contas.length} {contas.length === 1 ? "conta" : "contas"}
           {contas.length === 100 && " (mostrando as 100 primeiras; refine a busca)"}
         </h2>
@@ -62,13 +62,13 @@ export default async function MembrosAdminPage({ searchParams }: { searchParams:
         ) : (
           <ul className="mt-2">
             {contas.map((c) => (
-              <li key={c.id} className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-linha py-3 last:border-b-0">
+              <li key={c.id} className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-borda py-3 last:border-b-0">
                 <div className="min-w-0 flex-1 basis-56">
                   <p className="truncate text-[15px] font-bold">
                     {c.nome}
-                    {c.id === sessao?.conta.id && <span className="ml-2 font-mono text-[11px] font-normal text-cinza">(você)</span>}
+                    {c.id === sessao?.conta.id && <span className="ml-2 text-[11px] font-normal text-suave">(você)</span>}
                   </p>
-                  <p className="mt-0.5 flex flex-wrap gap-x-3 font-mono text-[11px] uppercase text-cinza">
+                  <p className="mt-0.5 flex flex-wrap gap-x-3 text-[11px] uppercase text-suave">
                     <span>{c.nivel ? `Nível ${c.nivel.numero} · ${c.nivel.nome} · ${c.xp} XP` : "Sem nível"}</span>
                     <span>{c.provedores.map((p) => ROTULO_PROVEDOR[p] ?? p).join(" + ") || "Sem login vinculado"}</span>
                   </p>

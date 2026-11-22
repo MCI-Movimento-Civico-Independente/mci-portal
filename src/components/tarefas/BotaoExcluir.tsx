@@ -1,6 +1,6 @@
 "use client";
 
-import { Trash2 } from "lucide-react";
+import { TbTrash } from "react-icons/tb";
 import { excluirTarefaAction } from "@/app/org/tarefas/acoes";
 
 export function BotaoExcluir({ id, aviso }: { id: string; aviso: string }) {
@@ -13,9 +13,9 @@ export function BotaoExcluir({ id, aviso }: { id: string; aviso: string }) {
     >
       <button
         type="submit"
-        className="inline-flex min-h-11 items-center gap-2 px-3 text-sm font-bold text-laranja-texto hover:bg-laranja hover:text-preto"
+        className="inline-flex min-h-11 items-center gap-2 rounded-lg px-3 text-sm font-bold text-marca-texto hover:bg-marca-suave"
       >
-        <Trash2 size={16} aria-hidden="true" />
+        <TbTrash size={16} aria-hidden="true" />
         Excluir
       </button>
     </form>

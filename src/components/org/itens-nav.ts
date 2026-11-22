@@ -1,45 +1,35 @@
-import {
-  Calendar,
-  CheckSquare,
-  FileText,
-  Home,
-  Settings,
-  SquareKanban,
-  MoreHorizontal,
-  Users,
-  UsersRound,
-  type LucideIcon,
-} from "lucide-react";
+import { TbCalendar, TbDots, TbFileText, TbHome, TbLayoutKanban, TbSettings, TbSquareCheck, TbUsers, TbUsersGroup } from "react-icons/tb";
+import type { IconType } from "react-icons";
 
 export type ItemNav = {
   href: string;
   rotulo: string;
-  icone: LucideIcon;
+  icone: IconType;
   /** Prefixos extras de rota que também deixam o item ativo. */
   tambem?: string[];
 };
 
 export const itensLaterais: ItemNav[] = [
-  { href: "/org", rotulo: "Início", icone: Home },
-  { href: "/org/tarefas", rotulo: "Minhas tarefas", icone: CheckSquare },
-  { href: "/org/projetos", rotulo: "Projetos", icone: SquareKanban },
-  { href: "/org/comites", rotulo: "Comitês", icone: UsersRound },
-  { href: "/org/calendario", rotulo: "Calendário", icone: Calendar },
-  { href: "/org/documentos", rotulo: "Documentos", icone: FileText },
-  { href: "/org/membros", rotulo: "Membros", icone: Users },
+  { href: "/org", rotulo: "Início", icone: TbHome },
+  { href: "/org/tarefas", rotulo: "Minhas tarefas", icone: TbSquareCheck },
+  { href: "/org/projetos", rotulo: "Projetos", icone: TbLayoutKanban },
+  { href: "/org/comites", rotulo: "Comitês", icone: TbUsersGroup },
+  { href: "/org/calendario", rotulo: "Calendário", icone: TbCalendar },
+  { href: "/org/documentos", rotulo: "Documentos", icone: TbFileText },
+  { href: "/org/membros", rotulo: "Membros", icone: TbUsers },
 ];
 
-export const itemAdmin: ItemNav = { href: "/org/admin", rotulo: "Administração", icone: Settings };
+export const itemAdmin: ItemNav = { href: "/org/admin", rotulo: "Administração", icone: TbSettings };
 
 export const itensInferiores: ItemNav[] = [
-  { href: "/org", rotulo: "Início", icone: Home },
-  { href: "/org/tarefas", rotulo: "Tarefas", icone: CheckSquare },
-  { href: "/org/projetos", rotulo: "Projetos", icone: SquareKanban },
-  { href: "/org/calendario", rotulo: "Agenda", icone: Calendar },
+  { href: "/org", rotulo: "Início", icone: TbHome },
+  { href: "/org/tarefas", rotulo: "Tarefas", icone: TbSquareCheck },
+  { href: "/org/projetos", rotulo: "Projetos", icone: TbLayoutKanban },
+  { href: "/org/calendario", rotulo: "Agenda", icone: TbCalendar },
   {
     href: "/org/comites",
     rotulo: "Mais",
-    icone: MoreHorizontal,
+    icone: TbDots,
     tambem: ["/org/documentos", "/org/membros"],
   },
 ];

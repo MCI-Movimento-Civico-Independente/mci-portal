@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ChevronLeft } from "lucide-react";
+import { TbChevronLeft } from "react-icons/tb";
 import { listarComentarios, listarHistorico, type Evento } from "@/lib/atividade";
 import { formatarDataHora, hojeSP } from "@/lib/datas";
 import {
@@ -81,13 +81,13 @@ export async function DetalheTarefa({
           <Link
             href={`/org/tarefas?${qs ? `${qs}&` : ""}tarefa=${tarefa.pai_id}`}
             scroll={false}
-            className="inline-flex min-h-11 items-center gap-1 font-mono text-[11px] uppercase tracking-widest text-laranja-texto hover:underline"
+            className="inline-flex min-h-11 items-center gap-1 text-[11px] uppercase tracking-widest text-marca-texto hover:underline"
           >
-            <ChevronLeft size={14} aria-hidden="true" />
+            <TbChevronLeft size={14} aria-hidden="true" />
             Subtarefa de {tarefa.paiTitulo ?? "tarefa"}
           </Link>
         ) : (
-          <p className="font-mono text-[11px] uppercase tracking-widest text-cinza">Tarefa</p>
+          <p className="text-[11px] uppercase tracking-widest text-suave">Tarefa</p>
         )}
         <div className="mt-1">
           <CelulaTitulo id={tarefa.id} valor={tarefa.titulo} grande />
@@ -97,7 +97,7 @@ export async function DetalheTarefa({
       <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-2">
         {campos.map((c) => (
           <div key={c.chave} className="grid grid-cols-[110px_1fr] items-center">
-            <dt className="font-mono text-[11px] uppercase tracking-widest text-cinza">{c.rotulo}</dt>
+            <dt className="text-[11px] uppercase tracking-widest text-suave">{c.rotulo}</dt>
             <dd>
               <CampoEditavel
                 campo={c}
@@ -116,7 +116,7 @@ export async function DetalheTarefa({
             key={c.id}
             className={`grid grid-cols-[110px_1fr] items-start ${c.tipo === "texto_longo" ? "sm:col-span-2" : "items-center"}`}
           >
-            <dt className="pt-3 font-mono text-[11px] uppercase tracking-widest text-cinza">
+            <dt className="pt-3 text-[11px] uppercase tracking-widest text-suave">
               {c.rotulo}
               {c.obrigatorio && <span aria-hidden="true"> *</span>}
             </dt>
@@ -132,11 +132,11 @@ export async function DetalheTarefa({
       {!ehSub && (
         <section aria-labelledby="titulo-subtarefas">
           <div className="flex items-baseline justify-between">
-            <h2 id="titulo-subtarefas" className="text-xl font-extrabold tracking-tight">
+            <h2 id="titulo-subtarefas" className="text-xl font-semibold">
               Subtarefas
             </h2>
             {total > 0 && (
-              <span className="font-mono text-[11px] font-bold uppercase text-cinza">
+              <span className="text-[11px] font-bold uppercase text-suave">
                 {feitas} de {total} concluídas
               </span>
             )}
@@ -148,13 +148,13 @@ export async function DetalheTarefa({
               aria-valuenow={Math.round((feitas / total) * 100)}
               aria-valuemin={0}
               aria-valuemax={100}
-              className="mt-3 h-2 bg-preto/15"
+              className="mt-3 h-2 overflow-hidden rounded-full bg-sutil"
             >
-              <div className="h-full bg-preto" style={{ width: `${(feitas / total) * 100}%` }} />
+              <div className="h-full rounded-full bg-marca" style={{ width: `${(feitas / total) * 100}%` }} />
             </div>
           )}
           {total === 0 ? (
-            <p className="mt-3 text-[15px] text-cinza">
+            <p className="mt-3 text-[15px] text-suave">
               Divida o trabalho em partes menores, cada uma com seu executor e entrega.
             </p>
           ) : (
@@ -183,7 +183,7 @@ export async function DetalheTarefa({
         }))}
       />
 
-      <div className="flex justify-end border-t border-linha pt-3">
+      <div className="flex justify-end border-t border-borda pt-3">
         <BotaoExcluir
           id={tarefa.id}
           aviso={

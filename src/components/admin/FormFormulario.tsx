@@ -1,6 +1,6 @@
 "use client";
 
-import { Plus } from "lucide-react";
+import { TbPlus } from "react-icons/tb";
 import { useActionState } from "react";
 import { criarFormularioAction, salvarFormularioAction, type EstadoAdmin } from "@/app/org/admin/acoes";
 import { campo, rotulo } from "@/components/tarefas/estilos";
@@ -27,13 +27,13 @@ export function FormNovoFormulario() {
       <div className="flex flex-col gap-2 sm:flex-row">
         <input id="novo-formulario" name="nome" required maxLength={80} placeholder="Ex.: Pauta jornalística" className={`${campo} sm:flex-1`} />
         <Botao type="submit" disabled={pendente}>
-          <Plus size={16} aria-hidden="true" />
+          <TbPlus size={16} aria-hidden="true" />
           {pendente ? "Criando…" : "Criar formulário"}
         </Botao>
       </div>
-      <p className="text-xs text-cinza">Começa com os mesmos campos do Padrão geral. Depois é só adicionar ou remover.</p>
+      <p className="text-xs text-suave">Começa com os mesmos campos do Padrão geral. Depois é só adicionar ou remover.</p>
       {estado.erro && (
-        <p role="alert" className="text-sm font-bold text-laranja-texto">
+        <p role="alert" className="text-sm font-bold text-marca-texto">
           {estado.erro}
         </p>
       )}
@@ -70,7 +70,7 @@ export function FormEditarFormulario({
         </div>
         <div>
           <label htmlFor="descricao-formulario" className={rotulo}>
-            Descrição <span className="font-normal text-cinza">(opcional)</span>
+            Descrição <span className="font-normal text-suave">(opcional)</span>
           </label>
           <textarea
             id="descricao-formulario"
@@ -84,47 +84,47 @@ export function FormEditarFormulario({
       </div>
 
       <fieldset>
-        <legend className="text-lg font-extrabold tracking-tight">Campos</legend>
-        <p className="mt-1 text-sm text-cinza">
+        <legend className="text-lg font-semibold">Campos</legend>
+        <p className="mt-1 text-sm text-suave">
           Sempre presentes: Assunto, Descrição,{" "}
           {fixos.map((c) => c.rotulo).join(", ")}. Marque os outros campos que este formulário deve ter.
         </p>
         <ul className="mt-3 grid gap-x-6 sm:grid-cols-2">
           {CAMPOS_CONFIGURAVEIS.map((c) => (
             <li key={c.chave}>
-              <label className="flex min-h-11 cursor-pointer items-center gap-3 hover:bg-creme-claro">
+              <label className="flex min-h-11 cursor-pointer items-center gap-3 hover:bg-sutil">
                 <input
                   type="checkbox"
                   name="campo"
                   value={c.chave}
                   defaultChecked={formulario.campos.includes(c.chave)}
-                  className="size-5 shrink-0 accent-preto"
+                  className="size-5 shrink-0 accent-marca"
                 />
                 <span className="text-[15px] font-bold">{c.rotulo}</span>
-                <span className="font-mono text-[11px] uppercase text-cinza">{TIPOS[c.tipo] ?? c.tipo}</span>
+                <span className="text-[11px] uppercase text-suave">{TIPOS[c.tipo] ?? c.tipo}</span>
               </label>
             </li>
           ))}
         </ul>
         {personalizados.length > 0 && (
           <>
-            <h3 className="mt-5 font-mono text-[11px] uppercase tracking-widest text-cinza">Campos personalizados</h3>
+            <h3 className="mt-5 text-[11px] uppercase tracking-widest text-suave">Campos personalizados</h3>
             <ul className="mt-1 grid gap-x-6 sm:grid-cols-2">
               {personalizados.map((c) => (
                 <li key={c.id}>
-                  <label className="flex min-h-11 cursor-pointer items-center gap-3 hover:bg-creme-claro">
+                  <label className="flex min-h-11 cursor-pointer items-center gap-3 hover:bg-sutil">
                     <input
                       type="checkbox"
                       name="campo"
                       value={chaveFormulario(c.id)}
                       defaultChecked={formulario.campos.includes(chaveFormulario(c.id))}
-                      className="size-5 shrink-0 accent-preto"
+                      className="size-5 shrink-0 accent-marca"
                     />
                     <span className="text-[15px] font-bold">
                       {c.rotulo}
                       {c.obrigatorio && <span aria-hidden="true"> *</span>}
                     </span>
-                    <span className="font-mono text-[11px] uppercase text-cinza">{rotuloDoTipo(c.tipo)}</span>
+                    <span className="text-[11px] uppercase text-suave">{rotuloDoTipo(c.tipo)}</span>
                   </label>
                 </li>
               ))}
@@ -134,14 +134,14 @@ export function FormEditarFormulario({
       </fieldset>
 
       {formulario.padrao ? (
-        <p className="border-l-4 border-amarelo bg-creme-claro p-3 text-sm">
+        <p className="rounded-lg border border-ouro/40 bg-ouro-suave p-3 text-sm text-ouro-texto">
           Este é o <strong>Padrão geral</strong>: vale para todo comitê que não tem um formulário próprio, e não pode ser
           excluído.
         </p>
       ) : (
         <fieldset>
-          <legend className="text-lg font-extrabold tracking-tight">Padrão para os comitês</legend>
-          <p className="mt-1 text-sm text-cinza">
+          <legend className="text-lg font-semibold">Padrão para os comitês</legend>
+          <p className="mt-1 text-sm text-suave">
             Tarefas criadas nesses comitês já abrem com este formulário. Marcar um comitê que usa outro formulário passa
             ele para este.
           </p>
@@ -151,10 +151,10 @@ export function FormEditarFormulario({
               const aqui = formulario.comites.includes(c.slug);
               return (
                 <li key={c.slug}>
-                  <label className="flex min-h-11 cursor-pointer flex-wrap items-center gap-x-3 hover:bg-creme-claro">
-                    <input type="checkbox" name="comite" value={c.slug} defaultChecked={aqui} className="size-5 shrink-0 accent-preto" />
+                  <label className="flex min-h-11 cursor-pointer flex-wrap items-center gap-x-3 hover:bg-sutil">
+                    <input type="checkbox" name="comite" value={c.slug} defaultChecked={aqui} className="size-5 shrink-0 accent-marca" />
                     <span className="text-[15px] font-bold">{c.nome}</span>
-                    {!aqui && outro && <span className="font-mono text-[11px] uppercase text-cinza">hoje usa: {outro}</span>}
+                    {!aqui && outro && <span className="text-[11px] uppercase text-suave">hoje usa: {outro}</span>}
                   </label>
                 </li>
               );
@@ -164,7 +164,7 @@ export function FormEditarFormulario({
       )}
 
       {estado.erro && (
-        <p role="alert" className="border-l-4 border-laranja-texto bg-creme-claro p-3 text-sm font-bold">
+        <p role="alert" className="rounded-lg border border-marca/30 bg-marca-suave p-3 text-sm font-medium text-marca-texto">
           {estado.erro}
         </p>
       )}
@@ -173,7 +173,7 @@ export function FormEditarFormulario({
           {pendente ? "Salvando…" : "Salvar formulário"}
         </Botao>
         {estado.ok && !pendente && (
-          <span role="status" className="font-mono text-xs font-bold uppercase text-cinza">
+          <span role="status" className="text-xs font-bold uppercase text-suave">
             Salvo
           </span>
         )}

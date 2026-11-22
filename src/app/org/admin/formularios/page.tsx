@@ -1,4 +1,4 @@
-import { ChevronLeft } from "lucide-react";
+import { TbChevronLeft } from "react-icons/tb";
 import Link from "next/link";
 import { FormNovoFormulario } from "@/components/admin/FormFormulario";
 import { Card } from "@/components/ui/Card";
@@ -15,25 +15,25 @@ export default async function FormulariosAdminPage() {
     <div className="flex max-w-3xl flex-col gap-6">
       <Link
         href="/org/admin"
-        className="inline-flex min-h-11 w-fit items-center gap-1 font-mono text-[11px] uppercase tracking-widest text-laranja-texto hover:underline"
+        className="inline-flex min-h-11 w-fit items-center gap-1 text-[11px] uppercase tracking-widest text-marca-texto hover:underline"
       >
-        <ChevronLeft size={14} aria-hidden="true" />
+        <TbChevronLeft size={14} aria-hidden="true" />
         Administração
       </Link>
-      <h1 className="text-3xl font-black tracking-tighter md:text-4xl">Formulários</h1>
+      <h1 className="font-serif text-3xl md:text-4xl">Formulários</h1>
 
       <Card>
         <ul>
           {formularios.map((f) => (
-            <li key={f.id} className="border-b border-linha last:border-b-0">
-              <Link href={`/org/admin/formularios/${f.id}`} className="flex flex-col gap-1 py-3 hover:bg-creme/60">
+            <li key={f.id} className="border-b border-borda last:border-b-0">
+              <Link href={`/org/admin/formularios/${f.id}`} className="flex flex-col gap-1 py-3 hover:bg-sutil">
                 <span className="flex flex-wrap items-center gap-2">
                   <span className="text-[15px] font-bold">{f.nome}</span>
                   {f.padrao && (
-                    <span className="bg-amarelo px-2 py-0.5 font-mono text-[10px] font-bold uppercase">Padrão geral</span>
+                    <span className="bg-ouro px-2 py-0.5 text-[10px] font-bold uppercase">Padrão geral</span>
                   )}
                 </span>
-                <span className="font-mono text-[11px] uppercase text-cinza">
+                <span className="text-[11px] uppercase text-suave">
                   {f.campos.length} {f.campos.length === 1 ? "campo opcional" : "campos opcionais"}
                   {!f.padrao &&
                     ` · ${

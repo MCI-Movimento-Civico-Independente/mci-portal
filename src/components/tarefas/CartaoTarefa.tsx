@@ -12,19 +12,19 @@ export function CartaoTarefa({ t, membros, hoje, qs }: { t: TarefaDb; membros: P
   const feitas = t.subtarefas.filter((s) => s.status === "concluida").length;
   const atrasada = t.status !== "concluida" && !!t.prazo && t.prazo < hoje;
   return (
-    <li className="flex flex-col gap-2 border border-linha bg-creme-claro p-3 hover:border-preto">
+    <li className="flex flex-col gap-2 rounded-xl border border-borda bg-superficie p-3 shadow-suave hover:-translate-y-0.5 hover:border-borda-forte hover:shadow-elevado">
       <Link
         href={`/org/tarefas?${qs ? `${qs}&` : ""}tarefa=${t.id}`}
         scroll={false}
-        className="text-[15px] font-bold leading-snug hover:text-laranja-texto hover:underline"
+        className="text-[15px] font-bold leading-snug hover:text-marca-texto hover:underline"
       >
         {t.titulo}
       </Link>
-      {t.projeto && <p className="truncate font-mono text-[11px] uppercase text-cinza">{t.projeto.nome}</p>}
+      {t.projeto && <p className="truncate text-[11px] uppercase text-suave">{t.projeto.nome}</p>}
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
         <Progresso feitas={feitas} total={t.subtarefas.length} />
         {t.prazo && (
-          <span className={`font-mono text-[11px] uppercase ${atrasada ? "font-bold text-laranja-texto" : "text-cinza"}`}>
+          <span className={`text-[11px] uppercase ${atrasada ? "font-bold text-marca-texto" : "text-suave"}`}>
             {formatarPrazo(t.prazo, hoje)}
           </span>
         )}

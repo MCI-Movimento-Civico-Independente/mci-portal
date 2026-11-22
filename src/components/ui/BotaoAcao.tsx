@@ -32,8 +32,8 @@ export function BotaoAcao({
         disabled={desabilitado}
         title={titulo}
         aria-label={rotulo}
-        className={`inline-flex min-h-11 min-w-11 items-center justify-center gap-2 px-3 text-sm font-bold disabled:opacity-40 ${
-          perigo ? "text-laranja-texto hover:bg-laranja hover:text-preto" : "hover:bg-creme"
+        className={`inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-lg px-3 text-sm font-bold disabled:opacity-40 ${
+          perigo ? "text-marca-texto hover:bg-marca-suave" : "hover:bg-sutil"
         }`}
       >
         {children}

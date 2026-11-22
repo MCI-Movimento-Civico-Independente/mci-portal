@@ -5,7 +5,7 @@ import { atualizarCampoPersonalizadoTarefaAction } from "@/app/org/tarefas/acoes
 import type { CampoPersonalizado } from "@/lib/campos-personalizados-tipos";
 
 const base =
-  "min-h-11 w-full border border-transparent bg-transparent px-1.5 text-sm font-medium hover:border-linha hover:bg-creme-claro focus-visible:border-preto disabled:opacity-60";
+  "min-h-11 w-full rounded-lg border border-transparent bg-transparent px-1.5 text-sm font-medium hover:border-borda hover:bg-sutil focus-visible:border-marca disabled:opacity-60";
 
 /**
  * Edita um campo personalizado direto na janela da tarefa. Salva ao sair do campo
@@ -76,7 +76,7 @@ export function CampoPersonalizadoInline({
           defaultValue={valor}
           onBlur={(e) => salvar(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
-          className={`${base} w-[8.5rem] font-mono text-xs`}
+          className={`${base} w-[8.5rem] text-xs`}
         />
       );
       break;
@@ -103,7 +103,7 @@ export function CampoPersonalizadoInline({
             type="checkbox"
             defaultChecked={valor === "true"}
             onChange={(e) => salvar(e.target.checked ? "true" : "false")}
-            className="size-5 accent-preto"
+            className="size-5 accent-marca"
           />
           <span className="text-sm">{valor === "true" ? "Sim" : "Não"}</span>
         </label>
@@ -128,7 +128,7 @@ export function CampoPersonalizadoInline({
     <div className="min-w-0">
       {controle}
       {erro && (
-        <p role="alert" className="mt-0.5 text-xs font-bold text-laranja-texto">
+        <p role="alert" className="mt-0.5 text-xs font-bold text-marca-texto">
           {erro}
         </p>
       )}
