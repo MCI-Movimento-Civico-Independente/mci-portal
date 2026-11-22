@@ -26,7 +26,7 @@ export function CartaoComite({ comite, indice, href, selecionado = false }: Prop
   const tom = TONS[indice % TONS.length];
   return (
     <Link
-      href={href ?? `/org/comites/${slug}`}
+      href={href ?? `/org/projetos?comite=${slug}`}
       aria-current={selecionado ? "true" : undefined}
       className={`group relative flex min-h-[176px] flex-col justify-between gap-6 overflow-hidden border-2 p-5 hover:-translate-y-0.5 ${tom.bloco} ${
         selecionado ? "border-texto outline outline-2 outline-offset-2 outline-texto" : "border-transparent hover:border-texto"

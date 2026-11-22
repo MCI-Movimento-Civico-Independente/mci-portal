@@ -151,8 +151,8 @@ export function InicioView({ primeiroNome, nivel, abertas, comites, hoje }: Prop
           <h2 id="titulo-comites" className="font-titulo text-2xl font-black uppercase tracking-tight">
             Comitês
           </h2>
-          <Link href="/org/comites" className="rotulo inline-flex min-h-11 items-center text-marca-texto underline hover:text-texto">
-            Todos os comitês
+          <Link href="/org/projetos" className="rotulo inline-flex min-h-11 items-center text-marca-texto underline hover:text-texto">
+            Ver projetos
           </Link>
         </div>
         <div className="grid gap-4 md:grid-cols-3">

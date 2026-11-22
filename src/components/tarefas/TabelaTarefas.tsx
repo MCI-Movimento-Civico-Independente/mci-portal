@@ -11,6 +11,7 @@ import type { GrupoBasico } from "@/lib/grupos-tipos";
 import type { Pessoa, TarefaDb } from "@/lib/tarefas";
 import { PRIORIDADE_OPCOES, STATUS_OPCOES } from "@/lib/tarefas-campos";
 import { CelulaData, CelulaOpcao, CelulaPessoa, CelulaProjeto, CelulaTitulo } from "./Celulas";
+import { LinhaNovaSubtarefa } from "./LinhaNovaSubtarefa";
 import { Progresso } from "./Progresso";
 
 /*
@@ -69,7 +70,7 @@ function Linha({ t, membros, comites, projetos, hoje, qs, caminho = "/org/tarefa
     >
       {modoProjeto && <div className="flex size-7 items-center justify-center @3xl:size-5">{alca}</div>}
       <div className={`flex size-7 items-center justify-center @3xl:size-6 ${sub ? c.subOculto : ""}`}>
-        {expansor && t.subtarefas.length > 0 && (
+        {expansor && !sub && (
           <button
             type="button"
             aria-expanded={expansor.aberto}
@@ -130,7 +131,14 @@ function Corpo(props: Omit<LinhaProps, "expansor" | "sub">) {
   return (
     <>
       <Linha {...props} expansor={{ aberto, alternar: () => setAberto((v) => !v) }} />
-      {aberto && props.t.subtarefas.map((s) => <Linha key={s.id} {...props} t={s} sub alca={undefined} arrastarPeloTitulo={undefined} fantasma={false} />)}
+      {aberto && (
+        <>
+          {props.t.subtarefas.map((s) => (
+            <Linha key={s.id} {...props} t={s} sub alca={undefined} arrastarPeloTitulo={undefined} fantasma={false} />
+          ))}
+          <LinhaNovaSubtarefa paiId={props.t.id} />
+        </>
+      )}
     </>
   );
 }

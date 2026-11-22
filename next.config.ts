@@ -10,6 +10,13 @@ const nextConfig: NextConfig = {
     // continuar mostrando o CSS antigo. Sem esse cache o dev sempre compila o CSS atual.
     turbopackFileSystemCacheForDev: false,
   },
+  async redirects() {
+    // A aba "Comitês" foi incorporada à de Projetos (os cartões de comitê filtram os projetos).
+    return [
+      { source: "/org/comites", destination: "/org/projetos", permanent: true },
+      { source: "/org/comites/:slug", destination: "/org/projetos?comite=:slug", permanent: true },
+    ];
+  },
   turbopack: {
     rules: {
       "*.css": {

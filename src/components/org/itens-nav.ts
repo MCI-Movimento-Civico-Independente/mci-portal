@@ -1,4 +1,4 @@
-import { TbCalendar, TbDots, TbFileText, TbHome, TbLayoutKanban, TbSettings, TbSquareCheck, TbUsers, TbUsersGroup } from "react-icons/tb";
+import { TbCalendar, TbDots, TbFileText, TbHome, TbLayoutKanban, TbSettings, TbSquareCheck, TbUsers } from "react-icons/tb";
 import type { IconType } from "react-icons";
 
 export type ItemNav = {
@@ -13,7 +13,6 @@ export const itensLaterais: ItemNav[] = [
   { href: "/org", rotulo: "Início", icone: TbHome },
   { href: "/org/tarefas", rotulo: "Minhas tarefas", icone: TbSquareCheck },
   { href: "/org/projetos", rotulo: "Projetos", icone: TbLayoutKanban },
-  { href: "/org/comites", rotulo: "Comitês", icone: TbUsersGroup },
   { href: "/org/calendario", rotulo: "Calendário", icone: TbCalendar },
   { href: "/org/documentos", rotulo: "Documentos", icone: TbFileText },
   { href: "/org/membros", rotulo: "Membros", icone: TbUsers },
@@ -27,10 +26,10 @@ export const itensInferiores: ItemNav[] = [
   { href: "/org/projetos", rotulo: "Projetos", icone: TbLayoutKanban },
   { href: "/org/calendario", rotulo: "Agenda", icone: TbCalendar },
   {
-    href: "/org/comites",
+    href: "/org/documentos",
     rotulo: "Mais",
     icone: TbDots,
-    tambem: ["/org/documentos", "/org/membros"],
+    tambem: ["/org/membros"],
   },
 ];
 

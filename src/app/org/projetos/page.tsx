@@ -55,9 +55,17 @@ export default async function ProjetosPage({ searchParams }: { searchParams: Pro
             </span>
           </h2>
           {selecionado && (
-            <Link href="/org/projetos" className="rotulo inline-flex min-h-11 items-center text-marca-texto underline hover:text-texto">
-              Ver todos
-            </Link>
+            <div className="flex flex-wrap items-center gap-x-5">
+              <Link
+                href={`/org/tarefas?quem=todas&comite=${selecionado.slug}`}
+                className="rotulo inline-flex min-h-11 items-center text-marca-texto underline hover:text-texto"
+              >
+                Tarefas do comitê
+              </Link>
+              <Link href="/org/projetos" className="rotulo inline-flex min-h-11 items-center text-marca-texto underline hover:text-texto">
+                Ver todos
+              </Link>
+            </div>
           )}
         </div>
 
