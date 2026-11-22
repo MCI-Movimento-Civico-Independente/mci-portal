@@ -4,7 +4,7 @@ import { useOptimistic, useRef, useState, useTransition } from "react";
 import { DayPicker, type DateRange } from "react-day-picker";
 import { ptBR } from "react-day-picker/locale";
 import { TbCalendar, TbChevronLeft, TbChevronRight } from "react-icons/tb";
-import { atualizarPeriodoAction } from "@/app/org/tarefas/acoes";
+import { atualizarEmMassaAction, atualizarPeriodoAction } from "@/app/org/tarefas/acoes";
 
 const paraData = (iso: string) => {
   const [a, m, d] = iso.split("-").map(Number);
@@ -33,6 +33,7 @@ export function CelulaPeriodo({
   fim,
   hoje,
   status,
+  massa,
 }: {
   id: string;
   inicio: string;
@@ -40,6 +41,8 @@ export function CelulaPeriodo({
   hoje: string;
   /** Status da tarefa: define a cor do período (cinza, vermelho se atrasada, verde se concluída). */
   status: string;
+  /** Ações em massa: ids das subtarefas que recebem o período escolhido. */
+  massa?: string[];
 }) {
   const [atual, setOtimista] = useOptimistic({ inicio, fim });
   const [pendente, iniciar] = useTransition();
@@ -58,7 +61,7 @@ export function CelulaPeriodo({
     const left = Math.max(8, Math.min(r.left, window.innerWidth - LARGURA - 8));
     const cabeAbaixo = r.bottom + ALTURA + 8 <= window.innerHeight;
     setPosicao({ left, top: cabeAbaixo ? r.bottom + 4 : Math.max(8, r.top - ALTURA - 4) });
-    setIntervalo({ from: atual.inicio ? paraData(atual.inicio) : undefined, to: atual.fim ? paraData(atual.fim) : undefined });
+    if (!massa) setIntervalo({ from: atual.inicio ? paraData(atual.inicio) : undefined, to: atual.fim ? paraData(atual.fim) : undefined });
     setErro(null);
     setSobre(undefined);
     setAberto(true);
@@ -67,11 +70,13 @@ export function CelulaPeriodo({
 
   function salvar(novoInicio: string, novoFim: string, fechar = false) {
     if (fechar) painel.current?.hidePopover();
-    if (novoInicio === atual.inicio && novoFim === atual.fim) return;
+    if (!massa && novoInicio === atual.inicio && novoFim === atual.fim) return;
     setErro(null);
     iniciar(async () => {
-      setOtimista({ inicio: novoInicio, fim: novoFim });
-      const r = await atualizarPeriodoAction(id, novoInicio, novoFim);
+      if (!massa) setOtimista({ inicio: novoInicio, fim: novoFim });
+      const r = massa
+        ? await atualizarEmMassaAction(massa, { tipo: "periodo", inicio: novoInicio, fim: novoFim })
+        : await atualizarPeriodoAction(id, novoInicio, novoFim);
       if (r.erro) setErro(r.erro);
     });
   }
@@ -119,14 +124,18 @@ export function CelulaPeriodo({
       <button
         ref={botao}
         type="button"
-        aria-label={rotulo ? `Período: ${rotulo}${atrasada ? ", atrasada" : status === "concluida" ? ", concluída" : ""}. Alterar` : "Definir período"}
+        aria-label={massa ? "Definir o período das selecionadas" : rotulo ? `Período: ${rotulo}${atrasada ? ", atrasada" : status === "concluida" ? ", concluída" : ""}. Alterar` : "Definir período"}
         aria-haspopup="dialog"
         disabled={pendente}
         onClick={abrir}
-        className={`flex min-h-11 w-full items-center gap-1.5 border px-1.5 text-xs hover:brightness-95 disabled:opacity-60 md:min-h-8 md:text-[11px] dark:hover:brightness-125 ${cor}`}
+        className={
+          massa
+            ? "rotulo flex min-h-11 items-center gap-1.5 border-2 border-sobre-bloco/40 px-2.5 text-[11px] font-bold hover:bg-sobre-bloco hover:text-bloco disabled:opacity-60 md:min-h-8"
+            : `flex min-h-11 w-full items-center gap-1.5 border px-1.5 text-xs hover:brightness-95 disabled:opacity-60 md:min-h-8 md:text-[11px] dark:hover:brightness-125 ${cor}`
+        }
       >
         <TbCalendar size={14} aria-hidden="true" className="shrink-0" />
-        <span className="truncate">{rotulo ?? "Definir datas"}</span>
+        <span className="truncate">{massa ? "Período" : (rotulo ?? "Definir datas")}</span>
       </button>
       {erro && (
         <p role="alert" className="mt-0.5 text-xs font-bold text-marca-texto">

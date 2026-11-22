@@ -68,7 +68,10 @@ function montar(topo: Linha[], subs: Linha[]): TarefaDb[] {
   return [...topo].sort(ordenar).map((t) => ({
     ...t,
     paiTitulo: null,
-    subtarefas: (porPai.get(t.id) ?? []).map((s) => ({ ...s, subtarefas: [], paiTitulo: t.titulo })),
+    // Subtarefas na ordem manual (arrastar e soltar); empate: pela criação.
+    subtarefas: (porPai.get(t.id) ?? [])
+      .sort((a, b) => a.ordem - b.ordem || (a.criado_em < b.criado_em ? -1 : 1))
+      .map((s) => ({ ...s, subtarefas: [], paiTitulo: t.titulo })),
   }));
 }
 
@@ -303,6 +306,44 @@ export async function moverTarefa(
     return "ok";
   }
   const { error: erroUpd } = await db.from("tarefas").update({ grupo_id: grupoId, ordem }).eq("id", id);
+  if (erroUpd) throw erroUpd;
+  return "ok";
+}
+
+/** Põe a subtarefa antes de `antesDeId` (ou no fim) entre as irmãs da mesma tarefa. */
+export async function reordenarSubtarefa(id: string, antesDeId: string | null): Promise<"ok" | "nao_achou"> {
+  const db = createAdminClient();
+  const { data: alvo, error } = await db.from("tarefas").select("id, pai_id").eq("id", id).maybeSingle();
+  if (error) throw error;
+  if (!alvo?.pai_id) return "nao_achou";
+
+  const { data: lista, error: erroLista } = await db
+    .from("tarefas")
+    .select("id, ordem")
+    .eq("pai_id", alvo.pai_id)
+    .neq("id", id)
+    .order("ordem")
+    .order("criado_em");
+  if (erroLista) throw erroLista;
+  const outras = (lista ?? []) as { id: string; ordem: number }[];
+
+  const i = antesDeId ? outras.findIndex((t) => t.id === antesDeId) : -1;
+  const pos = i < 0 ? outras.length : i;
+  const antes = outras[pos - 1]?.ordem;
+  const depois = outras[pos]?.ordem;
+  if (antes !== undefined && depois !== undefined && depois - antes < 0.001) {
+    // Sem espaço entre as vizinhas: renumera as irmãs (1000, 2000, ...).
+    const ids = outras.map((t) => t.id);
+    ids.splice(pos, 0, id);
+    for (const [n, tid] of ids.entries()) {
+      const { error: erroUpd } = await db.from("tarefas").update({ ordem: (n + 1) * 1000 }).eq("id", tid);
+      if (erroUpd) throw erroUpd;
+    }
+    return "ok";
+  }
+  const ordem =
+    antes !== undefined && depois !== undefined ? (antes + depois) / 2 : depois !== undefined ? depois - 1000 : antes !== undefined ? antes + 1000 : 1000;
+  const { error: erroUpd } = await db.from("tarefas").update({ ordem }).eq("id", id);
   if (erroUpd) throw erroUpd;
   return "ok";
 }

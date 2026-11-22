@@ -23,6 +23,7 @@ import {
   excluirTarefa,
   membrosOrg,
   moverTarefa,
+  reordenarSubtarefa,
   tarefaPorId,
   type Alteracao,
   type NovaTarefa,
@@ -499,6 +500,101 @@ export async function atualizarExecutoresAction(id: string, ids: string[]): Prom
       de: nomes(antes),
       para: nomes(lista),
     });
+  }
+  revalidatePath("/org", "layout");
+  return {};
+}
+
+/** Arrastar e soltar de subtarefas: muda a posição entre as irmãs. */
+export async function moverSubtarefaAction(id: string, antesDeId: string | null): Promise<EstadoForm> {
+  await exigirOrg();
+  if (!UUID.test(id) || (antesDeId !== null && !UUID.test(antesDeId))) return { erro: "Pedido inválido." };
+  try {
+    if ((await reordenarSubtarefa(id, antesDeId)) === "nao_achou") return { erro: "Subtarefa não encontrada." };
+  } catch (erro) {
+    console.error("Falha ao reordenar a subtarefa:", erro);
+    return { erro: "Algo deu errado. Tente de novo em alguns minutos." };
+  }
+  revalidatePath("/org", "layout");
+  return {};
+}
+
+export type MudancaEmMassa =
+  | { tipo: "status"; valor: string }
+  | { tipo: "solicitante"; valor: string }
+  | { tipo: "executores"; ids: string[] }
+  | { tipo: "periodo"; inicio: string; fim: string };
+
+/** Aplica a mesma mudança a várias subtarefas de uma vez (status, pessoas ou período). */
+export async function atualizarEmMassaAction(ids: string[], mudanca: MudancaEmMassa): Promise<EstadoForm> {
+  const sessao = await exigirOrg();
+  if (!Array.isArray(ids) || ids.length === 0 || ids.length > 200 || ids.some((i) => typeof i !== "string" || !UUID.test(i))) {
+    return { erro: "Pedido inválido." };
+  }
+  const alvos = [...new Set(ids)];
+  const cat = await carregarCatalogos();
+
+  let patch: Alteracao;
+  let campos: ChaveCampo[];
+  switch (mudanca?.tipo) {
+    case "status": {
+      const campo = campoPorChave("status")!;
+      if (!campo.opcoes?.some((o) => o.valor === mudanca.valor)) return { erro: "Status inválido." };
+      patch = { status: mudanca.valor as Alteracao["status"] };
+      campos = ["status"];
+      break;
+    }
+    case "solicitante": {
+      if (mudanca.valor && !cat.membros.some((m) => m.id === mudanca.valor)) return { erro: "Solicitante: pessoa inválida." };
+      patch = { solicitante_id: mudanca.valor || null };
+      campos = ["solicitante_id"];
+      break;
+    }
+    case "executores": {
+      const lista = [...new Set(mudanca.ids ?? [])];
+      if (lista.length > 30 || !lista.every((i) => UUID.test(i) && cat.membros.some((m) => m.id === i))) return { erro: "Executor: pessoa inválida." };
+      patch = { responsavel_id: lista[0] ?? null, executores_extra: lista.slice(1) };
+      campos = ["responsavel_id"];
+      break;
+    }
+    case "periodo": {
+      const { inicio, fim } = mudanca;
+      if ((inicio && !dataValida(inicio)) || (fim && !dataValida(fim))) return { erro: "Data inválida." };
+      if (inicio && fim && inicio > fim) return { erro: ERRO_PERIODO };
+      patch = { data_inicio: inicio || null, prazo: fim || null };
+      campos = ["data_inicio", "prazo"];
+      break;
+    }
+    default:
+      return { erro: "Pedido inválido." };
+  }
+
+  const nomes = (conjunto: (string | null)[]) =>
+    conjunto.filter(Boolean).length ? conjunto.filter(Boolean).map((i) => cat.membros.find((m) => m.id === i)?.nome?.trim() || "Membro").join(", ") : null;
+
+  for (const id of alvos) {
+    const atual = await tarefaPorId(id);
+    if (!atual) continue;
+    try {
+      await atualizarTarefa(id, patch);
+    } catch (erro) {
+      console.error("Falha na alteração em massa:", erro);
+      return { erro: "Algo deu errado. Tente de novo em alguns minutos." };
+    }
+    for (const chave of campos) {
+      const c = campoPorChave(chave)!;
+      if (chave === "responsavel_id" && mudanca.tipo === "executores") {
+        const antes = [atual.responsavel_id, ...atual.executores_extra];
+        const depois = [patch.responsavel_id ?? null, ...(patch.executores_extra ?? [])];
+        if (antes.filter(Boolean).join() === depois.filter(Boolean).join()) continue;
+        await registrarEvento({ tarefa_id: id, autor_id: sessao.conta.id, tipo: "campo", campo: "Executor", de: nomes(antes), para: nomes(depois) });
+        continue;
+      }
+      const antes = valorAtual(atual, chave);
+      const depois = (patch as Record<string, string | null>)[chave] ?? null;
+      if (antes === depois) continue;
+      await registrarEvento({ tarefa_id: id, autor_id: sessao.conta.id, tipo: "campo", campo: c.rotulo, de: descrever(c, antes, cat), para: descrever(c, depois, cat) });
+    }
   }
   revalidatePath("/org", "layout");
   return {};

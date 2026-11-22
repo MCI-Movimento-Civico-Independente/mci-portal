@@ -172,7 +172,7 @@ export async function DetalheTarefa({
               Divida o trabalho em partes menores, cada uma com seu executor e entrega.
             </p>
           ) : (
-            <SubtarefasLista subtarefas={tarefa.subtarefas} membros={membros} hoje={hoje} />
+            <SubtarefasLista paiId={tarefa.id} subtarefas={tarefa.subtarefas} membros={membros} hoje={hoje} />
           )}
           <NovaSubtarefa paiId={tarefa.id} membros={membros} responsavelPadrao={tarefa.responsavel_id} />
         </section>

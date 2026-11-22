@@ -13,6 +13,7 @@ import { PRIORIDADE_OPCOES, STATUS_OPCOES } from "@/lib/tarefas-campos";
 import { CelulaOpcao, CelulaProjeto, CelulaTitulo } from "./Celulas";
 import { CelulaPessoa } from "./CelulaPessoa";
 import { CelulaPeriodo } from "./CelulaPeriodo";
+import { SubtarefasOrdenaveis } from "./SubtarefasOrdenaveis";
 import { LinhaNovaSubtarefa } from "./LinhaNovaSubtarefa";
 import { Progresso } from "./Progresso";
 
@@ -54,9 +55,11 @@ type LinhaProps = Omit<Props, "tarefas"> & {
   /** Pointer do dnd-kit: a área do título também arrasta a linha. */
   arrastarPeloTitulo?: (e: React.PointerEvent) => void;
   fantasma?: boolean;
+  /** Subtarefa selecionável (ações em massa): caixa de seleção no lugar da setinha. */
+  selecao?: { marcado: boolean; alternar: () => void };
 };
 
-function Linha({ t, membros, comites, projetos, hoje, qs, caminho = "/org/tarefas", grupos, sub = false, expansor, alca, arrastarPeloTitulo, fantasma = false }: LinhaProps) {
+function Linha({ t, membros, comites, projetos, hoje, qs, caminho = "/org/tarefas", grupos, sub = false, expansor, alca, arrastarPeloTitulo, fantasma = false, selecao }: LinhaProps) {
   const href = `${caminho}?${qs ? `${qs}&` : ""}tarefa=${t.id}`;
   const feitas = t.subtarefas.filter((s) => s.status === "concluida").length;
   const modoProjeto = !!grupos;
@@ -70,7 +73,16 @@ function Linha({ t, membros, comites, projetos, hoje, qs, caminho = "/org/tarefa
       className={`flex flex-wrap items-center border-b border-borda hover:bg-sutil ${modoProjeto ? GRID_PROJETO : GRID_LISTA} ${sub ? "bg-sutil/60" : ""} ${fantasma ? "opacity-40" : ""}`}
     >
       {modoProjeto && <div className="flex size-7 items-center justify-center @3xl:size-5">{alca}</div>}
-      <div className={`flex size-7 items-center justify-center @3xl:size-6 ${sub ? c.subOculto : ""}`}>
+      <div className={`flex size-7 items-center justify-center @3xl:size-6 ${sub && !selecao ? c.subOculto : ""}`}>
+        {sub && selecao && (
+          <input
+            type="checkbox"
+            checked={selecao.marcado}
+            onChange={selecao.alternar}
+            aria-label={`Selecionar a subtarefa ${t.titulo}`}
+            className="size-4 accent-marca"
+          />
+        )}
         {expansor && !sub && (
           <button
             type="button"
@@ -130,9 +142,25 @@ function Corpo(props: Omit<LinhaProps, "expansor" | "sub">) {
       <Linha {...props} expansor={{ aberto, alternar: () => setAberto((v) => !v) }} />
       {aberto && (
         <>
-          {props.t.subtarefas.map((s) => (
-            <Linha key={s.id} {...props} t={s} sub alca={undefined} arrastarPeloTitulo={undefined} fantasma={false} />
-          ))}
+          {props.t.subtarefas.length > 0 && (
+            <SubtarefasOrdenaveis
+              paiId={props.t.id}
+              subtarefas={props.t.subtarefas}
+              membros={props.membros}
+              hoje={props.hoje}
+              renderLinha={(s, a) => (
+                <Linha
+                  {...props}
+                  t={s}
+                  sub
+                  alca={props.grupos ? a.alca : undefined}
+                  arrastarPeloTitulo={a.arrastarPeloTitulo}
+                  selecao={{ marcado: a.marcado, alternar: a.alternar }}
+                  fantasma={a.fantasma}
+                />
+              )}
+            />
+          )}
           <LinhaNovaSubtarefa paiId={props.t.id} />
         </>
       )}
@@ -205,8 +233,8 @@ export function TabelaTarefas({ tarefas, membros, comites, projetos, hoje, qs, c
         <span />
         <span>Tarefa</span>
         {!modoProjeto && <span className="pl-1.5">Projeto</span>}
-        <span className="hidden pl-1.5 @6xl:block">Solicitante</span>
-        <span className="pl-1.5">Executor</span>
+        <span className="hidden text-center @6xl:block">Solicitante</span>
+        <span className="text-center">Executor</span>
         <span>Status</span>
         <span>Prioridade</span>
         <span>Período</span>

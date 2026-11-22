@@ -2,7 +2,7 @@
 
 import { useOptimistic, useRef, useState, useTransition } from "react";
 import { TbCheck, TbUserPlus } from "react-icons/tb";
-import { atualizarCampoAction, atualizarExecutoresAction } from "@/app/org/tarefas/acoes";
+import { atualizarCampoAction, atualizarEmMassaAction, atualizarExecutoresAction } from "@/app/org/tarefas/acoes";
 import { Avatar } from "@/components/ui/Avatar";
 import type { Pessoa } from "@/lib/tarefas";
 import type { ChaveCampo } from "@/lib/tarefas-campos";
@@ -21,6 +21,7 @@ export function CelulaPessoa({
   extras = [],
   membros,
   rotulo,
+  massa,
 }: {
   id: string;
   chave: ChaveCampo;
@@ -29,10 +30,14 @@ export function CelulaPessoa({
   extras?: string[];
   membros: Pessoa[];
   rotulo: string;
+  /** Ações em massa: ids das subtarefas que recebem a escolha (o botão vira um rótulo de texto). */
+  massa?: string[];
 }) {
   const multiplo = chave === "responsavel_id";
   const servidor = [valor, ...extras].filter(Boolean);
-  const [ids, setOtimista] = useOptimistic<string[]>(servidor);
+  const [otimista, setOtimista] = useOptimistic<string[]>(servidor);
+  const [escolhidos, setEscolhidos] = useState<string[]>([]);
+  const ids = massa ? escolhidos : otimista;
   const [pendente, iniciar] = useTransition();
   const [erro, setErro] = useState<string | null>(null);
   const botao = useRef<HTMLButtonElement>(null);
@@ -67,8 +72,13 @@ export function CelulaPessoa({
   function salvar(novos: string[]) {
     setErro(null);
     iniciar(async () => {
-      setOtimista(novos);
-      const r = multiplo ? await atualizarExecutoresAction(id, novos) : await atualizarCampoAction(id, chave, novos[0] ?? "");
+      if (massa) setEscolhidos(novos);
+      else setOtimista(novos);
+      const r = massa
+        ? await atualizarEmMassaAction(massa, multiplo ? { tipo: "executores", ids: novos } : { tipo: "solicitante", valor: novos[0] ?? "" })
+        : multiplo
+          ? await atualizarExecutoresAction(id, novos)
+          : await atualizarCampoAction(id, chave, novos[0] ?? "");
       if (r.erro) setErro(r.erro);
     });
   }
@@ -85,10 +95,14 @@ export function CelulaPessoa({
   // Até 2 perfis; com mais, só o primeiro e o "+N".
   const mostrados = pessoas.length <= 2 ? pessoas : pessoas.slice(0, 1);
   const restantes = pessoas.length > 2 ? pessoas.length - 1 : 0;
-  const descricao = nomes.length ? `${rotulo}: ${nomes.join(", ")}. Alterar` : `${rotulo}: ninguém. Definir`;
+  const descricao = massa
+    ? `Definir ${rotulo.toLowerCase()} das selecionadas`
+    : nomes.length
+      ? `${rotulo}: ${nomes.join(", ")}. Alterar`
+      : `${rotulo}: ninguém. Definir`;
 
   return (
-    <div className="min-w-0">
+    <div className="flex min-w-0 flex-col items-center">
       <div className="group/pessoas inline-block">
         <button
           ref={botao}
@@ -97,13 +111,23 @@ export function CelulaPessoa({
           aria-haspopup="dialog"
           disabled={pendente}
           onClick={abrir}
-          onPointerEnter={mostrarDica}
-          onPointerLeave={esconderDica}
-          onFocus={mostrarDica}
-          onBlur={esconderDica}
-          className="flex min-h-11 items-center px-1.5 hover:bg-sutil disabled:opacity-60 md:min-h-8"
+          onPointerEnter={massa ? undefined : mostrarDica}
+          onPointerLeave={massa ? undefined : esconderDica}
+          onFocus={massa ? undefined : mostrarDica}
+          onBlur={massa ? undefined : esconderDica}
+          className={
+            massa
+              ? "rotulo flex min-h-11 items-center gap-1.5 border-2 border-sobre-bloco/40 px-2.5 text-[11px] font-bold hover:bg-sobre-bloco hover:text-bloco disabled:opacity-60 md:min-h-8"
+              : "flex min-h-11 items-center px-1.5 hover:bg-sutil disabled:opacity-60 md:min-h-8"
+          }
         >
-          {pessoas.length === 0 ? (
+          {massa ? (
+            <>
+              <TbUserPlus size={14} aria-hidden="true" />
+              {rotulo}
+              {pessoas.length > 0 && <span className="font-mono">· {pessoas.length}</span>}
+            </>
+          ) : pessoas.length === 0 ? (
             <span className="flex size-7 items-center justify-center rounded-full border-2 border-dashed border-borda-forte text-suave group-hover/pessoas:border-texto group-hover/pessoas:text-texto">
               <TbUserPlus size={14} aria-hidden="true" />
             </span>
