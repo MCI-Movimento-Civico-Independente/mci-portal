@@ -3,6 +3,7 @@ import {
   CheckSquare,
   FileText,
   Home,
+  Settings,
   SquareKanban,
   MoreHorizontal,
   Users,
@@ -27,6 +28,8 @@ export const itensLaterais: ItemNav[] = [
   { href: "/org/documentos", rotulo: "Documentos", icone: FileText },
   { href: "/org/membros", rotulo: "Membros", icone: Users },
 ];
+
+export const itemAdmin: ItemNav = { href: "/org/admin", rotulo: "Administração", icone: Settings };
 
 export const itensInferiores: ItemNav[] = [
   { href: "/org", rotulo: "Início", icone: Home },

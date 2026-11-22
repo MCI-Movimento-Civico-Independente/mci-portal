@@ -1,10 +1,8 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-import { podeAcessarOrg } from "@/lib/auth/destino";
 
 // No Next 16 o antigo middleware.ts se chama proxy.ts.
-// Aqui só atualiza a sessão e faz a checagem rápida de acesso (pelo token).
-// A checagem que vale é a do banco, feita no layout de /org.
+// Aqui só atualiza a sessão e exige login. O papel é conferido no banco, no layout de /org.
 
 const ehRota = (caminho: string, base: string) =>
   caminho === base || caminho.startsWith(`${base}/`);
@@ -62,9 +60,10 @@ export async function proxy(request: NextRequest) {
 
   if (protegida && !claims) return redirecionar(paraLogin());
 
-  if (ehRota(pathname, "/org") && !podeAcessarOrg(claims?.app_metadata?.papel)) {
-    return redirecionar(NextResponse.redirect(new URL("/comunidade", request.url)));
-  }
+  // O papel NÃO é conferido aqui: o token guarda o papel da hora do login e fica
+  // defasado quando um admin muda o acesso de alguém (quem acabou de ser promovido
+  // seria barrado até renovar o token). Quem decide é o banco, no layout de /org e
+  // em cada Server Action.
 
   return resposta;
 }

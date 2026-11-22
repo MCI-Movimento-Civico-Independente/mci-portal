@@ -20,6 +20,7 @@ export type Sessao = {
   };
   temGoogle: boolean;
   podeOrg: boolean;
+  souAdmin: boolean;
 };
 
 type LinhaNivel = { nivel: number; nome: string; xp_min: number };
@@ -77,5 +78,6 @@ export const getSessao = cache(async (): Promise<Sessao | null> => {
     },
     temGoogle: provedores.includes("google"),
     podeOrg: podeAcessarOrg(conta.papel),
+    souAdmin: conta.papel === "admin",
   };
 });

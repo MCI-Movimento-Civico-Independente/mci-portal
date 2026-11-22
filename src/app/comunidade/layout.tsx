@@ -27,6 +27,7 @@ async function CascaComunidade({ children }: { children: ReactNode }) {
           inicial={sessao.inicial}
           nome={sessao.nome}
           podeOrg={sessao.podeOrg}
+          souAdmin={sessao.souAdmin}
           temGoogle={sessao.temGoogle}
         />
       </header>

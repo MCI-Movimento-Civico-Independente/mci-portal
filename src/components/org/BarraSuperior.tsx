@@ -11,6 +11,7 @@ export function BarraSuperior({ sessao }: { sessao: Sessao }) {
       inicial={sessao.inicial}
       nome={sessao.nome}
       podeOrg={sessao.podeOrg}
+      souAdmin={sessao.souAdmin}
       temGoogle={sessao.temGoogle}
     />
   );

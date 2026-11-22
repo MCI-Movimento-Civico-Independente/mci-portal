@@ -8,13 +8,14 @@ type Props = {
   inicial: string;
   nome: string;
   podeOrg: boolean;
+  souAdmin?: boolean;
   temGoogle: boolean;
 };
 
 const item = "flex min-h-11 w-full items-center px-4 text-left text-sm font-bold hover:bg-creme";
 
 /** Avatar com menu: Organização (só com papel), Comunidade, Vincular Google, Sair. */
-export function MenuAvatar({ inicial, nome, podeOrg, temGoogle }: Props) {
+export function MenuAvatar({ inicial, nome, podeOrg, souAdmin = false, temGoogle }: Props) {
   const pathname = usePathname();
   // Guarda a rota em que o menu foi aberto: ao navegar, ele fecha sozinho.
   const [abertoEm, setAbertoEm] = useState<string | null>(null);
@@ -57,6 +58,11 @@ export function MenuAvatar({ inicial, nome, podeOrg, temGoogle }: Props) {
           {podeOrg && (
             <Link role="menuitem" href="/org" className={item}>
               Organização
+            </Link>
+          )}
+          {souAdmin && (
+            <Link role="menuitem" href="/org/admin" className={item}>
+              Administração
             </Link>
           )}
           <Link role="menuitem" href="/comunidade" className={item}>

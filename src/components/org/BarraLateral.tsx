@@ -4,9 +4,9 @@ import { ChevronLeft } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Logo } from "@/components/ui/Logo";
-import { estaAtivo, itensLaterais } from "./itens-nav";
+import { estaAtivo, itemAdmin, itensLaterais } from "./itens-nav";
 
-export function BarraLateral() {
+export function BarraLateral({ souAdmin = false }: { souAdmin?: boolean }) {
   const pathname = usePathname();
 
   return (
@@ -20,7 +20,7 @@ export function BarraLateral() {
         </Link>
 
         <nav aria-label="Principal" className="flex flex-col gap-0.5">
-          {itensLaterais.map((item) => {
+          {(souAdmin ? [...itensLaterais, itemAdmin] : itensLaterais).map((item) => {
             const ativo = estaAtivo(pathname, item);
             const Icone = item.icone;
             return (

@@ -22,7 +22,7 @@ async function CascaOrg({ children }: { children: ReactNode }) {
 
   return (
     <div className="flex min-h-dvh">
-      <BarraLateral />
+      <BarraLateral souAdmin={sessao.souAdmin} />
       <div className="flex min-w-0 flex-1 flex-col">
         <BarraSuperior sessao={sessao} />
         {/* pb-24: espaço para a navegação inferior no celular */}
