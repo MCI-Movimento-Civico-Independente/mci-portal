@@ -27,7 +27,7 @@ export function SubtarefasLista({ subtarefas, membros, hoje }: { subtarefas: Tar
                 inicio={s.data_inicio ?? ""}
                 fim={s.prazo ?? ""}
                 hoje={hoje}
-                alerta={s.status !== "concluida" && !!s.prazo && s.prazo < hoje}
+                status={s.status}
               />
             </div>
           </div>

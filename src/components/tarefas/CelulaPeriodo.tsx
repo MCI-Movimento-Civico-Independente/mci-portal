@@ -18,6 +18,8 @@ const curta = (iso: string, comAno: boolean) => {
 };
 const completa = (iso?: string) => (iso ? iso.split("-").reverse().join("/") : "");
 
+const rotuloTemDatas = (p: { inicio: string; fim: string }) => !!p.inicio || !!p.fim;
+
 const LARGURA = 252;
 const ALTURA = 330;
 
@@ -30,13 +32,14 @@ export function CelulaPeriodo({
   inicio,
   fim,
   hoje,
-  alerta = false,
+  status,
 }: {
   id: string;
   inicio: string;
   fim: string;
   hoje: string;
-  alerta?: boolean;
+  /** Status da tarefa: define a cor do período (cinza, vermelho se atrasada, verde se concluída). */
+  status: string;
 }) {
   const [atual, setOtimista] = useOptimistic({ inicio, fim });
   const [pendente, iniciar] = useTransition();
@@ -62,8 +65,8 @@ export function CelulaPeriodo({
     painel.current?.showPopover();
   }
 
-  function salvar(novoInicio: string, novoFim: string) {
-    painel.current?.hidePopover();
+  function salvar(novoInicio: string, novoFim: string, fechar = false) {
+    if (fechar) painel.current?.hidePopover();
     if (novoInicio === atual.inicio && novoFim === atual.fim) return;
     setErro(null);
     iniciar(async () => {
@@ -82,6 +85,7 @@ export function CelulaPeriodo({
     }
     const [a, b] = dia < from ? [dia, from] : [from, dia];
     setIntervalo({ from: a, to: b });
+    // O calendário continua aberto: fecha ao clicar fora, como na Monday.
     salvar(paraIso(a), paraIso(b));
   }
 
@@ -92,6 +96,16 @@ export function CelulaPeriodo({
         ? { from: sobre, to: intervalo.from }
         : { from: intervalo.from, to: sobre }
       : intervalo;
+
+  // Cinza por padrão; vermelho se passou da entrega sem concluir; verde quando concluída.
+  const atrasada = status !== "concluida" && !!atual.fim && atual.fim < hoje;
+  const cor = !rotuloTemDatas(atual)
+    ? "border-transparent bg-transparent text-suave hover:bg-sutil"
+    : status === "concluida"
+      ? "border-verde bg-verde font-bold text-sobre-verde"
+      : atrasada
+        ? "border-absurdo bg-absurdo font-bold text-sobre-absurdo"
+        : "border-borda bg-borda font-medium text-texto";
 
   const anoAtual = hoje.slice(0, 4);
   const comAno = [atual.inicio, atual.fim].some((d) => d && d.slice(0, 4) !== anoAtual);
@@ -105,13 +119,11 @@ export function CelulaPeriodo({
       <button
         ref={botao}
         type="button"
-        aria-label={rotulo ? `Período: ${rotulo}. Alterar` : "Definir período"}
+        aria-label={rotulo ? `Período: ${rotulo}${atrasada ? ", atrasada" : status === "concluida" ? ", concluída" : ""}. Alterar` : "Definir período"}
         aria-haspopup="dialog"
         disabled={pendente}
         onClick={abrir}
-        className={`flex min-h-11 w-full items-center gap-1.5 border border-transparent bg-transparent px-1.5 text-xs hover:border-borda hover:bg-sutil disabled:opacity-60 md:min-h-8 md:text-[11px] ${
-          alerta ? "font-bold text-marca-texto" : rotulo ? "font-medium" : "text-suave"
-        }`}
+        className={`flex min-h-11 w-full items-center gap-1.5 border px-1.5 text-xs hover:brightness-95 disabled:opacity-60 md:min-h-8 md:text-[11px] dark:hover:brightness-125 ${cor}`}
       >
         <TbCalendar size={14} aria-hidden="true" className="shrink-0" />
         <span className="truncate">{rotulo ?? "Definir datas"}</span>
@@ -170,11 +182,11 @@ export function CelulaPeriodo({
             button_next: "flex size-8 items-center justify-center text-suave hover:text-texto",
             month_grid: "w-full border-collapse",
             weekday: "rotulo h-7 text-[9px] font-normal text-suave",
-            day: "p-0 text-center text-xs",
-            day_button: "flex size-8 w-full items-center justify-center hover:bg-sutil",
+            day: "p-0 text-center text-xs transition-colors duration-150",
+            day_button: "flex size-8 w-full items-center justify-center transition-colors duration-150 hover:bg-sutil",
             today: "font-extrabold text-marca-texto",
             outside: "text-suave opacity-40",
-            selected: "bg-marca text-sobre-marca [&>button]:hover:bg-transparent",
+            selected: "bg-marca text-sobre-marca transition-colors duration-150 [&>button]:hover:bg-transparent",
           }}
         />
         )}
@@ -182,7 +194,10 @@ export function CelulaPeriodo({
         <div className="mt-1 flex items-center justify-between">
           <button
             type="button"
-            onClick={() => salvar("", "")}
+            onClick={() => {
+              setIntervalo(undefined);
+              salvar("", "");
+            }}
             className="rotulo inline-flex min-h-11 items-center px-1 text-[10px] text-suave hover:text-marca-texto md:min-h-7"
           >
             Limpar
@@ -190,7 +205,7 @@ export function CelulaPeriodo({
           {intervalo?.from && !intervalo.to && (
             <button
               type="button"
-              onClick={() => salvar(paraIso(intervalo.from!), "")}
+              onClick={() => salvar(paraIso(intervalo.from!), "", true)}
               className="rotulo inline-flex min-h-11 items-center px-1 text-[10px] font-bold hover:text-marca-texto md:min-h-7"
             >
               Só início

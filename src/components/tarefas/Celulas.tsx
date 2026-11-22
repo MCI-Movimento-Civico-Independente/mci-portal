@@ -399,7 +399,7 @@ export function CampoEditavel({
           inicio={tarefa.data_inicio ?? ""}
           fim={tarefa.prazo ?? ""}
           hoje={hoje}
-          alerta={!!tarefa.prazo && tarefa.prazo < hoje && tarefa.status !== "concluida"}
+          status={tarefa.status}
         />
       );
     case "comite":

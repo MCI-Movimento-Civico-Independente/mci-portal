@@ -58,7 +58,6 @@ type LinhaProps = Omit<Props, "tarefas"> & {
 function Linha({ t, membros, comites, projetos, hoje, qs, caminho = "/org/tarefas", grupos, sub = false, expansor, alca, arrastarPeloTitulo, fantasma = false }: LinhaProps) {
   const href = `${caminho}?${qs ? `${qs}&` : ""}tarefa=${t.id}`;
   const feitas = t.subtarefas.filter((s) => s.status === "concluida").length;
-  const atrasada = t.status !== "concluida" && !!t.prazo && t.prazo < hoje;
   const modoProjeto = !!grupos;
   // Classes de cada ponto de corte escritas por extenso (o Tailwind não lê nomes montados).
   const c = modoProjeto
@@ -116,7 +115,7 @@ function Linha({ t, membros, comites, projetos, hoje, qs, caminho = "/org/tarefa
           <CelulaOpcao id={t.id} chave="prioridade" valor={t.prioridade ?? ""} opcoes={PRIORIDADE_OPCOES} rotulo="Prioridade" />
         </div>
         <div className="w-44 @3xl:w-auto">
-          <CelulaPeriodo id={t.id} inicio={t.data_inicio ?? ""} fim={t.prazo ?? ""} hoje={hoje} alerta={atrasada} />
+          <CelulaPeriodo id={t.id} inicio={t.data_inicio ?? ""} fim={t.prazo ?? ""} hoje={hoje} status={t.status} />
         </div>
       </div>
     </div>
