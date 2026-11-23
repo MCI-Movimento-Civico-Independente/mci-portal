@@ -185,6 +185,10 @@ export async function membrosOrg(): Promise<Pessoa[]> {
 }
 
 export type NovaTarefa = {
+  /** Quando o id nasce no navegador (as imagens da descrição já subiram para a pasta dele). */
+  id?: string;
+  /** Documento rico da descrição (o texto puro vai em `descricao`). */
+  descricao_doc?: unknown;
   titulo: string;
   descricao: string | null;
   comite_slug?: string | null;

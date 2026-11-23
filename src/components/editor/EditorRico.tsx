@@ -14,7 +14,7 @@ type Retorno = { erro?: string };
 
 export type PropsEditorRico = {
   /** descricao: abre como texto formatado, edita ao clicar e salva sozinho. comentario: editor compacto com botão. */
-  modo: "descricao" | "comentario";
+  modo: "descricao" | "comentario" | "campo";
   tarefaId: string;
   /** Documento atual (com as imagens já assinadas). */
   valor: Documento | null;
@@ -31,6 +31,8 @@ export type PropsEditorRico = {
   aoTerminar?: () => void;
   aoCancelar?: () => void;
   autoFoco?: boolean;
+  /** Modo "campo" (dentro de um formulário): avisa a cada mudança, sem salvar nem enviar. */
+  aoMudar?: (doc: Documento, imagens: "carregando" | "erro" | null) => void;
 };
 
 /**
@@ -98,9 +100,11 @@ function Corpo({
   aoTerminar,
   aoCancelar,
   autoFoco = false,
+  aoMudar,
   aoSair,
 }: PropsEditorRico & { inicial: Documento; aoSair?: (doc: Documento) => void }) {
-  const ehDescricao = modo === "descricao";
+  const ehCampo = modo === "campo";
+  const ehDescricao = modo === "descricao" || ehCampo;
   const tipo = ehDescricao ? "tarefa" : "comentario";
   const [painel, setPainel] = useState<Painel>(null);
   const [estado, setEstado] = useState<"parado" | "salvando" | "salvo" | "erro">("parado");
@@ -215,6 +219,10 @@ function Corpo({
     },
     onUpdate: ({ editor: e }) => {
       setMensagem(null);
+      if (ehCampo) {
+        aoMudar?.(docPlano(e), imagensPendentes(e));
+        return;
+      }
       if (!ehDescricao) return;
       window.clearTimeout(timer.current);
       timer.current = window.setTimeout(() => void salvar(e), 1500); // salva sozinho 1,5 s depois da última digitação
@@ -233,19 +241,20 @@ function Corpo({
     aoSair?.(JSON.parse(salvoRef.current));
   };
 
-  const altura = ehDescricao ? "min-h-40 px-4 py-3" : "min-h-20 px-3 py-2";
+  const altura = ehCampo ? "min-h-32 px-3 py-2" : ehDescricao ? "min-h-40 px-4 py-3" : "min-h-20 px-3 py-2";
   return (
     <div
       className="border-2 border-borda bg-superficie focus-within:border-texto"
       onBlur={(e) => {
         // Descrição: ao sair do editor, grava e volta a ler como texto formatado.
-        if (!ehDescricao || !editor || e.currentTarget.contains(e.relatedTarget as Node | null)) return;
+        if (!ehDescricao || ehCampo || !editor || e.currentTarget.contains(e.relatedTarget as Node | null)) return;
         void salvar(editor).then((ok) => ok && aoSair?.(JSON.parse(salvoRef.current)));
       }}
       onKeyDown={(e) => {
         if (e.key === "Escape" && editor && !painel) {
           e.preventDefault();
           e.stopPropagation(); // não fecha a janela da tarefa
+          if (ehCampo) return;
           if (ehDescricao) cancelarEdicao(editor);
           else aoCancelar?.();
         }
@@ -265,7 +274,9 @@ function Corpo({
       )}
 
       <div className="flex flex-wrap items-center gap-3 border-t-2 border-borda px-3 py-2">
-        {ehDescricao ? (
+        {ehCampo ? (
+          <span className="rotulo text-[10px] text-suave">Cole ou arraste imagens aqui</span>
+        ) : ehDescricao ? (
           <>
             <Botao variante="secundario" className="min-h-9 px-3 text-xs" onClick={() => editor && void salvar(editor).then((ok) => ok && aoSair?.(JSON.parse(salvoRef.current)))}>
               Pronto

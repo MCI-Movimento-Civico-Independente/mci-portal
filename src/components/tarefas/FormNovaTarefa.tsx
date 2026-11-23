@@ -2,6 +2,7 @@
 
 import { useActionState, useState } from "react";
 import { criarTarefaAction, type EstadoForm } from "@/app/org/tarefas/acoes";
+import { CampoDescricao } from "@/components/editor/CampoDescricao";
 import { Botao } from "@/components/ui/Botao";
 import { chaveFormulario, type CampoPersonalizado } from "@/lib/campos-personalizados-tipos";
 import { resolverFormulario, type FormularioView } from "@/lib/formularios-tipos";
@@ -85,18 +86,8 @@ export function FormNovaTarefa({
       </div>
 
       <div>
-        <label htmlFor="descricao" className={rotulo}>
-          Descrição
-        </label>
-        <textarea
-          id="descricao"
-          name="descricao"
-          required
-          rows={5}
-          maxLength={2000}
-          placeholder="O que precisa ser feito e qual o resultado esperado"
-          className={`${campo} py-2`}
-        />
+        <p className={rotulo}>Descrição</p>
+        <CampoDescricao placeholder="O que precisa ser feito e qual o resultado esperado" />
       </div>
 
       <div className="grid gap-5 sm:grid-cols-2">

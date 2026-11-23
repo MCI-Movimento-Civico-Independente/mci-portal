@@ -32,7 +32,8 @@ export async function POST(req: Request) {
     console.error("Falha ao conferir a tarefa do anexo:", error);
     return NextResponse.json({ erro: "Algo deu errado. Tente de novo em alguns minutos." }, { status: 500 });
   }
-  if (!data) return NextResponse.json({ erro: "Tarefa não encontrada." }, { status: 404 });
+  // Descrição de tarefa nova: o id nasce no navegador e a tarefa só existe depois de criada.
+  if (!data && tipo !== "tarefa") return NextResponse.json({ erro: "Tarefa não encontrada." }, { status: 404 });
 
   try {
     return NextResponse.json(await criarUrlDeUpload(tipo as TipoAnexo, itemId));

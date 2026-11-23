@@ -207,9 +207,18 @@ export async function criarTarefaAction(_anterior: EstadoForm, form: FormData): 
     if ("erro" in v) return { erro: v.erro };
     lido[chave] = v.valor;
   }
-  const descricao = texto(form.get("descricao"));
-  if (!descricao) return { erro: "Escreva a descrição da tarefa." };
-  if (descricao.length > 2000) return { erro: "A descrição pode ter no máximo 2000 caracteres." };
+  const tarefaId = texto(form.get("tarefa_id")) ?? "";
+  if (!UUID.test(tarefaId)) return { erro: "Algo deu errado. Recarregue a página e tente de novo." };
+  let bruto: unknown;
+  try {
+    bruto = JSON.parse(texto(form.get("descricao_doc")) ?? "");
+  } catch {
+    return { erro: "Escreva a descrição da tarefa." };
+  }
+  const v = validarDocumento(bruto, "tarefa", tarefaId);
+  if ("erro" in v) return { erro: v.erro };
+  if (estaVazio(v.doc)) return { erro: "Escreva a descrição da tarefa." };
+  const descricao = textoPuro(v.doc) || "(imagem)";
   if (lido.data_inicio && lido.prazo && lido.data_inicio > lido.prazo) return { erro: ERRO_PERIODO };
 
   // O grupo precisa ser do projeto escolhido.
@@ -238,6 +247,8 @@ export async function criarTarefaAction(_anterior: EstadoForm, form: FormData): 
   let id: string;
   try {
     id = await criarTarefa(sessao.conta.id, {
+      id: tarefaId,
+      descricao_doc: v.doc,
       titulo: lido.titulo!,
       descricao,
       comite_slug: lido.comite_slug,
