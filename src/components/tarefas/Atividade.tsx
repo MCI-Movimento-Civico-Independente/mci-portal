@@ -1,26 +1,34 @@
 "use client";
 
-import { TbTrash } from "react-icons/tb";
-import { useActionState, useState } from "react";
-import { comentarAction, excluirComentarioAction, type EstadoForm } from "@/app/org/tarefas/acoes";
-import { Botao } from "@/components/ui/Botao";
-import { campo } from "./estilos";
+import dynamic from "next/dynamic";
+import { useState } from "react";
+import { TbPencil, TbTrash } from "react-icons/tb";
+import { comentarAction, editarComentarioAction, excluirComentarioAction } from "@/app/org/tarefas/acoes";
+import { ConteudoRico } from "@/components/editor/ConteudoRico";
+import { Avatar } from "@/components/ui/Avatar";
+import type { Documento } from "@/lib/editor/documento";
 
-export type ComentarioView = { id: string; texto: string; quando: string; autor: string; autorId: string | null };
+// O editor só é baixado quando a janela da tarefa abre, e nunca na leitura dos comentários.
+const EditorRico = dynamic(() => import("@/components/editor/EditorRico").then((m) => m.EditorRico), {
+  ssr: false,
+  loading: () => <div className="h-36 animate-pulse border-2 border-borda bg-sutil" aria-busy="true" />,
+});
+
+export type ComentarioView = {
+  id: string;
+  doc: Documento;
+  /** "há 5 min" (calculado ao carregar) e a data completa, para o title. */
+  relativo: string;
+  quando: string;
+  editado: boolean;
+  autor: string;
+  autorId: string | null;
+  /** "Nível 3 · Articulador" */
+  nivel: string | null;
+};
 export type EventoView = { id: string; quando: string; autor: string; frase: string };
 
-function Avatar({ nome }: { nome: string }) {
-  return (
-    <span
-      aria-hidden="true"
-      className="flex size-8 shrink-0 items-center justify-center rounded-full bg-marca-suave text-xs font-semibold text-marca-texto"
-    >
-      {nome[0]?.toUpperCase()}
-    </span>
-  );
-}
-
-/** Comentários e histórico da tarefa. Os textos de data chegam prontos do servidor. */
+/** Comentários (texto rico) e histórico da tarefa. Os textos de data chegam prontos do servidor. */
 export function Atividade({
   tarefaId,
   comentarios,
@@ -35,7 +43,7 @@ export function Atividade({
   souAdmin: boolean;
 }) {
   const [aba, setAba] = useState<"comentarios" | "historico">("comentarios");
-  const [estado, acao, pendente] = useActionState<EstadoForm, FormData>(comentarAction.bind(null, tarefaId), {});
+  const [editandoId, setEditandoId] = useState<string | null>(null);
 
   const botaoAba = (id: typeof aba, rotulo: string, total: number) => (
     <button
@@ -64,61 +72,74 @@ export function Atividade({
       {aba === "comentarios" ? (
         <div role="tabpanel" className="mt-4 flex flex-col gap-4">
           {comentarios.length === 0 && <p className="text-[15px] text-suave">Nenhum comentário ainda. Comece a conversa.</p>}
-          <ul className="flex flex-col gap-4">
+          <ul className="flex flex-col gap-5">
             {comentarios.map((c) => (
               <li key={c.id} className="flex gap-3">
-                <Avatar nome={c.autor} />
+                <Avatar pessoa={{ id: c.autorId ?? c.id, nome: c.autor }} />
                 <div className="min-w-0 flex-1">
                   <p className="flex flex-wrap items-baseline gap-x-2">
                     <span className="text-sm font-bold">{c.autor}</span>
-                    <span className="text-[11px] text-suave">{c.quando}</span>
+                    {c.nivel && <span className="rotulo text-[10px] text-marca-texto">{c.nivel}</span>}
+                    <time title={c.quando} className="text-[11px] text-suave">
+                      {c.relativo}
+                    </time>
+                    {c.editado && <span className="text-[11px] text-suave">(editado)</span>}
                   </p>
-                  <p className="mt-1 whitespace-pre-wrap break-words text-[15px] leading-snug">{c.texto}</p>
+                  {editandoId === c.id ? (
+                    <div className="mt-2">
+                      <EditorRico
+                        modo="comentario"
+                        tarefaId={tarefaId}
+                        valor={c.doc}
+                        rotuloEnviar="Salvar"
+                        autoFoco
+                        aoSalvar={(doc) => editarComentarioAction(c.id, tarefaId, doc)}
+                        aoTerminar={() => setEditandoId(null)}
+                        aoCancelar={() => setEditandoId(null)}
+                      />
+                    </div>
+                  ) : (
+                    <ConteudoRico doc={c.doc} className="mt-1" />
+                  )}
                 </div>
-                {(c.autorId === euId || souAdmin) && (
-                  <form
-                    action={excluirComentarioAction.bind(null, c.id)}
-                    onSubmit={(e) => {
-                      if (!window.confirm("Excluir este comentário?")) e.preventDefault();
-                    }}
-                  >
-                    <button
-                      type="submit"
-                      aria-label="Excluir comentário"
-                      className="flex size-11 items-center justify-center rounded-lg text-suave hover:bg-marca-suave hover:text-marca-texto"
-                    >
-                      <TbTrash size={16} aria-hidden="true" />
-                    </button>
-                  </form>
+                {editandoId !== c.id && (
+                  <div className="flex shrink-0">
+                    {c.autorId === euId && (
+                      <button
+                        type="button"
+                        aria-label="Editar comentário"
+                        onClick={() => setEditandoId(c.id)}
+                        className="flex size-11 items-center justify-center text-suave hover:bg-sutil hover:text-texto"
+                      >
+                        <TbPencil size={16} aria-hidden="true" />
+                      </button>
+                    )}
+                    {(c.autorId === euId || souAdmin) && (
+                      <form
+                        action={excluirComentarioAction.bind(null, c.id)}
+                        onSubmit={(e) => {
+                          if (!window.confirm("Excluir este comentário?")) e.preventDefault();
+                        }}
+                      >
+                        <button
+                          type="submit"
+                          aria-label="Excluir comentário"
+                          className="flex size-11 items-center justify-center text-suave hover:bg-marca-suave hover:text-marca-texto"
+                        >
+                          <TbTrash size={16} aria-hidden="true" />
+                        </button>
+                      </form>
+                    )}
+                  </div>
                 )}
               </li>
             ))}
           </ul>
 
-          <form key={estado.n ?? 0} action={acao} className="flex flex-col gap-2 border-t border-borda pt-4">
-            <label htmlFor="comentario" className="text-sm font-bold">
-              Novo comentário
-            </label>
-            <textarea
-              id="comentario"
-              name="texto"
-              required
-              rows={3}
-              maxLength={4000}
-              placeholder="Escreva uma atualização, dúvida ou decisão"
-              className={`${campo} py-2`}
-            />
-            {estado.erro && (
-              <p role="alert" className="text-sm font-bold text-marca-texto">
-                {estado.erro}
-              </p>
-            )}
-            <div>
-              <Botao type="submit" disabled={pendente}>
-                {pendente ? "Enviando…" : "Comentar"}
-              </Botao>
-            </div>
-          </form>
+          <div className="flex flex-col gap-2 border-t border-borda pt-4">
+            <p className="text-sm font-bold">Novo comentário</p>
+            <EditorRico modo="comentario" tarefaId={tarefaId} valor={null} limparAoEnviar aoSalvar={(doc) => comentarAction(tarefaId, doc)} />
+          </div>
         </div>
       ) : (
         <div role="tabpanel" className="mt-4">
@@ -128,7 +149,7 @@ export function Atividade({
             <ul className="flex flex-col gap-3">
               {historico.map((e) => (
                 <li key={e.id} className="flex gap-3 text-sm">
-                  <Avatar nome={e.autor} />
+                  <Avatar pessoa={{ id: e.id, nome: e.autor }} />
                   <p className="min-w-0 flex-1 leading-snug">
                     <span className="font-bold">{e.autor}</span> {e.frase}
                     <span className="ml-2 text-[11px] text-suave">{e.quando}</span>

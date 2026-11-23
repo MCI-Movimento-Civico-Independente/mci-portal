@@ -44,3 +44,16 @@ export function formatarDataCurta(data: string): string {
   const [ano, mes, dia] = data.split("-");
   return `${dia}/${mes}/${ano}`;
 }
+
+/** "agora", "há 5 min", "há 3 h", "há 2 dias" ou a data curta, a partir de um instante ISO. */
+export function dataRelativa(iso: string, agora: number): string {
+  const segundos = Math.max(0, Math.round((agora - new Date(iso).getTime()) / 1000));
+  if (segundos < 60) return "agora";
+  const minutos = Math.floor(segundos / 60);
+  if (minutos < 60) return `há ${minutos} min`;
+  const horas = Math.floor(minutos / 60);
+  if (horas < 24) return `há ${horas} h`;
+  const dias = Math.floor(horas / 24);
+  if (dias < 7) return `há ${dias} ${dias === 1 ? "dia" : "dias"}`;
+  return new Date(iso).toLocaleDateString("pt-BR", { timeZone: FUSO, day: "2-digit", month: "2-digit", year: "2-digit" });
+}

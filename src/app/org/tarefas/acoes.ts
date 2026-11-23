@@ -2,9 +2,12 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { criarComentario, excluirComentario, listarComentarios, listarHistorico, registrarEvento, type Evento } from "@/lib/atividade";
+import { criarComentario, editarComentario, excluirComentario, listarComentarios, listarHistorico, niveisDosAutores, registrarEvento, type Evento } from "@/lib/atividade";
+import { assinarDocumento } from "@/lib/editor/anexos";
+import { documentoDeTexto, estaVazio, textoPuro, validarDocumento, type Documento } from "@/lib/editor/documento";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { getSessao } from "@/lib/auth/sessao";
-import { dataValida, formatarDataCurta, formatarDataHora } from "@/lib/datas";
+import { dataRelativa, dataValida, formatarDataCurta, formatarDataHora } from "@/lib/datas";
 import { definirValorPersonalizado, listarCamposPersonalizados } from "@/lib/campos-personalizados";
 import {
   chaveFormulario,
@@ -260,28 +263,50 @@ export async function criarTarefaAction(_anterior: EstadoForm, form: FormData): 
   redirect(`${base}?tarefa=${id}`);
 }
 
-export async function salvarDescricaoAction(id: string, _anterior: EstadoForm, form: FormData): Promise<EstadoForm> {
+/** Descrição rica da tarefa (o editor salva sozinho). O texto puro fica em `descricao`. */
+export async function salvarDescricaoRicaAction(id: string, bruto: unknown): Promise<EstadoForm> {
   const sessao = await exigirOrg();
   if (!UUID.test(id)) return { erro: "Tarefa inválida." };
   const atual = await tarefaPorId(id);
   if (!atual) return { erro: "Tarefa não encontrada." };
+  if (atual.pai_id) return { erro: "Subtarefas não têm descrição: use os comentários." };
 
-  const descricao = texto(form.get("descricao"));
-  // A descrição é obrigatória nas tarefas; na subtarefa pode ficar vazia.
-  if (!descricao && atual.pai_id === null) return { erro: "Escreva a descrição da tarefa." };
-  if (descricao.length > 2000) return { erro: "A descrição pode ter no máximo 2000 caracteres." };
+  const v = validarDocumento(bruto, "tarefa", id);
+  if ("erro" in v) return { erro: v.erro };
+  const texto = textoPuro(v.doc);
+  if (estaVazio(v.doc)) return { erro: "A descrição não pode ficar vazia." };
 
   try {
-    await atualizarTarefa(id, { descricao: descricao || null });
+    const { error } = await createAdminClient()
+      .from("tarefas")
+      .update({ descricao: texto || "(imagem)", descricao_doc: v.doc, atualizado_em: new Date().toISOString() })
+      .eq("id", id);
+    if (error) throw error;
   } catch (erro) {
     console.error("Falha ao salvar a descrição:", erro);
     return { erro: "Algo deu errado. Tente de novo em alguns minutos." };
   }
-  if ((atual.descricao ?? "") !== descricao) {
+  if ((atual.descricao ?? "") !== texto) {
     await registrarEvento({ tarefa_id: id, autor_id: sessao.conta.id, tipo: "descricao" });
   }
   revalidatePath("/org", "layout");
-  return { ok: true };
+  return {};
+}
+
+/** Descrição para exibir: documento com as imagens assinadas (1 hora). Sem documento, vem o texto antigo. */
+export async function carregarDescricaoAction(id: string): Promise<{ doc: Documento } | { erro: string }> {
+  await exigirOrg();
+  if (!UUID.test(id)) return { erro: "Tarefa inválida." };
+  try {
+    const { data, error } = await createAdminClient().from("tarefas").select("descricao, descricao_doc").eq("id", id).maybeSingle();
+    if (error) throw error;
+    if (!data) return { erro: "Tarefa não encontrada." };
+    const bruto = data.descricao_doc as Documento | null;
+    return { doc: bruto ? await assinarDocumento(bruto) : documentoDeTexto(data.descricao as string | null) };
+  } catch (erro) {
+    console.error("Falha ao carregar a descrição:", erro);
+    return { erro: "Não deu para carregar a descrição. Tente de novo em alguns minutos." };
+  }
 }
 
 export async function criarSubtarefaAction(paiId: string, anterior: EstadoForm, form: FormData): Promise<EstadoForm> {
@@ -345,24 +370,48 @@ export async function excluirTarefaAction(id: string): Promise<void> {
   redirect(atual?.pai_id ? `/org/tarefas?tarefa=${atual.pai_id}` : "/org/tarefas");
 }
 
-export async function comentarAction(tarefaId: string, anterior: EstadoForm, form: FormData): Promise<EstadoForm> {
+function textoDoComentario(doc: Documento) {
+  return textoPuro(doc) || "(imagem)";
+}
+
+export async function comentarAction(tarefaId: string, bruto: unknown): Promise<EstadoForm> {
   const sessao = await exigirOrg();
   if (!UUID.test(tarefaId)) return { erro: "Tarefa inválida." };
-  const comentario = texto(form.get("texto"));
-  if (!comentario) return { erro: "Escreva o comentário." };
-  if (comentario.length > 4000) return { erro: "O comentário pode ter no máximo 4000 caracteres." };
+  const v = validarDocumento(bruto, "comentario", tarefaId);
+  if ("erro" in v) return { erro: v.erro };
+  if (estaVazio(v.doc)) return { erro: "Escreva o comentário." };
   if (!(await tarefaPorId(tarefaId))) return { erro: "Tarefa não encontrada." };
 
   try {
-    await criarComentario(tarefaId, sessao.conta.id, comentario);
+    await criarComentario(tarefaId, sessao.conta.id, v.doc, textoDoComentario(v.doc));
   } catch (erro) {
     console.error("Falha ao comentar:", erro);
     return { erro: "Algo deu errado. Tente de novo em alguns minutos." };
   }
   revalidatePath("/org", "layout");
-  return { ok: true, n: (anterior.n ?? 0) + 1 };
+  return {};
 }
 
+/** Só o autor edita o próprio comentário. */
+export async function editarComentarioAction(id: string, tarefaId: string, bruto: unknown): Promise<EstadoForm> {
+  const sessao = await exigirOrg();
+  if (!UUID.test(id) || !UUID.test(tarefaId)) return { erro: "Pedido inválido." };
+  const v = validarDocumento(bruto, "comentario", tarefaId);
+  if ("erro" in v) return { erro: v.erro };
+  if (estaVazio(v.doc)) return { erro: "O comentário não pode ficar vazio." };
+  try {
+    if (!(await editarComentario(id, sessao.conta.id, v.doc, textoDoComentario(v.doc)))) {
+      return { erro: "Só o autor pode editar este comentário." };
+    }
+  } catch (erro) {
+    console.error("Falha ao editar o comentário:", erro);
+    return { erro: "Algo deu errado. Tente de novo em alguns minutos." };
+  }
+  revalidatePath("/org", "layout");
+  return {};
+}
+
+/** Exclusão lógica: o autor apaga o próprio; a coordenação (admin) apaga qualquer um. */
 export async function excluirComentarioAction(id: string): Promise<void> {
   const sessao = await exigirOrg();
   if (!UUID.test(id)) return;
@@ -626,14 +675,22 @@ export async function carregarAtividadeAction(
   if (!UUID.test(tarefaId)) return { erro: "Tarefa inválida." };
   try {
     const [comentarios, historico] = await Promise.all([listarComentarios(tarefaId), listarHistorico(tarefaId)]);
-    return {
-      comentarios: comentarios.map((c) => ({
+    const niveis = await niveisDosAutores([...new Set(comentarios.map((c) => c.autor_id).filter((i): i is string => !!i))]);
+    const agora = Date.now();
+    const vistos = await Promise.all(
+      comentarios.map(async (c): Promise<ComentarioView> => ({
         id: c.id,
-        texto: c.texto,
+        doc: await assinarDocumento(c.conteudo ?? documentoDeTexto(c.texto)),
+        relativo: dataRelativa(c.criado_em, agora),
         quando: formatarDataHora(c.criado_em),
+        editado: !!c.editado_em,
         autor: c.autor?.nome?.trim() || "Membro removido",
         autorId: c.autor_id,
+        nivel: c.autor_id ? (niveis.get(c.autor_id) ?? null) : null,
       })),
+    );
+    return {
+      comentarios: vistos,
       historico: historico.map((e) => ({
         id: e.id,
         quando: formatarDataHora(e.criado_em),

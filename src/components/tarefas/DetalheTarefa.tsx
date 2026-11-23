@@ -16,7 +16,7 @@ import { AtividadeCarregavel } from "./AtividadeCarregavel";
 import { BotaoExcluir } from "./BotaoExcluir";
 import { CampoPersonalizadoInline } from "./CampoPersonalizado";
 import { CampoEditavel, CelulaTitulo } from "./Celulas";
-import { FormDescricao } from "./FormDescricao";
+import { DescricaoTarefa } from "./DescricaoTarefa";
 import { NovaSubtarefa } from "./NovaSubtarefa";
 import { SubtarefasLista } from "./SubtarefasLista";
 
@@ -123,7 +123,8 @@ export function DetalheTarefa({
         ))}
       </dl>
 
-      <FormDescricao id={tarefa.id} descricao={tarefa.descricao ?? ""} obrigatoria={!ehSub} />
+      {/* Subtarefas não têm descrição própria: a conversa fica nos comentários. */}
+      {!ehSub && <DescricaoTarefa tarefaId={tarefa.id} textoAtual={tarefa.descricao} />}
 
       {!ehSub && (
         <section aria-labelledby="titulo-subtarefas">

@@ -337,8 +337,33 @@ export default function DesignPage() {
             euId="p1"
             souAdmin={false}
             comentarios={[
-              { id: "c1", texto: "Subi o ajuste do fluxo. Falta revisar as mensagens de erro.", quando: "22/11/26, 14:30", autor: "Ana Souza", autorId: "p2" },
-              { id: "c2", texto: "Combinado. Reviso hoje à noite.", quando: "22/11/26, 15:02", autor: "Vitor Moraes", autorId: "p1" },
+              {
+                id: "c1",
+                doc: {
+                  type: "doc",
+                  content: [
+                    { type: "paragraph", content: [{ type: "text", text: "Subi o ajuste do fluxo. " }, { type: "text", text: "Falta revisar", marks: [{ type: "bold" }] }, { type: "text", text: " as mensagens de erro:" }] },
+                    { type: "taskList", content: [{ type: "taskItem", attrs: { checked: true }, content: [{ type: "paragraph", content: [{ type: "text", text: "login pelo Telegram" }] }] }, { type: "taskItem", attrs: { checked: false }, content: [{ type: "paragraph", content: [{ type: "text", text: "erro de rede" }] }] }] },
+                    { type: "blockquote", content: [{ type: "paragraph", content: [{ type: "text", text: "Pensar. Agir. Fiscalizar." }] }] },
+                  ],
+                },
+                relativo: "há 5 min",
+                quando: "22/11/26, 14:30",
+                editado: true,
+                autor: "Ana Souza",
+                autorId: "p2",
+                nivel: "Nível 3 · Articulador",
+              },
+              {
+                id: "c2",
+                doc: { type: "doc", content: [{ type: "paragraph", content: [{ type: "text", text: "Combinado. Reviso hoje à noite." }] }] },
+                relativo: "há 2 h",
+                quando: "22/11/26, 15:02",
+                editado: false,
+                autor: "Vitor Moraes",
+                autorId: "p1",
+                nivel: "Nível 4 · Fiscal",
+              },
             ]}
             historico={[
               { id: "e1", quando: "22/11/26, 14:10", autor: "Vitor Moraes", frase: "alterou Status: A fazer → Em andamento" },

@@ -265,3 +265,126 @@ summary::-webkit-details-marker {
       transform 120ms ease;
   }
 }
+
+/*
+ * Texto rico (editor e leitura). Cantos retos, sem sombra: citação com barra laranja e fundo
+ * de superfície, código em IBM Plex Mono, links em laranja de texto, foco com borda de tinta.
+ */
+.conteudo-rico {
+  font-size: 15px;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+.conteudo-rico > * + * {
+  margin-top: 0.6em;
+}
+.conteudo-rico h2 {
+  font-family: var(--font-titulo);
+  font-size: 1.35em;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  line-height: 1.15;
+  text-transform: uppercase;
+  margin-top: 1em;
+}
+.conteudo-rico h3 {
+  font-family: var(--font-titulo);
+  font-size: 1.12em;
+  font-weight: 800;
+  line-height: 1.2;
+  margin-top: 0.9em;
+}
+.conteudo-rico ul,
+.conteudo-rico ol {
+  padding-left: 1.4em;
+}
+.conteudo-rico ul {
+  list-style: disc;
+}
+.conteudo-rico ol {
+  list-style: decimal;
+}
+.conteudo-rico li > * + * {
+  margin-top: 0.25em;
+}
+.conteudo-rico ul[data-type="taskList"] {
+  list-style: none;
+  padding-left: 0.2em;
+}
+.conteudo-rico ul[data-type="taskList"] li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55em;
+}
+.conteudo-rico ul[data-type="taskList"] li > label {
+  display: flex;
+  align-items: center;
+  min-height: 1.55em;
+}
+.conteudo-rico ul[data-type="taskList"] li > div {
+  flex: 1;
+  min-width: 0;
+}
+.conteudo-rico ul[data-type="taskList"] input[type="checkbox"] {
+  width: 1.05em;
+  height: 1.05em;
+  margin-top: 0.3em;
+  accent-color: var(--marca);
+}
+.conteudo-rico li[data-checked="true"] > div {
+  text-decoration: line-through;
+  color: var(--suave);
+}
+.conteudo-rico blockquote {
+  border-left: 4px solid var(--marca);
+  background: var(--superficie);
+  padding: 0.5em 0.9em;
+  color: var(--texto);
+}
+.conteudo-rico code {
+  font-family: var(--font-mono);
+  font-size: 0.88em;
+  background: var(--sutil);
+  padding: 0.1em 0.35em;
+}
+.conteudo-rico pre {
+  font-family: var(--font-mono);
+  font-size: 0.88em;
+  background: var(--bloco);
+  color: var(--sobre-bloco);
+  padding: 0.8em 1em;
+  overflow-x: auto;
+}
+.conteudo-rico pre code {
+  background: none;
+  padding: 0;
+  font-size: inherit;
+}
+.conteudo-rico hr {
+  border: 0;
+  border-top: 2px solid var(--borda);
+  margin: 1em 0;
+}
+.conteudo-rico a {
+  color: var(--marca-texto);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.conteudo-rico a:hover {
+  color: var(--texto);
+}
+.conteudo-rico .ProseMirror,
+.conteudo-rico.ProseMirror {
+  outline: none;
+}
+.conteudo-rico p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  color: var(--suave);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+.conteudo-rico .ProseMirror-selectednode {
+  outline: 2px solid var(--marca-texto);
+  outline-offset: 2px;
+}
