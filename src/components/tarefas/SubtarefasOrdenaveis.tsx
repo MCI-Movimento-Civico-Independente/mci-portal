@@ -48,7 +48,7 @@ function Item({ id, children }: { id: string; children: (a: Pick<ArgsLinhaSub, "
             title="Arrastar para mudar a posição"
             {...attributes}
             {...listeners}
-            className="flex size-7 cursor-grab touch-none items-center justify-center text-suave hover:bg-inverso hover:text-sobre-inverso active:cursor-grabbing @3xl:size-5"
+            className="flex size-5 cursor-grab touch-none items-center justify-center text-suave hover:bg-inverso hover:text-sobre-inverso active:cursor-grabbing"
           >
             <TbGripVertical size={14} aria-hidden="true" />
           </button>

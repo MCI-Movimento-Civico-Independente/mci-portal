@@ -18,18 +18,21 @@ import { LinhaNovaSubtarefa } from "./LinhaNovaSubtarefa";
 import { Progresso } from "./Progresso";
 
 /*
- * Layout por largura do CONTAINER (não da tela): com o menu lateral aberto a tela
- * sobra pouco, então medir a tela fazia a tabela ganhar rolagem horizontal à toa.
- * Abaixo do ponto de corte a linha vira um cartão compacto (sem rolagem).
+ * A tabela mantém sempre o formato de colunas. Quando a área fica estreita, ela rola na
+ * horizontal com UMA barra só, embaixo da última tarefa: arrastar a barra move todas as
+ * linhas juntas (cabeçalho, tarefas e subtarefas). A coluna "Solicitante" só aparece em
+ * áreas largas (@6xl, medido pelo espaço da tabela, não da tela).
  *
- * Modo projeto (arrastável): handle | expandir | tarefa | executor | status | prioridade | período
+ * Modo projeto (arrastável): alça | expandir | tarefa | executor | status | prioridade | período
  * Modo lista:                        expandir | tarefa | projeto | executor | status | prioridade | período
- * A partir de @6xl entra a coluna "Solicitante".
  */
-const GRID_PROJETO =
-  "@3xl:grid @3xl:grid-cols-[20px_24px_minmax(160px,1fr)_84px_96px_84px_150px] @6xl:grid-cols-[20px_24px_minmax(160px,1fr)_84px_84px_96px_84px_150px] @3xl:items-center @3xl:gap-x-1";
-const GRID_LISTA =
-  "@4xl:grid @4xl:grid-cols-[24px_minmax(160px,1fr)_130px_84px_96px_84px_150px] @6xl:grid-cols-[24px_minmax(160px,1fr)_130px_84px_84px_96px_84px_150px] @4xl:items-center @4xl:gap-x-1";
+const COLUNAS_PROJETO =
+  "grid-cols-[20px_24px_minmax(160px,1fr)_84px_96px_84px_150px] @6xl:grid-cols-[20px_24px_minmax(160px,1fr)_84px_84px_96px_84px_150px]";
+const COLUNAS_LISTA =
+  "grid-cols-[24px_minmax(160px,1fr)_130px_84px_96px_84px_150px] @6xl:grid-cols-[24px_minmax(160px,1fr)_130px_84px_84px_96px_84px_150px]";
+// Largura mínima do conteúdo: abaixo disso a barra de rolagem aparece.
+const LARGURA_PROJETO = "min-w-[680px]";
+const LARGURA_LISTA = "min-w-[780px]";
 
 type Props = {
   tarefas: TarefaDb[];
@@ -63,17 +66,13 @@ function Linha({ t, membros, comites, projetos, hoje, qs, caminho = "/org/tarefa
   const href = `${caminho}?${qs ? `${qs}&` : ""}tarefa=${t.id}`;
   const feitas = t.subtarefas.filter((s) => s.status === "concluida").length;
   const modoProjeto = !!grupos;
-  // Classes de cada ponto de corte escritas por extenso (o Tailwind não lê nomes montados).
-  const c = modoProjeto
-    ? { contents: "@3xl:contents", auto: "@3xl:w-auto", ocultoNoCorte: "@3xl:hidden @6xl:block", none: "@3xl:flex-none", subOculto: "hidden @3xl:flex" }
-    : { contents: "@4xl:contents", auto: "@4xl:w-auto", ocultoNoCorte: "@4xl:hidden @6xl:block", none: "@4xl:flex-none", subOculto: "hidden @4xl:flex" };
 
   return (
     <div
-      className={`flex flex-wrap items-center border-b border-borda hover:bg-sutil ${modoProjeto ? GRID_PROJETO : GRID_LISTA} ${sub ? "bg-sutil/60" : ""} ${fantasma ? "opacity-40" : ""}`}
+      className={`grid items-center gap-x-1 border-b border-borda hover:bg-sutil ${modoProjeto ? COLUNAS_PROJETO : COLUNAS_LISTA} ${sub ? "bg-sutil/60" : ""} ${fantasma ? "opacity-40" : ""}`}
     >
-      {modoProjeto && <div className="flex size-7 items-center justify-center @3xl:size-5">{alca}</div>}
-      <div className={`flex size-7 items-center justify-center @3xl:size-6 ${sub && !selecao ? c.subOculto : ""}`}>
+      {modoProjeto && <div className="flex size-5 items-center justify-center">{alca}</div>}
+      <div className="flex size-6 items-center justify-center">
         {sub && selecao && (
           <input
             type="checkbox"
@@ -89,7 +88,7 @@ function Linha({ t, membros, comites, projetos, hoje, qs, caminho = "/org/tarefa
             aria-expanded={expansor.aberto}
             aria-label={expansor.aberto ? "Recolher subtarefas" : "Mostrar subtarefas"}
             onClick={expansor.alternar}
-            className="flex size-7 items-center justify-center hover:bg-sutil"
+            className="flex size-6 items-center justify-center hover:bg-sutil"
           >
             <TbChevronRight size={16} aria-hidden="true" className={`transition-transform ${expansor.aberto ? "rotate-90" : ""}`} />
           </button>
@@ -97,7 +96,7 @@ function Linha({ t, membros, comites, projetos, hoje, qs, caminho = "/org/tarefa
       </div>
       <div
         onPointerDown={arrastarPeloTitulo}
-        className={`flex min-w-0 flex-1 items-center gap-2 ${c.none} ${sub ? "pl-4" : ""} ${
+        className={`flex min-w-0 items-center gap-2 ${sub ? "pl-4" : ""} ${
           arrastarPeloTitulo ? "cursor-grab active:cursor-grabbing [&_a]:cursor-grab! [&_a]:active:cursor-grabbing!" : ""
         }`}
       >
@@ -105,31 +104,29 @@ function Linha({ t, membros, comites, projetos, hoje, qs, caminho = "/org/tarefa
         <Progresso feitas={feitas} total={t.subtarefas.length} />
       </div>
 
-      <div className={`flex basis-full flex-wrap items-start gap-x-2 gap-y-0 pb-2 pl-9 ${c.contents}`}>
-        {!modoProjeto && (
-          <div className={`w-full sm:w-52 ${c.auto}`}>
-            {sub ? (
-              <span aria-hidden="true" />
-            ) : (
-              <CelulaProjeto id={t.id} valor={t.projeto_id ?? ""} comites={comites} projetos={projetos} comiteFiltro={t.comite_slug} />
-            )}
-          </div>
-        )}
-        <div className={`w-36 ${c.ocultoNoCorte} ${c.auto}`}>
-          <CelulaPessoa id={t.id} chave="solicitante_id" valor={t.solicitante_id ?? ""} membros={membros} rotulo="Solicitante" />
+      {!modoProjeto && (
+        <div className="min-w-0">
+          {sub ? (
+            <span aria-hidden="true" />
+          ) : (
+            <CelulaProjeto id={t.id} valor={t.projeto_id ?? ""} comites={comites} projetos={projetos} comiteFiltro={t.comite_slug} />
+          )}
         </div>
-        <div className={`w-36 ${c.auto}`}>
-          <CelulaPessoa id={t.id} chave="responsavel_id" valor={t.responsavel_id ?? ""} extras={t.executores_extra} membros={membros} rotulo="Executor" />
-        </div>
-        <div className={`w-36 ${c.auto}`}>
-          <CelulaOpcao id={t.id} chave="status" valor={t.status} opcoes={STATUS_OPCOES} rotulo="Status" />
-        </div>
-        <div className={`w-28 ${c.auto}`}>
-          <CelulaOpcao id={t.id} chave="prioridade" valor={t.prioridade ?? ""} opcoes={PRIORIDADE_OPCOES} rotulo="Prioridade" />
-        </div>
-        <div className="w-44 @3xl:w-auto">
-          <CelulaPeriodo id={t.id} inicio={t.data_inicio ?? ""} fim={t.prazo ?? ""} hoje={hoje} status={t.status} />
-        </div>
+      )}
+      <div className="hidden min-w-0 @6xl:block">
+        <CelulaPessoa id={t.id} chave="solicitante_id" valor={t.solicitante_id ?? ""} membros={membros} rotulo="Solicitante" />
+      </div>
+      <div className="min-w-0">
+        <CelulaPessoa id={t.id} chave="responsavel_id" valor={t.responsavel_id ?? ""} extras={t.executores_extra} membros={membros} rotulo="Executor" />
+      </div>
+      <div className="min-w-0">
+        <CelulaOpcao id={t.id} chave="status" valor={t.status} opcoes={STATUS_OPCOES} rotulo="Status" />
+      </div>
+      <div className="min-w-0">
+        <CelulaOpcao id={t.id} chave="prioridade" valor={t.prioridade ?? ""} opcoes={PRIORIDADE_OPCOES} rotulo="Prioridade" />
+      </div>
+      <div className="min-w-0">
+        <CelulaPeriodo id={t.id} inicio={t.data_inicio ?? ""} fim={t.prazo ?? ""} hoje={hoje} status={t.status} />
       </div>
     </div>
   );
@@ -197,7 +194,7 @@ function ItemArrastavel(props: Omit<LinhaProps, "expansor" | "sub">) {
             title="Arrastar para mudar de grupo ou de posição"
             {...attributes}
             {...listeners}
-            className="flex size-7 cursor-grab touch-none items-center justify-center text-suave hover:bg-inverso hover:text-sobre-inverso active:cursor-grabbing @3xl:size-5"
+            className="flex size-5 cursor-grab touch-none items-center justify-center text-suave hover:bg-inverso hover:text-sobre-inverso active:cursor-grabbing"
           >
             <TbGripVertical size={14} aria-hidden="true" />
           </button>
@@ -212,10 +209,7 @@ export function TabelaTarefas({ tarefas, membros, comites, projetos, hoje, qs, c
   const arrastavel = !!grupos && !!grupoId;
   const { setNodeRef } = useDroppable({ id: `grupo:${grupoId ?? "-"}`, disabled: !arrastavel });
   const modoProjeto = !!grupos;
-  const cabecalho = modoProjeto
-    ? "@3xl:grid @3xl:grid-cols-[20px_24px_minmax(160px,1fr)_84px_96px_84px_150px] @6xl:grid-cols-[20px_24px_minmax(160px,1fr)_84px_84px_96px_84px_150px] @3xl:gap-x-1"
-    : "@4xl:grid @4xl:grid-cols-[24px_minmax(160px,1fr)_130px_84px_96px_84px_150px] @6xl:grid-cols-[24px_minmax(160px,1fr)_130px_84px_84px_96px_84px_150px] @4xl:gap-x-1";
-  const mostrar = modoProjeto ? "@3xl:grid" : "@4xl:grid";
+  const colunas = modoProjeto ? COLUNAS_PROJETO : COLUNAS_LISTA;
 
   const itens = tarefas.map((t) => {
     const props = { t, membros, comites, projetos, hoje, qs, caminho, grupos };
@@ -223,31 +217,30 @@ export function TabelaTarefas({ tarefas, membros, comites, projetos, hoje, qs, c
   });
 
   return (
-    // Rolagem horizontal só aparece se mesmo assim não couber, e com barra fina.
-    <div className="@container overflow-x-auto [scrollbar-width:thin]">
-      <div
-        aria-hidden="true"
-        className={`hidden border-b border-borda-forte pb-1 rotulo text-[10px] text-suave ${mostrar} ${cabecalho}`}
-      >
-        {modoProjeto && <span />}
-        <span />
-        <span>Tarefa</span>
-        {!modoProjeto && <span className="pl-1.5">Projeto</span>}
-        <span className="hidden text-center @6xl:block">Solicitante</span>
-        <span className="text-center">Executor</span>
-        <span>Status</span>
-        <span>Prioridade</span>
-        <span>Período</span>
+    // Uma rolagem horizontal só para a tabela inteira (barra fina, embaixo da última tarefa).
+    <div className="@container overflow-x-auto pb-1 [scrollbar-width:thin]">
+      <div className={modoProjeto ? LARGURA_PROJETO : LARGURA_LISTA}>
+        <div aria-hidden="true" className={`grid gap-x-1 border-b border-borda-forte pb-1 rotulo text-[10px] text-suave ${colunas}`}>
+          {modoProjeto && <span />}
+          <span />
+          <span>Tarefa</span>
+          {!modoProjeto && <span className="pl-1.5">Projeto</span>}
+          <span className="hidden text-center @6xl:block">Solicitante</span>
+          <span className="text-center">Executor</span>
+          <span>Status</span>
+          <span>Prioridade</span>
+          <span>Período</span>
+        </div>
+        {arrastavel ? (
+          <SortableContext items={tarefas.map((t) => t.id)} strategy={verticalListSortingStrategy}>
+            <ul ref={setNodeRef} className="min-h-8">
+              {itens}
+            </ul>
+          </SortableContext>
+        ) : (
+          <ul>{itens}</ul>
+        )}
       </div>
-      {arrastavel ? (
-        <SortableContext items={tarefas.map((t) => t.id)} strategy={verticalListSortingStrategy}>
-          <ul ref={setNodeRef} className="min-h-8">
-            {itens}
-          </ul>
-        </SortableContext>
-      ) : (
-        <ul>{itens}</ul>
-      )}
     </div>
   );
 }
