@@ -37,6 +37,11 @@ export type PropsEditorRico = {
  * Editor de texto rico (Tiptap): um componente, dois usos. A lista de extensões e a barra de
  * ferramentas ficam em extensoes.ts, para o editor crescer (menções, menu "/", blocos).
  */
+/** O ProseMirror cria `attrs` sem protótipo; o React não serializa isso para a Server Action ("$T"). */
+function docPlano(editor: Editor): Documento {
+  return JSON.parse(JSON.stringify(editor.getJSON())) as Documento;
+}
+
 export function EditorRico(props: PropsEditorRico) {
   return props.modo === "descricao" ? <Descricao {...props} /> : <Corpo {...props} inicial={props.valor ?? documentoDeTexto(props.textoAlternativo)} />;
 }
@@ -123,7 +128,7 @@ function Corpo({
       setMensagem("Tente de novo ou remova a imagem com erro para salvar.");
       return false;
     }
-    const doc = editor.getJSON() as Documento;
+    const doc = docPlano(editor);
     const json = JSON.stringify(doc);
     if (json === salvoRef.current) return true;
     if (obrigatorio && estaVazio(doc)) {
@@ -151,7 +156,7 @@ function Corpo({
       setMensagem(pendente === "carregando" ? "Espere a imagem terminar de subir." : "Tente de novo ou remova a imagem com erro.");
       return;
     }
-    const doc = editor.getJSON() as Documento;
+    const doc = docPlano(editor);
     if (estaVazio(doc)) {
       setMensagem("Escreva algo ou cole uma imagem.");
       return;
