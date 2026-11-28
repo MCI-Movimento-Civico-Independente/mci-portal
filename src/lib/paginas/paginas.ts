@@ -125,6 +125,38 @@ export async function excluirAba(id: string): Promise<void> {
   if (error) throw error;
 }
 
+const inicioDaLixeira = () => new Date(Date.now() - PAGINA.diasNaLixeira * 24 * 60 * 60 * 1000).toISOString();
+
+/** Páginas excluídas nos últimos dias, a mais recente primeiro. As mais antigas continuam no banco. */
+export async function listarLixeira(projetoId: string): Promise<{ id: string; titulo: string; excluidoEm: string }[]> {
+  const { data, error } = await createAdminClient()
+    .from("projeto_abas")
+    .select("id, titulo, excluido_em")
+    .eq("projeto_id", projetoId)
+    .gte("excluido_em", inicioDaLixeira())
+    .order("excluido_em", { ascending: false });
+  if (error) throw error;
+  return (data ?? []).map((a) => ({ id: a.id as string, titulo: a.titulo as string, excluidoEm: a.excluido_em as string }));
+}
+
+/** Tira a página da lixeira e a põe no fim das abas. */
+export async function restaurarAba(id: string): Promise<boolean> {
+  const db = createAdminClient();
+  const { data: aba, error } = await db
+    .from("projeto_abas")
+    .select("projeto_id")
+    .eq("id", id)
+    .gte("excluido_em", inicioDaLixeira())
+    .maybeSingle();
+  if (error) throw error;
+  if (!aba) return false;
+  const abas = await listarAbas(aba.projeto_id as string);
+  const posicao = abas.reduce((m, a) => Math.max(m, a.posicao + 1), 0);
+  const { error: erroUpd } = await db.from("projeto_abas").update({ excluido_em: null, posicao }).eq("id", id);
+  if (erroUpd) throw erroUpd;
+  return true;
+}
+
 export type PaginaCarregada = {
   titulo: string;
   conteudo: Documento;

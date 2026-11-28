@@ -8,6 +8,9 @@ import { BLOCOS_DA_PAGINA, transformar, type Bloco } from "./blocos";
 /*
  * Alça à esquerda de cada bloco de primeiro nível: arrastar muda a ordem; clicar abre o menu
  * (transformar, mover, duplicar, excluir). Funciona com mouse, toque e teclado.
+ *
+ * PRÓXIMA ETAPA: mover também um item de lista sozinho (listItem e taskItem), e não só a
+ * lista inteira. Hoje `posicaoDo`, `blocosNaTela` e `mover` enxergam só o primeiro nível.
  */
 
 /** Posição, no documento, do bloco número `indice`. */

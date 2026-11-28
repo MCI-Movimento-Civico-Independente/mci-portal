@@ -3,8 +3,9 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getSessao } from "@/lib/auth/sessao";
+import { formatarDataHora } from "@/lib/datas";
 import { PAGINA } from "@/lib/limites";
-import { criarPagina, duplicarAba, excluirAba, renomearAba, reordenarAbas } from "@/lib/paginas/paginas";
+import { criarPagina, duplicarAba, excluirAba, listarLixeira, renomearAba, reordenarAbas, restaurarAba } from "@/lib/paginas/paginas";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const FALHOU = "Algo deu errado. Tente de novo em alguns minutos.";
@@ -75,4 +76,27 @@ export async function excluirAbaAction(id: string): Promise<RetornoAba> {
     await excluirAba(id);
     return {};
   });
+}
+
+export type ItemDaLixeira = { id: string; titulo: string; excluidaEm: string };
+
+export async function listarLixeiraAction(projetoId: string): Promise<{ itens: ItemDaLixeira[] } | { erro: string }> {
+  await exigirOrg();
+  if (!UUID.test(projetoId)) return { erro: "Projeto inválido." };
+  try {
+    const itens = await listarLixeira(projetoId);
+    // A data já sai formatada no horário de Brasília.
+    return { itens: itens.map((i) => ({ id: i.id, titulo: i.titulo, excluidaEm: formatarDataHora(i.excluidoEm) })) };
+  } catch (erro) {
+    console.error("Falha ao listar a lixeira:", erro);
+    return { erro: FALHOU };
+  }
+}
+
+export async function restaurarAbaAction(id: string): Promise<RetornoAba> {
+  await exigirOrg();
+  if (!UUID.test(id)) return { erro: "Aba inválida." };
+  return tentar("restaurar a aba", async () =>
+    (await restaurarAba(id)) ? { id } : { erro: "Esta página não está mais na lixeira." },
+  );
 }

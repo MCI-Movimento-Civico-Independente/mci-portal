@@ -9,6 +9,8 @@ export const PAGINA = {
   conteudoMaxBytes: 500 * KB,
   tituloMaxCaracteres: 120,
   maxImagens: 20,
+  /** Por quantos dias uma página excluída aparece na lixeira (depois fica só no banco). */
+  diasNaLixeira: 30,
 } as const;
 
 export const IMAGEM = {

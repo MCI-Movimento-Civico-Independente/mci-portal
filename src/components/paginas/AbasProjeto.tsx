@@ -20,9 +20,16 @@ import {
   TbTimeline,
   TbTrash,
 } from "react-icons/tb";
-import { criarPaginaAction, duplicarAbaAction, excluirAbaAction, reordenarAbasAction } from "@/app/org/projetos/acoes-abas";
+import {
+  criarPaginaAction,
+  duplicarAbaAction,
+  excluirAbaAction,
+  reordenarAbasAction,
+  restaurarAbaAction,
+} from "@/app/org/projetos/acoes-abas";
 import { PAGINA } from "@/lib/limites";
 import { esquecerPagina, salvarPendente } from "./controlador";
+import { Lixeira } from "./Lixeira";
 import { itemDeMenu, MenuSuspenso } from "./MenuSuspenso";
 import { lerErroDeTitulo, lerTitulos, ouvirTitulos, renomear, tituloDoServidor } from "./titulos";
 
@@ -159,7 +166,7 @@ function ConfirmarExclusao({ titulo, aoConfirmar, aoCancelar }: { titulo: string
         Excluir a página?
       </h2>
       <p className="mt-2 text-sm">
-        A aba <strong>{titulo}</strong> sai do projeto para todo mundo.
+        A aba <strong>{titulo}</strong> sai do projeto para todo mundo. Ela fica na lixeira por {PAGINA.diasNaLixeira} dias.
       </p>
       <div className="mt-5 flex justify-end gap-3">
         <button type="button" onClick={() => ref.current?.close()} className="min-h-11 border-2 border-borda-forte px-4 text-sm font-bold hover:border-texto">
@@ -186,6 +193,7 @@ export function AbasProjeto({ projetoId, abas }: { projetoId: string; abas: AbaD
   const erroTitulo = useSyncExternalStore(ouvirTitulos, lerErroDeTitulo, () => null);
   const [erro, setErro] = useState<string | null>(null);
   const [excluindo, setExcluindo] = useState<AbaDaBarra | null>(null);
+  const [lixeira, setLixeira] = useState(false);
   const [pendente, iniciar] = useTransition();
 
   const doServidor = abas.map((a) => a.id).join();
@@ -314,6 +322,19 @@ export function AbasProjeto({ projetoId, abas }: { projetoId: string; abas: AbaD
                   <span className="rotulo text-[10px]">Em breve</span>
                 </button>
               ))}
+              <div className="mt-1.5 border-t border-borda pt-1.5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    fechar();
+                    setLixeira(true);
+                  }}
+                  className={itemDeMenu}
+                >
+                  <TbTrash size={17} aria-hidden="true" />
+                  <span className="flex-1">Lixeira</span>
+                </button>
+              </div>
             </div>
           )}
         </MenuSuspenso>
@@ -322,6 +343,16 @@ export function AbasProjeto({ projetoId, abas }: { projetoId: string; abas: AbaD
         <p role="alert" className="mt-2 text-sm font-bold text-marca-texto">
           {erro ?? erroTitulo}
         </p>
+      )}
+      {lixeira && (
+        <Lixeira
+          projetoId={projetoId}
+          aoFechar={() => setLixeira(false)}
+          aoRestaurar={(id) => {
+            setLixeira(false);
+            abrirNova(() => restaurarAbaAction(id));
+          }}
+        />
       )}
       {excluindo && <ConfirmarExclusao titulo={nome(excluindo)} aoCancelar={() => setExcluindo(null)} aoConfirmar={() => excluir(excluindo)} />}
     </div>
