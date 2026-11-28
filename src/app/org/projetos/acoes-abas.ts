@@ -5,6 +5,8 @@ import { redirect } from "next/navigation";
 import { getSessao } from "@/lib/auth/sessao";
 import { formatarDataHora } from "@/lib/datas";
 import { PAGINA } from "@/lib/limites";
+import { listarArquivosDoProjeto, usoDoProjeto } from "@/lib/paginas/arquivos";
+import type { Uso } from "@/lib/paginas/arquivos-tipos";
 import { criarPagina, duplicarAba, excluirAba, listarLixeira, renomearAba, reordenarAbas, restaurarAba } from "@/lib/paginas/paginas";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -99,4 +101,21 @@ export async function restaurarAbaAction(id: string): Promise<RetornoAba> {
   return tentar("restaurar a aba", async () =>
     (await restaurarAba(id)) ? { id } : { erro: "Esta página não está mais na lixeira." },
   );
+}
+
+export type ItemDeArquivo = { id: string; nome: string; tamanho: number; pagina: string | null; enviadoEm: string };
+
+export async function listarArquivosAction(projetoId: string): Promise<{ uso: Uso; itens: ItemDeArquivo[] } | { erro: string }> {
+  await exigirOrg();
+  if (!UUID.test(projetoId)) return { erro: "Projeto inválido." };
+  try {
+    const [uso, arquivos] = await Promise.all([usoDoProjeto(projetoId), listarArquivosDoProjeto(projetoId)]);
+    return {
+      uso,
+      itens: arquivos.map(({ criadoEm, ...a }) => ({ ...a, enviadoEm: formatarDataHora(criadoEm) })),
+    };
+  } catch (erro) {
+    console.error("Falha ao listar os arquivos do projeto:", erro);
+    return { erro: FALHOU };
+  }
 }

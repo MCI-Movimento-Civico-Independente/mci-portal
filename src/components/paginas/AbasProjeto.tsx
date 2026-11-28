@@ -14,6 +14,7 @@ import {
   TbDots,
   TbFile,
   TbLayoutKanban,
+  TbPaperclip,
   TbPencil,
   TbPlus,
   TbTable,
@@ -28,6 +29,7 @@ import {
   restaurarAbaAction,
 } from "@/app/org/projetos/acoes-abas";
 import { PAGINA } from "@/lib/limites";
+import { ArquivosProjeto } from "./ArquivosProjeto";
 import { esquecerPagina, salvarPendente } from "./controlador";
 import { Lixeira } from "./Lixeira";
 import { itemDeMenu, MenuSuspenso } from "./MenuSuspenso";
@@ -55,7 +57,7 @@ function ItemAba({
   ativa: boolean;
   primeira: boolean;
   ultima: boolean;
-  acoes: { duplicar: () => void; excluir: () => void; mover: (passo: -1 | 1) => void };
+  acoes: { duplicar: () => void; excluir: () => void; arquivos: () => void; mover: (passo: -1 | 1) => void };
 }) {
   const [editando, setEditando] = useState<string | null>(null);
   const cancelado = useRef(false);
@@ -140,6 +142,7 @@ function ItemAba({
                 {item("Duplicar", TbCopy, acoes.duplicar)}
                 {item("Mover para a esquerda", TbArrowLeft, () => acoes.mover(-1), primeira)}
                 {item("Mover para a direita", TbArrowRight, () => acoes.mover(1), ultima)}
+                {item("Arquivos do projeto", TbPaperclip, acoes.arquivos)}
                 {item("Excluir", TbTrash, acoes.excluir, false, true)}
               </>
             );
@@ -194,6 +197,7 @@ export function AbasProjeto({ projetoId, abas }: { projetoId: string; abas: AbaD
   const [erro, setErro] = useState<string | null>(null);
   const [excluindo, setExcluindo] = useState<AbaDaBarra | null>(null);
   const [lixeira, setLixeira] = useState(false);
+  const [arquivos, setArquivos] = useState(false);
   const [pendente, iniciar] = useTransition();
 
   const doServidor = abas.map((a) => a.id).join();
@@ -283,6 +287,7 @@ export function AbasProjeto({ projetoId, abas }: { projetoId: string; abas: AbaD
                         return duplicarAbaAction(a.id);
                       }),
                     excluir: () => setExcluindo(a),
+                    arquivos: () => setArquivos(true),
                     mover: (passo) => reordenar(arrayMove(ordem, ordem.indexOf(a.id), ordem.indexOf(a.id) + passo)),
                   }}
                 />
@@ -344,6 +349,7 @@ export function AbasProjeto({ projetoId, abas }: { projetoId: string; abas: AbaD
           {erro ?? erroTitulo}
         </p>
       )}
+      {arquivos && <ArquivosProjeto projetoId={projetoId} aoFechar={() => setArquivos(false)} />}
       {lixeira && (
         <Lixeira
           projetoId={projetoId}

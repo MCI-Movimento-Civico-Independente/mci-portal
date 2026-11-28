@@ -3,6 +3,7 @@ import CharacterCount from "@tiptap/extension-character-count";
 import { Details, DetailsContent, DetailsSummary } from "@tiptap/extension-details";
 import Highlight from "@tiptap/extension-highlight";
 import { TaskItem, TaskList } from "@tiptap/extension-list";
+import { Table, TableCell, TableHeader, TableRow } from "@tiptap/extension-table";
 import Placeholder, { type PlaceholderOptions } from "@tiptap/extension-placeholder";
 import StarterKit, { type StarterKitOptions } from "@tiptap/starter-kit";
 import type { IconType } from "react-icons";
@@ -27,7 +28,10 @@ import {
 } from "react-icons/tb";
 import { LIMITE_CARACTERES, type TipoAnexo } from "@/lib/editor/documento";
 import { AtalhoAlternante, Divisor, FraseDestaque } from "./blocos-pagina";
+import { Coluna, Colunas, DocumentoPagina } from "./colunas";
 import { Comandos, type CanalDeComandos } from "./comandos";
+import { LimitesDaPagina } from "./limites-editor";
+import { ArquivoBloco, CartaoLink, ImagemPagina } from "./midia";
 import { ImagemAnexo } from "./ImagemAnexo";
 
 /*
@@ -43,6 +47,9 @@ export type OpcoesExtensoes = {
   /** Ctrl/Cmd+K: abre o painel de link. */
   aoPedirLink: () => void;
 };
+
+/** Uma célula de tabela só leva texto e listas. */
+const NA_CELULA = "(paragraph | bulletList | orderedList | taskList)+";
 
 /** Parte comum a todos os editores: texto, listas, link, placeholder e Ctrl/Cmd+K. */
 function criarBasico({
@@ -100,10 +107,22 @@ export function criarExtensoes({ placeholder, tipo, tarefaId, aoPedirLink }: Opc
  * Páginas dos projetos: o básico com os blocos de documento. Os caracteres "{" (tarefas) e
  * "@" (pessoas) ficam reservados para as próximas etapas: nada aqui usa esses gatilhos.
  */
-export function criarExtensoesPagina({ canal, aoPedirLink }: { canal: CanalDeComandos; aoPedirLink: () => void }): Extensions {
+export function criarExtensoesPagina({
+  abaId,
+  canal,
+  aoPedirLink,
+  aoRecusar,
+}: {
+  abaId: string;
+  canal: CanalDeComandos;
+  aoPedirLink: () => void;
+  /** Um limite da página barrou a mudança. */
+  aoRecusar: (mensagem: string) => void;
+}): Extensions {
   return [
     ...criarBasico({
       starter: {
+        document: false, // trocado pelo DocumentoPagina, que aceita colunas no primeiro nível
         heading: { levels: [1, 2, 3] },
         codeBlock: false, // não faz parte dos blocos desta etapa
         horizontalRule: false, // trocado pelo Divisor, que espera o espaço
@@ -134,6 +153,18 @@ export function criarExtensoesPagina({ canal, aoPedirLink }: { canal: CanalDeCom
     FraseDestaque,
     Divisor,
     AtalhoAlternante,
+    DocumentoPagina,
+    Colunas,
+    Coluna,
+    // A tabela vem dentro de uma caixa que rola na horizontal.
+    Table.configure({ resizable: false, renderWrapper: true }),
+    TableRow,
+    TableHeader.extend({ content: NA_CELULA }),
+    TableCell.extend({ content: NA_CELULA }),
+    ImagemPagina.configure({ abaId }),
+    ArquivoBloco.configure({ abaId }),
+    CartaoLink,
+    LimitesDaPagina.configure({ aoRecusar }),
     Comandos.configure({ canal }),
   ];
 }

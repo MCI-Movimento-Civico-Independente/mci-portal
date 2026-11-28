@@ -2,7 +2,9 @@ import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { Documento } from "@/lib/editor/documento";
 import { PAGINA } from "@/lib/limites";
-import { textoPagina } from "./documento";
+import { sincronizarArquivos, tiposDosArquivos, usoDoProjeto } from "./arquivos";
+import type { Uso } from "./arquivos-tipos";
+import { textoPagina, type AnexoCitado } from "./documento";
 
 // Mesmo modelo de acesso do projeto: quem chama já conferiu o login e o papel.
 
@@ -52,7 +54,7 @@ async function gravarOrdem(ids: string[]) {
 
 async function inserirPagina(
   aba: { projeto_id: string; titulo: string; posicao: number; criado_por: string },
-  conteudo?: { conteudo: Documento; conteudo_texto: string },
+  conteudo?: { conteudo: Documento; conteudo_texto: string; arquivos: string[] },
 ): Promise<string> {
   const db = createAdminClient();
   const { data, error } = await db.from("projeto_abas").insert({ ...aba, tipo: "pagina" }).select("id").single();
@@ -101,14 +103,16 @@ export async function duplicarAba(id: string, autorId: string): Promise<string |
   if (!aba) return null;
   const { data, error } = await createAdminClient()
     .from("projeto_paginas")
-    .select("conteudo, conteudo_texto")
+    .select("conteudo, conteudo_texto, arquivos")
     .eq("aba_id", id)
     .maybeSingle();
   if (error) throw error;
   const titulo = `${aba.titulo.slice(0, PAGINA.tituloMaxCaracteres - 8)} (cópia)`;
   const nova = await inserirPagina(
     { projeto_id: aba.projeto_id, titulo, posicao: aba.posicao + 1, criado_por: autorId },
-    data ? { conteudo: data.conteudo as Documento, conteudo_texto: data.conteudo_texto as string } : undefined,
+    data
+      ? { conteudo: data.conteudo as Documento, conteudo_texto: data.conteudo_texto as string, arquivos: data.arquivos as string[] }
+      : undefined,
   );
   const ordem = (await listarAbas(aba.projeto_id)).map((a) => a.id).filter((i) => i !== nova);
   ordem.splice(ordem.indexOf(id) + 1, 0, nova);
@@ -116,13 +120,27 @@ export async function duplicarAba(id: string, autorId: string): Promise<string |
   return nova;
 }
 
+/** Os arquivos de uma página excluída deixam de contar na cota (voltam se ela for restaurada). */
+async function sincronizarDaAba(projetoId: string, abaId: string) {
+  try {
+    const { data, error } = await createAdminClient().from("projeto_paginas").select("arquivos").eq("aba_id", abaId).maybeSingle();
+    if (error) throw error;
+    await sincronizarArquivos(projetoId, (data?.arquivos as string[] | undefined) ?? [], abaId);
+  } catch (erro) {
+    // O espaço usado se acerta no próximo salvamento; a exclusão já valeu.
+    console.error("Falha ao atualizar os arquivos do projeto:", erro);
+  }
+}
+
 export async function excluirAba(id: string): Promise<void> {
-  const { error } = await createAdminClient()
+  const { data, error } = await createAdminClient()
     .from("projeto_abas")
     .update({ excluido_em: new Date().toISOString() })
     .eq("id", id)
-    .is("excluido_em", null);
+    .is("excluido_em", null)
+    .select("projeto_id");
   if (error) throw error;
+  if (data?.length) await sincronizarDaAba(data[0].projeto_id as string, id);
 }
 
 const inicioDaLixeira = () => new Date(Date.now() - PAGINA.diasNaLixeira * 24 * 60 * 60 * 1000).toISOString();
@@ -154,6 +172,7 @@ export async function restaurarAba(id: string): Promise<boolean> {
   const posicao = abas.reduce((m, a) => Math.max(m, a.posicao + 1), 0);
   const { error: erroUpd } = await db.from("projeto_abas").update({ excluido_em: null, posicao }).eq("id", id);
   if (erroUpd) throw erroUpd;
+  await sincronizarDaAba(aba.projeto_id as string, id);
   return true;
 }
 
@@ -163,6 +182,8 @@ export type PaginaCarregada = {
   versao: number;
   atualizadoPor: string | null;
   atualizadoEm: string;
+  /** Espaço usado pelos arquivos do projeto. */
+  uso: Uso;
 };
 
 type LinhaPagina = {
@@ -188,6 +209,7 @@ export async function carregarPagina(abaId: string): Promise<PaginaCarregada | n
   const [aba, linha] = await Promise.all([abaPorId(abaId), linhaDaPagina(abaId)]);
   if (!aba || !linha) return null;
   return {
+    uso: await usoDoProjeto(aba.projeto_id),
     titulo: aba.titulo,
     conteudo: linha.conteudo,
     versao: linha.versao,
@@ -197,19 +219,41 @@ export async function carregarPagina(abaId: string): Promise<PaginaCarregada | n
 }
 
 export type ResultadoSalvar =
-  | { tipo: "ok"; versao: number; atualizadoEm: string }
+  | { tipo: "ok"; versao: number; atualizadoEm: string; uso: Uso }
   | { tipo: "conflito"; por: string }
+  | { tipo: "anexo_invalido" }
   | { tipo: "nao_achou" };
 
 /** Só grava se a versão no banco ainda for a que a pessoa carregou (a conferência é no próprio update). */
-export async function salvarPagina(abaId: string, versao: number, doc: Documento, autorId: string): Promise<ResultadoSalvar> {
-  if (!(await abaPorId(abaId))) return { tipo: "nao_achou" };
+export async function salvarPagina(
+  abaId: string,
+  versao: number,
+  doc: Documento,
+  anexos: AnexoCitado[],
+  autorId: string,
+): Promise<ResultadoSalvar> {
+  const aba = await abaPorId(abaId);
+  if (!aba) return { tipo: "nao_achou" };
+  // Todo anexo citado precisa ser deste projeto, ter sido conferido e ser do tipo certo.
+  const ids = [...new Set(anexos.map((a) => a.id))];
+  const tipos = await tiposDosArquivos(aba.projeto_id, ids);
+  const certo = (a: AnexoCitado) => {
+    const tipo = tipos.get(a.id);
+    return !!tipo && (a.especie === "imagem") === tipo.startsWith("image/");
+  };
+  if (!anexos.every(certo)) return { tipo: "anexo_invalido" };
+
+  const db = createAdminClient();
+  const { data: antes, error: erroAntes } = await db.from("projeto_paginas").select("arquivos").eq("aba_id", abaId).maybeSingle();
+  if (erroAntes) throw erroAntes;
+
   const agora = new Date().toISOString();
-  const { data, error } = await createAdminClient()
+  const { data, error } = await db
     .from("projeto_paginas")
     .update({
       conteudo: doc,
       conteudo_texto: textoPagina(doc),
+      arquivos: ids,
       versao: versao + 1,
       atualizado_por: autorId,
       atualizado_em: agora,
@@ -218,7 +262,14 @@ export async function salvarPagina(abaId: string, versao: number, doc: Documento
     .eq("versao", versao)
     .select("versao");
   if (error) throw error;
-  if (data?.length) return { tipo: "ok", versao: versao + 1, atualizadoEm: agora };
-  const atual = await linhaDaPagina(abaId);
-  return atual ? { tipo: "conflito", por: nomeDe(atual.autor) } : { tipo: "nao_achou" };
+  if (!data?.length) {
+    const atual = await linhaDaPagina(abaId);
+    return atual ? { tipo: "conflito", por: nomeDe(atual.autor) } : { tipo: "nao_achou" };
+  }
+  try {
+    await sincronizarArquivos(aba.projeto_id, [...((antes?.arquivos as string[] | undefined) ?? []), ...ids], abaId);
+  } catch (e) {
+    console.error("Falha ao atualizar os arquivos do projeto:", e);
+  }
+  return { tipo: "ok", versao: versao + 1, atualizadoEm: agora, uso: await usoDoProjeto(aba.projeto_id) };
 }

@@ -1,8 +1,9 @@
 // Limites do portal para páginas e anexos. Um lugar só: o servidor e o navegador leem daqui.
-// As imagens e os arquivos das PÁGINAS ainda não têm upload (próximas etapas).
 
 const KB = 1024;
 const MB = 1024 * KB;
+
+export const TABELA = { maxColunas: 10, maxLinhas: 100 } as const;
 
 export const PAGINA = {
   /** Tamanho máximo do conteúdo (JSON) de uma página. */
@@ -18,6 +19,8 @@ export const IMAGEM = {
   maxBytes: 1.5 * MB,
   tipo: "image/webp",
   maiorLadoPx: 1920,
+  /** Maior arquivo que o navegador aceita abrir para comprimir. */
+  entradaMaxBytes: 25 * MB,
 } as const;
 
 export const ARQUIVO = {

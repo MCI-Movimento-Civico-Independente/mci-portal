@@ -5,25 +5,45 @@ import { createClient } from "@/lib/supabase/client";
 export const LIMITE_BYTES = 8 * 1024 * 1024;
 const MAIOR_LADO = 1920;
 
-/** Reduz no navegador: no máximo 1920px no lado maior, WebP com qualidade 0,85. Recusa acima de 8 MB. */
-export async function reduzirImagem(arquivo: Blob): Promise<Blob> {
+type Compressao = {
+  /** Maior arquivo aceito antes de comprimir. */
+  entradaMax: number;
+  maiorLado: number;
+  /** Tamanho máximo do resultado; as tentativas vão em ordem até caber. */
+  saidaMax?: number;
+  tentativas: { escala: number; qualidade: number }[];
+};
+
+const DE_TAREFA: Compressao = { entradaMax: LIMITE_BYTES, maiorLado: MAIOR_LADO, tentativas: [{ escala: 1, qualidade: 0.85 }] };
+
+/** Reduz no navegador e converte para WebP. Padrão (tarefas): 1920px, qualidade 0,85, até 8 MB de entrada. */
+export async function reduzirImagem(arquivo: Blob, opcoes: Compressao = DE_TAREFA): Promise<Blob> {
+  const { entradaMax, maiorLado, saidaMax = Infinity, tentativas } = opcoes;
   if (!arquivo.type.startsWith("image/")) throw new Error("Esse arquivo não é uma imagem.");
-  if (arquivo.size > LIMITE_BYTES) throw new Error("A imagem passa de 8 MB.");
+  if (arquivo.size > entradaMax) throw new Error(`A imagem passa de ${Math.round(entradaMax / 1024 / 1024)} MB.`);
   let bitmap: ImageBitmap;
   try {
     bitmap = await createImageBitmap(arquivo);
   } catch {
     throw new Error("Não deu para ler essa imagem.");
   }
-  const escala = Math.min(1, MAIOR_LADO / Math.max(bitmap.width, bitmap.height));
-  const canvas = document.createElement("canvas");
-  canvas.width = Math.max(1, Math.round(bitmap.width * escala));
-  canvas.height = Math.max(1, Math.round(bitmap.height * escala));
-  canvas.getContext("2d")!.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-  bitmap.close();
-  const webp = await new Promise<Blob | null>((ok) => canvas.toBlob(ok, "image/webp", 0.85));
-  if (!webp) throw new Error("Não deu para preparar a imagem.");
-  return webp;
+  try {
+    const base = Math.min(1, maiorLado / Math.max(bitmap.width, bitmap.height));
+    for (const { escala, qualidade } of tentativas) {
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.max(1, Math.round(bitmap.width * base * escala));
+      canvas.height = Math.max(1, Math.round(bitmap.height * base * escala));
+      canvas.getContext("2d")!.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+      const webp = await new Promise<Blob | null>((ok) => canvas.toBlob(ok, "image/webp", qualidade));
+      if (!webp) throw new Error("Não deu para preparar a imagem.");
+      // Alguns navegadores devolvem PNG quando não sabem gerar WebP.
+      if (webp.type !== "image/webp") throw new Error("Este navegador não converte imagens para WebP. Use o Chrome, o Edge ou o Firefox.");
+      if (webp.size <= saidaMax) return webp;
+    }
+    throw new Error("Não deu para deixar a imagem pequena o bastante.");
+  } finally {
+    bitmap.close();
+  }
 }
 
 /** Pede a URL assinada ao servidor e envia o arquivo direto ao Storage. Devolve o caminho. */

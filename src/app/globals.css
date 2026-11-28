@@ -517,3 +517,97 @@ summary::-webkit-details-marker {
   color: var(--sobre-ouro);
   opacity: 0.7;
 }
+
+/* Tabela das páginas: no celular rola na horizontal dentro da própria caixa. */
+.conteudo-pagina {
+  container-type: inline-size;
+}
+.conteudo-pagina .tableWrapper {
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+.conteudo-pagina table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.conteudo-pagina th,
+.conteudo-pagina td {
+  position: relative;
+  min-width: 8rem;
+  border: 1px solid var(--borda);
+  padding: 0.5em 0.7em;
+  text-align: left;
+  vertical-align: top;
+  font-size: 0.92em;
+}
+.conteudo-pagina th {
+  background: var(--superficie);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.conteudo-pagina th > * + *,
+.conteudo-pagina td > * + * {
+  margin-top: 0.3em;
+}
+.conteudo-pagina .selectedCell::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--ouro);
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+/* Dentro da tabela o aviso de bloco vazio só atrapalharia. */
+.conteudo-pagina td .is-empty::before,
+.conteudo-pagina th .is-empty::before {
+  content: none;
+}
+
+/* Colunas: lado a lado; em área estreita, uma embaixo da outra. */
+.conteudo-pagina div[data-type="colunas"] {
+  display: flex;
+  align-items: flex-start;
+  gap: 2.75rem;
+}
+.conteudo-pagina div[data-type="coluna"] {
+  min-width: 0;
+  flex-shrink: 1;
+  flex-basis: 0;
+}
+.conteudo-pagina div[data-type="coluna"] > * + * {
+  margin-top: 0.6em;
+}
+.conteudo-pagina div[data-type="coluna"] > :first-child {
+  margin-top: 0;
+}
+@container (max-width: 560px) {
+  .conteudo-pagina div[data-type="colunas"] {
+    flex-direction: column;
+    gap: 0.9rem;
+  }
+  .conteudo-pagina div[data-type="coluna"] {
+    width: 100%;
+    flex-basis: auto;
+  }
+}
+
+/* Botões e cartões em forma de link não levam o sublinhado do texto. */
+.conteudo-pagina a.sem-estilo {
+  color: inherit;
+  text-decoration: none;
+}
+.conteudo-pagina a.sem-estilo:hover {
+  color: inherit;
+}
+.conteudo-pagina a.sem-estilo.inline-flex:hover {
+  color: var(--sobre-inverso);
+}
+/* O contorno de seleção dos blocos de mídia é desenhado por eles. */
+.conteudo-pagina .react-renderer.ProseMirror-selectednode {
+  outline: none;
+}

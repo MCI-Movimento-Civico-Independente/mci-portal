@@ -5,15 +5,19 @@ import { EditorContent, useEditor } from "@tiptap/react";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { AlcaBloco } from "@/components/editor/AlcaBloco";
 import { PainelLink } from "@/components/editor/BarraFerramentas";
+import { OferecerCartao, PedirCartao, type Oferta } from "@/components/editor/CaixasDeLink";
 import { criarCanalDeComandos } from "@/components/editor/comandos";
+import { ControlesDeBloco } from "@/components/editor/ControlesDeBloco";
+import { inserirAnexos } from "@/components/editor/envio";
 import { criarExtensoesPagina } from "@/components/editor/extensoes";
 import { MenuComandos } from "@/components/editor/MenuComandos";
 import { MenuSelecao } from "@/components/editor/MenuSelecao";
 import { Botao } from "@/components/ui/Botao";
 import { dataRelativa } from "@/lib/datas";
-import type { Documento } from "@/lib/editor/documento";
-import { PAGINA } from "@/lib/limites";
-import { chaveDoDocumento, controladorDe, type ControladorPagina, type EstadoPagina } from "./controlador";
+import { hrefSeguro, type Documento } from "@/lib/editor/documento";
+import { ARQUIVO, PAGINA } from "@/lib/limites";
+import { emAviso, formatarTamanho, SEM_ESPACO, type Uso } from "@/lib/paginas/arquivos-tipos";
+import { chaveDoDocumento, controladorDe, temEnvio, type ControladorPagina, type EstadoPagina } from "./controlador";
 import { concluirTitulo, lerTitulos, ouvirTitulos, renomear } from "./titulos";
 
 /** O ProseMirror cria `attrs` sem protótipo: a cópia deixa só objetos simples. */
@@ -28,13 +32,14 @@ function Indicador({ estado }: { estado: EstadoPagina }) {
   }, []);
 
   const salvando = estado.salvando || (estado.pendente && !estado.aviso && !estado.conflito);
+  const enviando = temEnvio(estado.doc);
   const parado = estado.conflito || estado.aviso;
   const quando = estado.atualizadoEm ? dataRelativa(estado.atualizadoEm, Math.max(agora, Date.parse(estado.atualizadoEm))) : "";
   const texto = estado.conflito
     ? "Não salvo"
     : salvando
       ? "Salvando…"
-      : (estado.aviso ?? `Salvo${estado.atualizadoPor ? ` · editado por ${estado.atualizadoPor} ${quando}` : ""}`);
+      : (estado.aviso ?? (enviando ? "Enviando arquivo…" : `Salvo${estado.atualizadoPor ? ` · editado por ${estado.atualizadoPor} ${quando}` : ""}`));
 
   return (
     <p role="status" aria-live="polite" className={`rotulo flex min-h-6 items-center justify-end gap-2 text-right text-[10px] ${parado ? "text-marca-texto" : "text-suave"}`}>
@@ -62,6 +67,20 @@ function CopiaNaoSalva({ texto, aoDescartar }: { texto: string; aoDescartar: () 
   );
 }
 
+function AvisoDeEspaco({ uso }: { uso: Uso }) {
+  if (!emAviso(uso)) return null;
+  const cheio = uso.usado >= uso.maximo;
+  return (
+    <p role="status" className="mb-4 bg-ouro p-3 text-sm font-bold text-sobre-ouro">
+      Este projeto usa {formatarTamanho(uso.usado)} de {formatarTamanho(uso.maximo)}.{cheio && ` ${SEM_ESPACO}`}
+    </p>
+  );
+}
+
+const ACEITOS = Object.keys(ARQUIVO.tipos)
+  .map((e) => `.${e}`)
+  .join(",");
+
 /** Painel de link logo abaixo do trecho selecionado. */
 function LinkJuntoAoTexto({ editor, aoFechar }: { editor: Editor; aoFechar: () => void }) {
   const caixa = useRef<HTMLDivElement>(null);
@@ -70,20 +89,30 @@ function LinkJuntoAoTexto({ editor, aoFechar }: { editor: Editor; aoFechar: () =
     if (caixa.current && base) caixa.current.style.top = `${editor.view.coordsAtPos(editor.state.selection.to).bottom - base.top + 8}px`;
   }, [editor]);
   return (
-    <div ref={caixa} className="absolute left-8 right-0 z-30 border border-texto bg-menu">
+    <div ref={caixa} className="absolute left-12 right-0 z-30 border border-texto bg-menu">
       <PainelLink editor={editor} aoFechar={aoFechar} />
     </div>
   );
 }
 
-function Escrita({ pagina, revisao }: { pagina: ControladorPagina; revisao: number }) {
+function Escrita({ abaId, pagina, revisao }: { abaId: string; pagina: ControladorPagina; revisao: number }) {
   // Só o conteúdo de partida; versões novas entram pelo efeito abaixo.
   const [inicial] = useState(() => pagina.ler().doc!);
   const area = useRef<HTMLDivElement>(null);
   const [link, setLink] = useState(false);
   const [aviso, setAviso] = useState<string | null>(null);
+  const [cartao, setCartao] = useState(false);
+  const [oferta, setOferta] = useState<Oferta | null>(null);
   const [canal] = useState(criarCanalDeComandos);
-  const [extensoes] = useState(() => criarExtensoesPagina({ canal, aoPedirLink: () => setLink(true) }));
+  const [extensoes] = useState(() =>
+    criarExtensoesPagina({ abaId, canal, aoPedirLink: () => setLink(true), aoRecusar: setAviso }),
+  );
+  const editorRef = useRef<Editor | null>(null);
+
+  const anexar = (arquivos: File[]) => {
+    const e = editorRef.current;
+    if (e) setAviso(inserirAnexos(e, abaId, arquivos));
+  };
 
   const editor = useEditor({
     immediatelyRender: false,
@@ -96,26 +125,66 @@ function Escrita({ pagina, revisao }: { pagina: ControladorPagina; revisao: numb
         "aria-multiline": "true",
         "aria-label": "Conteúdo da página",
       },
-      // Arquivos soltos ou colados: o upload das páginas chega numa próxima etapa.
-      handleDrop: (_view, event) => {
-        if (!event.dataTransfer?.files.length) return false;
+      handleDrop: (view, event, _trecho, movido) => {
+        const arquivos = [...(event.dataTransfer?.files ?? [])];
+        if (movido || !arquivos.length) return false;
         event.preventDefault();
-        setAviso("Imagens e arquivos nas páginas chegam numa próxima etapa.");
+        const ponto = view.posAtCoords({ left: event.clientX, top: event.clientY });
+        if (ponto) editorRef.current?.commands.setTextSelection(ponto.pos);
+        anexar(arquivos);
         return true;
       },
-      handlePaste: (_view, event) => {
+      handlePaste: (view, event) => {
         const dados = event.clipboardData;
-        if (!dados?.files.length || dados.getData("text/plain")) return false;
+        if (!dados) return false;
+        const texto = dados.getData("text/plain").trim();
+        // Print ou arquivo copiado (sem texto junto).
+        if (dados.files.length && !texto) {
+          event.preventDefault();
+          anexar([...dados.files]);
+          return true;
+        }
+        // Um endereço sozinho numa linha vazia: entra como link e oferece o cartão.
+        const { $from, empty } = view.state.selection;
+        if (!empty || !/^https?:\/\/\S+$/i.test(texto) || $from.parent.type.name !== "paragraph" || $from.parent.content.size) return false;
+        const href = hrefSeguro(texto);
+        const { cartaoLink } = view.state.schema.nodes;
+        if (!href || !$from.node(-1).canReplaceWith($from.index(-1), $from.index(-1) + 1, cartaoLink)) return false;
         event.preventDefault();
-        setAviso("Imagens e arquivos nas páginas chegam numa próxima etapa.");
+        const pos = $from.before();
+        view.dispatch(view.state.tr.replaceSelectionWith(view.state.schema.text(texto, [view.state.schema.marks.link.create({ href })]), false));
+        setOferta({ url: texto, pos });
         return true;
       },
     },
-    onUpdate: ({ editor: e }) => {
-      setAviso(null);
+    onCreate: ({ editor: e }) => {
+      editorRef.current = e;
+    },
+    onUpdate: ({ editor: e, transaction }) => {
+      // Andamento de envio não apaga o aviso na tela.
+      if (transaction.getMeta("addToHistory") !== false) {
+        setAviso(null);
+        setOferta(null);
+      }
       pagina.alterar(docDe(e));
     },
   });
+
+  useEffect(() => {
+    editorRef.current = editor;
+    if (!editor) return;
+    // O andamento dos envios chega aqui enquanto o editor está aberto.
+    return pagina.registrarEditor((uploadId, attrs) => {
+      if (editor.isDestroyed) return false;
+      const tr = editor.state.tr;
+      editor.state.doc.descendants((no, pos) => {
+        if (no.attrs.uploadId === uploadId) tr.setNodeMarkup(pos, undefined, { ...no.attrs, ...attrs });
+      });
+      if (!tr.docChanged) return false;
+      editor.view.dispatch(tr.setMeta("addToHistory", false));
+      return true;
+    });
+  }, [editor, pagina]);
 
   // O documento foi trocado por fora (carregou uma versão nova ou o editor foi recriado).
   useEffect(() => {
@@ -127,18 +196,51 @@ function Escrita({ pagina, revisao }: { pagina: ControladorPagina; revisao: numb
 
   if (!editor) return <div className="h-48 animate-pulse bg-sutil" aria-busy="true" />;
   return (
-    <div ref={area} className="relative pl-8">
+    <div ref={area} className="relative pl-12">
       <EditorContent editor={editor} />
       {/* Área clicável no fim, para continuar escrevendo. */}
       <div aria-hidden="true" onClick={() => editor.chain().focus("end").run()} className="h-40 cursor-text" />
+      <ControlesDeBloco editor={editor} area={area} />
       <AlcaBloco editor={editor} area={area} />
       <MenuSelecao editor={editor} aoPedirLink={() => setLink(true)} />
-      <MenuComandos editor={editor} canal={canal} />
+      <MenuComandos
+        editor={editor}
+        canal={canal}
+        acoes={{
+          imagem: () => document.getElementById(`imagem-${abaId}`)?.click(),
+          arquivo: () => document.getElementById(`arquivo-${abaId}`)?.click(),
+          cartao: () => setCartao(true),
+        }}
+      />
+      {[
+        ["imagem", "image/*"],
+        ["arquivo", ACEITOS],
+      ].map(([tipo, aceita]) => (
+        <input
+          key={tipo}
+          id={`${tipo}-${abaId}`}
+          type="file"
+          multiple
+          accept={aceita}
+          tabIndex={-1}
+          aria-hidden="true"
+          className="sr-only"
+          onChange={(e) => {
+            anexar([...(e.target.files ?? [])]);
+            e.target.value = "";
+          }}
+        />
+      ))}
+      {cartao && <PedirCartao editor={editor} aoFechar={() => setCartao(false)} />}
+      {oferta && <OferecerCartao editor={editor} oferta={oferta} aoFechar={() => setOferta(null)} />}
       {link && <LinkJuntoAoTexto editor={editor} aoFechar={() => setLink(false)} />}
       {aviso && (
-        <p role="alert" className="sticky bottom-24 border border-texto bg-menu p-3 text-sm font-bold md:bottom-6">
-          {aviso}
-        </p>
+        <div role="alert" className="sticky bottom-24 z-30 flex items-center gap-3 border border-texto bg-menu p-3 text-sm font-bold md:bottom-6">
+          <span className="flex-1">{aviso}</span>
+          <button type="button" onClick={() => setAviso(null)} className="min-h-9 px-2 text-xs text-suave hover:text-marca-texto">
+            Fechar
+          </button>
+        </div>
       )}
     </div>
   );
@@ -184,6 +286,7 @@ export function PaginaEditor({ abaId, tituloInicial }: { abaId: string; tituloIn
         </div>
       )}
       {estado.copia && <CopiaNaoSalva texto={estado.copia} aoDescartar={() => pagina.descartarCopia()} />}
+      {estado.uso && <AvisoDeEspaco uso={estado.uso} />}
 
       <textarea
         aria-label="Título da página"
@@ -199,19 +302,19 @@ export function PaginaEditor({ abaId, tituloInicial }: { abaId: string; tituloIn
             e.currentTarget.closest("article")?.querySelector<HTMLElement>(".ProseMirror")?.focus();
           }
         }}
-        className="mb-4 block w-full resize-none overflow-hidden bg-transparent pl-8 font-titulo text-4xl font-extrabold leading-tight tracking-tight [field-sizing:content] placeholder:text-suave md:text-5xl"
+        className="mb-4 block w-full resize-none overflow-hidden bg-transparent pl-12 font-titulo text-4xl font-extrabold leading-tight tracking-tight [field-sizing:content] placeholder:text-suave md:text-5xl"
       />
 
-      {estado.fase === "carregando" && <div className="ml-8 h-48 animate-pulse bg-sutil" aria-busy="true" />}
+      {estado.fase === "carregando" && <div className="ml-12 h-48 animate-pulse bg-sutil" aria-busy="true" />}
       {estado.fase === "erro" && (
-        <div role="alert" className="ml-8 flex flex-col items-start gap-3">
+        <div role="alert" className="ml-12 flex flex-col items-start gap-3">
           <p className="text-sm font-bold text-marca-texto">{estado.aviso}</p>
           <Botao variante="secundario" onClick={() => void pagina.abrir()}>
             Tentar de novo
           </Botao>
         </div>
       )}
-      {estado.fase === "pronta" && estado.doc && <Escrita pagina={pagina} revisao={estado.revisao} />}
+      {estado.fase === "pronta" && estado.doc && <Escrita abaId={abaId} pagina={pagina} revisao={estado.revisao} />}
     </article>
   );
 }

@@ -58,8 +58,11 @@ export const Comandos = Extension.create<{ canal: CanalDeComandos | null }>({
         pluginKey: CHAVE,
         editor: this.editor,
         char: "/",
+        // "/2 colunas" tem espaço; o componente esconde o menu quando nada combina.
+        allowSpaces: true,
         // O título de um alternante só aceita texto.
-        allow: ({ state, range }) => state.doc.resolve(range.from).parent.type.name !== "detailsSummary",
+        allow: ({ state, range }) =>
+          range.to - range.from <= 40 && state.doc.resolve(range.from).parent.type.name !== "detailsSummary",
         render: () => ({
           onStart: publicar,
           onUpdate: publicar,
