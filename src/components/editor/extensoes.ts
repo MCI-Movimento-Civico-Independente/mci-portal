@@ -1,8 +1,10 @@
 import { Extension, type Editor, type Extensions } from "@tiptap/core";
 import CharacterCount from "@tiptap/extension-character-count";
+import { Details, DetailsContent, DetailsSummary } from "@tiptap/extension-details";
+import Highlight from "@tiptap/extension-highlight";
 import { TaskItem, TaskList } from "@tiptap/extension-list";
-import Placeholder from "@tiptap/extension-placeholder";
-import StarterKit from "@tiptap/starter-kit";
+import Placeholder, { type PlaceholderOptions } from "@tiptap/extension-placeholder";
+import StarterKit, { type StarterKitOptions } from "@tiptap/starter-kit";
 import type { IconType } from "react-icons";
 import {
   TbArrowBackUp,
@@ -24,12 +26,14 @@ import {
   TbUnderline,
 } from "react-icons/tb";
 import { LIMITE_CARACTERES, type TipoAnexo } from "@/lib/editor/documento";
+import { AtalhoAlternante, Divisor, FraseDestaque } from "./blocos-pagina";
+import { Comandos, type CanalDeComandos } from "./comandos";
 import { ImagemAnexo } from "./ImagemAnexo";
 
 /*
- * ÚNICO lugar da lista de extensões e da barra de ferramentas. Para crescer (menções com @,
- * menu "/", blocos do Notion): acrescente a extensão em `criarExtensoes` e, se tiver botão,
- * uma linha em `BARRA`. O editor e a barra leem daqui.
+ * ÚNICO lugar da lista de extensões e da barra de ferramentas. Há dois conjuntos sobre a
+ * mesma base: `criarExtensoes` (tarefas e comentários, com a `BARRA`) e `criarExtensoesPagina`
+ * (páginas, com o menu "/" e os blocos de blocos.ts).
  */
 
 export type OpcoesExtensoes = {
@@ -40,10 +44,18 @@ export type OpcoesExtensoes = {
   aoPedirLink: () => void;
 };
 
-export function criarExtensoes({ placeholder, tipo, tarefaId, aoPedirLink }: OpcoesExtensoes): Extensions {
+/** Parte comum a todos os editores: texto, listas, link, placeholder e Ctrl/Cmd+K. */
+function criarBasico({
+  starter,
+  placeholder,
+  aoPedirLink,
+}: {
+  starter: Partial<StarterKitOptions>;
+  placeholder: Partial<PlaceholderOptions>;
+  aoPedirLink: () => void;
+}): Extensions {
   return [
     StarterKit.configure({
-      heading: { levels: [2, 3] }, // o H1 é o título da tarefa
       link: {
         openOnClick: false,
         autolink: true,
@@ -52,12 +64,11 @@ export function criarExtensoes({ placeholder, tipo, tarefaId, aoPedirLink }: Opc
         protocols: ["mailto"],
         HTMLAttributes: { target: "_blank", rel: "noopener noreferrer nofollow" },
       },
+      ...starter,
     }),
     TaskList,
     TaskItem.configure({ nested: true }),
-    ImagemAnexo.configure({ tipo, tarefaId, inline: false, allowBase64: false }),
-    Placeholder.configure({ placeholder }),
-    CharacterCount.configure({ limit: LIMITE_CARACTERES }),
+    Placeholder.configure(placeholder),
     Extension.create({
       name: "atalhoLink",
       addKeyboardShortcuts() {
@@ -69,6 +80,61 @@ export function criarExtensoes({ placeholder, tipo, tarefaId, aoPedirLink }: Opc
         };
       },
     }),
+  ];
+}
+
+/** Descrição das tarefas e comentários. */
+export function criarExtensoes({ placeholder, tipo, tarefaId, aoPedirLink }: OpcoesExtensoes): Extensions {
+  return [
+    ...criarBasico({
+      starter: { heading: { levels: [2, 3] } }, // o H1 é o título da tarefa
+      placeholder: { placeholder },
+      aoPedirLink,
+    }),
+    ImagemAnexo.configure({ tipo, tarefaId, inline: false, allowBase64: false }),
+    CharacterCount.configure({ limit: LIMITE_CARACTERES }),
+  ];
+}
+
+/**
+ * Páginas dos projetos: o básico com os blocos de documento. Os caracteres "{" (tarefas) e
+ * "@" (pessoas) ficam reservados para as próximas etapas: nada aqui usa esses gatilhos.
+ */
+export function criarExtensoesPagina({ canal, aoPedirLink }: { canal: CanalDeComandos; aoPedirLink: () => void }): Extensions {
+  return [
+    ...criarBasico({
+      starter: {
+        heading: { levels: [1, 2, 3] },
+        codeBlock: false, // não faz parte dos blocos desta etapa
+        horizontalRule: false, // trocado pelo Divisor, que espera o espaço
+        dropcursor: { color: "var(--marca)", width: 2 },
+      },
+      placeholder: {
+        includeChildren: true,
+        showOnlyCurrent: true,
+        placeholder: ({ node }) => {
+          if (node.type.name === "heading") return `Título ${node.attrs.level}`;
+          if (node.type.name === "detailsSummary") return "Título do alternante";
+          if (node.type.name === "fraseDestaque") return "Frase de destaque";
+          return "Digite / para comandos";
+        },
+      },
+      aoPedirLink,
+    }),
+    Highlight,
+    Details.configure({
+      persist: true, // a página lembra o que ficou aberto
+      renderToggleButton: ({ element, isOpen }) => {
+        element.setAttribute("aria-label", isOpen ? "Recolher" : "Expandir");
+        element.setAttribute("aria-expanded", String(isOpen));
+      },
+    }),
+    DetailsSummary,
+    DetailsContent,
+    FraseDestaque,
+    Divisor,
+    AtalhoAlternante,
+    Comandos.configure({ canal }),
   ];
 }
 

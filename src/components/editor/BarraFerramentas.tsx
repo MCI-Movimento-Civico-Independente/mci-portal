@@ -81,7 +81,7 @@ export function MenuFlutuante({ editor, aoMudarPainel }: { editor: Editor; aoMud
 const campoPainel = "min-h-9 min-w-0 flex-1 border-2 border-borda-forte bg-superficie px-2 text-sm hover:border-texto focus-visible:border-texto";
 const botaoPainel = "rotulo min-h-9 border-2 border-inverso px-3 text-[11px] font-bold hover:bg-inverso hover:text-sobre-inverso";
 
-function PainelLink({ editor, aoFechar }: { editor: Editor; aoFechar: () => void }) {
+export function PainelLink({ editor, aoFechar }: { editor: Editor; aoFechar: () => void }) {
   const [url, setUrl] = useState(() => (editor.getAttributes("link").href as string | undefined) ?? "");
   const [erro, setErro] = useState<string | null>(null);
 

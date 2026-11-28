@@ -25,6 +25,7 @@
   --sutil: #e4d3ce; /* hover e áreas discretas */
   --borda: #cdbdb8;
   --borda-forte: #8f807b; /* contorno de campos (3:1 contra a superfície) */
+  --menu: #ffffff; /* menus suspensos */
 
   --texto: #000001;
   --suave: #5e5452;
@@ -69,6 +70,7 @@
   --sutil: #2d2d30;
   --borda: #3b3b3f;
   --borda-forte: #75757c;
+  --menu: #19191b;
 
   --texto: #eceef3; /* ink */
   --suave: #a6a6ae;
@@ -117,6 +119,7 @@
   --color-sutil: var(--sutil);
   --color-borda: var(--borda);
   --color-borda-forte: var(--borda-forte);
+  --color-menu: var(--menu);
   --color-texto: var(--texto);
   --color-suave: var(--suave);
   --color-inverso: var(--inverso);
@@ -387,4 +390,130 @@ summary::-webkit-details-marker {
 .conteudo-rico .ProseMirror-selectednode {
   outline: 2px solid var(--marca-texto);
   outline-offset: 2px;
+}
+
+/*
+ * Páginas dos projetos (somam-se a .conteudo-rico): corpo maior, títulos em Inter Tight 800,
+ * citação em Instrument Serif com barra laranja, destaque e frase de destaque em amarelo.
+ */
+.conteudo-pagina {
+  font-size: 16px;
+  line-height: 1.65;
+}
+.conteudo-pagina h1,
+.conteudo-pagina h2,
+.conteudo-pagina h3 {
+  font-family: var(--font-titulo);
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+  text-transform: none;
+  margin-top: 1.2em;
+}
+.conteudo-pagina h1 {
+  font-size: 1.9em;
+}
+.conteudo-pagina h2 {
+  font-size: 1.45em;
+}
+.conteudo-pagina h3 {
+  font-size: 1.2em;
+}
+.conteudo-pagina > :first-child {
+  margin-top: 0;
+}
+.conteudo-pagina blockquote {
+  border-left: 4px solid var(--marca);
+  background: none;
+  padding: 0.15em 0 0.15em 0.9em;
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 1.35em;
+  line-height: 1.4;
+}
+.conteudo-pagina mark {
+  background: var(--ouro);
+  color: var(--sobre-ouro);
+}
+.conteudo-pagina div[data-type="fraseDestaque"] {
+  position: relative;
+  background: var(--ouro);
+  color: var(--sobre-ouro);
+  padding: 0.8em 1em 0.8em 3em;
+}
+/* Ícone de aviso desenhado por máscara: acompanha a cor do texto. */
+.conteudo-pagina div[data-type="fraseDestaque"]::after {
+  content: "";
+  position: absolute;
+  left: 1em;
+  top: calc(0.8em + 0.2em);
+  width: 1.25em;
+  height: 1.25em;
+  background: currentColor;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Cpath d='M12 8v4M12 16h.01'/%3E%3C/svg%3E")
+    center / contain no-repeat;
+}
+.conteudo-pagina div[data-type="fraseDestaque"] a {
+  color: var(--sobre-ouro);
+}
+.conteudo-pagina div[data-type="fraseDestaque"] mark {
+  background: var(--superficie);
+  color: var(--texto);
+}
+
+/* Lista de alternantes (extensão Details): setinha à esquerda, conteúdo recuado. */
+.conteudo-pagina div[data-type="details"] {
+  display: flex;
+  gap: 0.35em;
+}
+.conteudo-pagina div[data-type="details"] > button {
+  display: flex;
+  width: 1.5em;
+  height: 1.65em;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+}
+.conteudo-pagina div[data-type="details"] > button:hover {
+  background: var(--sutil);
+}
+.conteudo-pagina div[data-type="details"] > button::before {
+  content: "▸";
+}
+.conteudo-pagina div[data-type="details"].is-open > button::before {
+  content: "▾";
+}
+.conteudo-pagina div[data-type="details"] > div {
+  flex: 1;
+  min-width: 0;
+}
+.conteudo-pagina summary {
+  font-weight: 700;
+  cursor: text;
+}
+.conteudo-pagina div[data-type="detailsContent"] > * + * {
+  margin-top: 0.6em;
+}
+
+.conteudo-pagina ul[data-type="taskList"] li > div {
+  margin-top: 0;
+}
+.conteudo-pagina ul[data-type="taskList"] li > label {
+  min-height: 1.65em;
+}
+.conteudo-pagina ul[data-type="taskList"] input[type="checkbox"] {
+  margin-top: 0;
+}
+
+/* Placeholder do bloco vazio onde está o cursor. */
+.conteudo-pagina .is-empty::before {
+  content: attr(data-placeholder);
+  color: var(--suave);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+.conteudo-pagina div[data-type="fraseDestaque"].is-empty::before {
+  color: var(--sobre-ouro);
+  opacity: 0.7;
 }

@@ -1,7 +1,6 @@
 import { Suspense } from "react";
-import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { TbChevronLeft, TbPlus } from "react-icons/tb";
+import { TbPlus } from "react-icons/tb";
 import { BotaoArquivar } from "@/components/projetos/BotaoArquivar";
 import { QuadroGrupos } from "@/components/projetos/QuadroGrupos";
 import { JanelasTarefa } from "@/components/tarefas/JanelasTarefa";
@@ -48,7 +47,6 @@ export default async function ProjetoPage({
   const caminho = `/org/projetos/${id}`;
   const grupos = todosGrupos.filter((g) => g.projeto_id === id);
   const hoje = hojeSP();
-  const nomeComite = comites.find((c) => c.slug === projeto.comite_slug)?.nome ?? projeto.comite_slug;
   const feitasTotal = tarefas.filter((t) => t.status === "concluida").length;
   const pct = tarefas.length > 0 ? Math.round((feitasTotal / tarefas.length) * 100) : 0;
   const arquivado = projeto.status === "arquivado";
@@ -56,23 +54,8 @@ export default async function ProjetoPage({
 
   return (
     <div className="flex flex-col gap-6">
-      <Link
-        href="/org/projetos"
-        className="rotulo inline-flex min-h-11 w-fit items-center gap-1 text-marca-texto hover:underline"
-      >
-        <TbChevronLeft size={14} aria-hidden="true" />
-        Projetos
-      </Link>
-
-      <header className="flex flex-wrap items-start justify-between gap-4">
-        <div className="min-w-0 flex-1">
-          <p className="rotulo-barras text-suave">{nomeComite}</p>
-          <h1 className="mt-1 font-titulo text-3xl font-black uppercase leading-none tracking-tight md:text-4xl">
-            {projeto.nome}
-            {arquivado && <span className="rotulo ml-3 border-2 border-borda-forte px-2 py-1 align-middle font-bold normal-case">Arquivado</span>}
-          </h1>
-          {projeto.descricao && <p className="mt-3 max-w-2xl text-suave">{projeto.descricao}</p>}
-        </div>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <p className="min-w-0 max-w-2xl flex-1 text-suave">{projeto.descricao}</p>
         <div className="flex items-center gap-2">
           <BotaoArquivar id={projeto.id} arquivado={arquivado} />
           <Botao href={hrefNova()} local>
@@ -80,7 +63,7 @@ export default async function ProjetoPage({
             Nova tarefa
           </Botao>
         </div>
-      </header>
+      </div>
 
       <Card className="p-4 md:p-5">
         <div className="flex flex-wrap items-end justify-between gap-x-8 gap-y-3">
