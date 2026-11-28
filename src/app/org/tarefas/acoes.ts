@@ -34,9 +34,11 @@ import {
   type TarefaDb,
 } from "@/lib/tarefas";
 import type { ComentarioView, EventoView } from "@/components/tarefas/Atividade";
+import { resumirPremios, type PremioXp } from "@/lib/xp";
+import type { AvisoXp } from "@/lib/xp-tipos";
 import { campoPorChave, type CampoTarefa, type ChaveCampo, type Prioridade } from "@/lib/tarefas-campos";
 
-export type EstadoForm = { erro?: string; ok?: boolean; n?: number };
+export type EstadoForm = { erro?: string; ok?: boolean; n?: number; /** XP ganho com a mudança. */ xp?: AvisoXp[] };
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const ERRO_PERIODO = "A data de início não pode ser depois da entrega.";
@@ -130,6 +132,9 @@ function descrever(campo: CampoTarefa, valor: string | null, cat: Catalogos): st
   }
 }
 
+const avisosDeXp = (premios: PremioXp[], euId: string, cat: Catalogos) =>
+  resumirPremios(premios, euId, (id) => cat.membros.find((m) => m.id === id)?.nome?.trim() || "Membro");
+
 const valorAtual = (t: TarefaDb, chave: ChaveCampo) => (t as unknown as Record<string, string | null>)[chave] ?? null;
 
 /** Edição inline de um campo (lista, quadro e janela da tarefa). */
@@ -171,8 +176,11 @@ export async function atualizarCampoAction(id: string, chave: string, valor: str
     if (projetoAtual && projetoAtual.comite_slug !== validado.valor) patch.projeto_id = null;
   }
 
+  let premios: PremioXp[];
   try {
-    if (!(await atualizarTarefa(id, patch))) return { erro: "Tarefa não encontrada." };
+    const r = await atualizarTarefa(id, patch, sessao.conta.id);
+    if (!r) return { erro: "Tarefa não encontrada." };
+    premios = r.premios;
   } catch (erro) {
     console.error("Falha ao atualizar o campo:", erro);
     return { erro: "Algo deu errado. Tente de novo em alguns minutos." };
@@ -194,7 +202,7 @@ export async function atualizarCampoAction(id: string, chave: string, valor: str
   }
 
   revalidatePath("/org", "layout");
-  return {};
+  return { xp: avisosDeXp(premios, sessao.conta.id, cat) };
 }
 
 export async function criarTarefaAction(_anterior: EstadoForm, form: FormData): Promise<EstadoForm> {
@@ -508,7 +516,7 @@ export async function atualizarPeriodoAction(id: string, inicio: string, fim: st
 
   const patch: Alteracao = { data_inicio: inicio || null, prazo: fim || null };
   try {
-    if (!(await atualizarTarefa(id, patch))) return { erro: "Tarefa não encontrada." };
+    if (!(await atualizarTarefa(id, patch, sessao.conta.id))) return { erro: "Tarefa não encontrada." };
   } catch (erro) {
     console.error("Falha ao atualizar o período:", erro);
     return { erro: "Algo deu errado. Tente de novo em alguns minutos." };
@@ -543,7 +551,7 @@ export async function atualizarExecutoresAction(id: string, ids: string[]): Prom
   if (!lista.every((i) => cat.membros.some((m) => m.id === i))) return { erro: "Executor: pessoa inválida." };
 
   try {
-    await atualizarTarefa(id, { responsavel_id: lista[0] ?? null, executores_extra: lista.slice(1) });
+    await atualizarTarefa(id, { responsavel_id: lista[0] ?? null, executores_extra: lista.slice(1) }, sessao.conta.id);
   } catch (erro) {
     console.error("Falha ao atualizar os executores:", erro);
     return { erro: "Algo deu errado. Tente de novo em alguns minutos." };
@@ -633,14 +641,15 @@ export async function atualizarEmMassaAction(ids: string[], mudanca: MudancaEmMa
   const nomes = (conjunto: (string | null)[]) =>
     conjunto.filter(Boolean).length ? conjunto.filter(Boolean).map((i) => cat.membros.find((m) => m.id === i)?.nome?.trim() || "Membro").join(", ") : null;
 
+  const premios: PremioXp[] = [];
   for (const id of alvos) {
     const atual = await tarefaPorId(id);
     if (!atual) continue;
     try {
-      await atualizarTarefa(id, patch);
+      premios.push(...((await atualizarTarefa(id, patch, sessao.conta.id))?.premios ?? []));
     } catch (erro) {
       console.error("Falha na alteração em massa:", erro);
-      return { erro: "Algo deu errado. Tente de novo em alguns minutos." };
+      return { erro: "Algo deu errado. Tente de novo em alguns minutos.", xp: avisosDeXp(premios, sessao.conta.id, cat) };
     }
     for (const chave of campos) {
       const c = campoPorChave(chave)!;
@@ -658,7 +667,7 @@ export async function atualizarEmMassaAction(ids: string[], mudanca: MudancaEmMa
     }
   }
   revalidatePath("/org", "layout");
-  return {};
+  return { xp: avisosDeXp(premios, sessao.conta.id, cat) };
 }
 
 function fraseDoEvento(e: Evento): string {

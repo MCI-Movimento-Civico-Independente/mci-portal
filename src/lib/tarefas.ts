@@ -1,6 +1,7 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { Prioridade, StatusTarefa } from "./tarefas-campos";
+import { premiarConclusao, type PremioXp, type TarefaConcluida } from "./xp";
 
 export type Pessoa = { id: string; nome: string | null };
 
@@ -233,20 +234,36 @@ export type Alteracao = Partial<
   >
 >;
 
-/** Aplica a alteração. Mudar o status também ajusta concluida_em. Devolve false se a tarefa não existe. */
-export async function atualizarTarefa(id: string, alteracao: Alteracao): Promise<boolean> {
+/**
+ * Aplica a alteração. Mudar o status também ajusta concluida_em, e passar para "concluída" registra
+ * o XP (por `autorId`, quem fez a mudança). Devolve null se a tarefa não existe.
+ */
+export async function atualizarTarefa(id: string, alteracao: Alteracao, autorId: string): Promise<{ premios: PremioXp[] } | null> {
+  const db = createAdminClient();
   const agora = new Date().toISOString();
-  const { data, error } = await createAdminClient()
+  if (alteracao.status === "concluida") {
+    // O filtro de status faz só a passagem para "concluída" contar, mesmo com dois cliques juntos.
+    const { data, error } = await db
+      .from("tarefas")
+      .update({ ...alteracao, atualizado_em: agora, concluida_em: agora })
+      .eq("id", id)
+      .neq("status", "concluida")
+      .select("id, pai_id, projeto_id, prazo, criado_por, responsavel_id, executores_extra");
+    if (error) throw error;
+    if (data?.length) return { premios: await premiarConclusao(data[0] as TarefaConcluida, autorId) };
+    // Já estava concluída (ou não existe): aplica abaixo sem mexer em concluida_em.
+  }
+  const { data, error } = await db
     .from("tarefas")
     .update({
       ...alteracao,
       atualizado_em: agora,
-      ...(alteracao.status ? { concluida_em: alteracao.status === "concluida" ? agora : null } : {}),
+      ...(alteracao.status && alteracao.status !== "concluida" ? { concluida_em: null } : {}),
     })
     .eq("id", id)
     .select("id");
   if (error) throw error;
-  return (data?.length ?? 0) > 0;
+  return data?.length ? { premios: [] } : null;
 }
 
 /** Apaga a tarefa e, por cascata no banco, as subtarefas dela. */

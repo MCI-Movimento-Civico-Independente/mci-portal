@@ -1,5 +1,6 @@
 import { Suspense, type ReactNode } from "react";
 import { redirect } from "next/navigation";
+import { AvisosXp } from "@/components/org/AvisosXp";
 import { BarraLateral } from "@/components/org/BarraLateral";
 import { BarraSuperior } from "@/components/org/BarraSuperior";
 import { NavegacaoInferior } from "@/components/org/NavegacaoInferior";
@@ -31,6 +32,7 @@ async function CascaOrg({ children }: { children: ReactNode }) {
         </main>
       </div>
       <NavegacaoInferior />
+      <AvisosXp />
     </div>
   );
 }

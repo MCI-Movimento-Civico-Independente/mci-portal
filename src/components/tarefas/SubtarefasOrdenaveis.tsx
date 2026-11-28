@@ -13,6 +13,7 @@ import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, v
 import { CSS } from "@dnd-kit/utilities";
 import { useEffect, useRef, useState, useTransition, type PointerEvent, type ReactNode } from "react";
 import { TbGripVertical, TbX } from "react-icons/tb";
+import { anunciarXp } from "@/components/org/avisos-xp";
 import { atualizarEmMassaAction, moverSubtarefaAction } from "@/app/org/tarefas/acoes";
 import type { Pessoa, TarefaDb } from "@/lib/tarefas";
 import { STATUS_OPCOES } from "@/lib/tarefas-campos";
@@ -134,6 +135,7 @@ export function SubtarefasOrdenaveis({
     iniciar(async () => {
       const r = await atualizarEmMassaAction(ids, { tipo: "status", valor });
       if (r.erro) setErro(r.erro);
+      anunciarXp(r.xp);
     });
   }
 

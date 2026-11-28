@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { Card } from "@/components/ui/Card";
 import { getSessao } from "@/lib/auth/sessao";
+import { xpDoMes } from "@/lib/xp";
 
 export const metadata = { title: "Comunidade · MCi" };
 
@@ -17,6 +18,11 @@ export default async function ComunidadePage({
   const sessao = await getSessao();
   if (!sessao) redirect("/login?next=/comunidade");
   const { aviso } = await searchParams;
+  // Se a soma do mês falhar, o resto do perfil continua aparecendo.
+  const doMes = await xpDoMes(sessao.conta.id).catch((erro) => {
+    console.error("Falha ao somar o XP do mês:", erro);
+    return null;
+  });
 
   return (
     <div className="flex flex-col gap-6">
@@ -45,6 +51,7 @@ export default async function ComunidadePage({
             <dd className="font-impacto text-5xl leading-none">{sessao.xp}</dd>
           </div>
         </dl>
+        {doMes !== null && <p className="mt-4 text-sm font-bold">{doMes} XP neste mês.</p>}
         {sessao.nivel.proximo && (
           <p className="mt-4 text-sm">
             Faltam {sessao.nivel.xpFaltando} de XP para {sessao.nivel.proximo}.

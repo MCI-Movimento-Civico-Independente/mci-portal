@@ -2,6 +2,7 @@
 
 import { useOptimistic, useState, useTransition } from "react";
 import { atualizarCampoAction } from "@/app/org/tarefas/acoes";
+import { anunciarXp } from "@/components/org/avisos-xp";
 import type { ChaveCampo } from "@/lib/tarefas-campos";
 
 /**
@@ -20,6 +21,7 @@ export function useCampo(id: string, chave: ChaveCampo, valorServidor: string) {
       setOtimista(novo);
       const r = await atualizarCampoAction(id, chave, novo);
       if (r.erro) setErro(r.erro);
+      anunciarXp(r.xp);
     });
   }
   return { valor, salvar, pendente, erro };
