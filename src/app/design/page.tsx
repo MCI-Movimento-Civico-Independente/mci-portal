@@ -31,6 +31,8 @@ const caio = pessoa("p4", "Caio Henrique de Lima");
 
 function tarefa(p: Partial<TarefaDb> & Pick<TarefaDb, "id" | "titulo">): TarefaDb {
   return {
+    numero: 12,
+    bloqueios: [],
     descricao: null,
     status: "a_fazer",
     prioridade: null,

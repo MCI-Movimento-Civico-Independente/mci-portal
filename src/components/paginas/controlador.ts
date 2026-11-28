@@ -1,6 +1,7 @@
 import type { Documento, No } from "@/lib/editor/documento";
 import type { Uso } from "@/lib/paginas/arquivos-tipos";
 import { textoPagina } from "@/lib/paginas/documento";
+import { aplicarTrocas, type Troca } from "@/lib/paginas/trocas";
 import { tituloDoServidor } from "./titulos";
 
 /*
@@ -24,6 +25,14 @@ export type EstadoPagina = {
   copia: string | null;
   /** Espaço usado pelos arquivos do projeto. */
   uso: Uso | null;
+};
+
+/** Mudanças que vêm de fora e o editor aberto aplica no próprio documento (sem entrar no desfazer). */
+export type EditorAberto = {
+  /** Andamento de um envio. False se o bloco não está no editor. */
+  envio: (uploadId: string, attrs: Record<string, unknown>) => boolean;
+  /** Anexos que o servidor trocou ao salvar. False se nenhum está no editor. */
+  trocas: (trocas: Troca[]) => boolean;
 };
 
 /** Atributos que só existem enquanto um arquivo sobe. */
@@ -70,7 +79,7 @@ export class ControladorPagina {
     uso: null,
   };
   /** O editor aberto, que aplica o resultado dos envios. */
-  private aplicador: ((uploadId: string, attrs: Record<string, unknown>) => boolean) | null = null;
+  private editor: EditorAberto | null = null;
   private versao = 0;
   private salvo = "";
   private timer: number | undefined;
@@ -132,16 +141,16 @@ export class ControladorPagina {
     if (pendente && !this.estado.conflito) this.agendar(ESPERA);
   }
 
-  registrarEditor(f: (uploadId: string, attrs: Record<string, unknown>) => boolean) {
-    this.aplicador = f;
+  registrarEditor(editor: EditorAberto) {
+    this.editor = editor;
     return () => {
-      if (this.aplicador === f) this.aplicador = null;
+      if (this.editor === editor) this.editor = null;
     };
   }
 
   /** Andamento de um envio: vai para o editor aberto ou, se a pessoa trocou de aba, direto no documento. */
   atualizarNo(uploadId: string, attrs: Record<string, unknown>) {
-    if (this.aplicador?.(uploadId, attrs) || !this.estado.doc) return;
+    if (this.editor?.envio(uploadId, attrs) || !this.estado.doc) return;
     const aplicar = (no: No): No => ({
       ...no,
       ...(no.attrs?.uploadId === uploadId ? { attrs: { ...no.attrs, ...attrs } } : {}),
@@ -188,8 +197,12 @@ export class ControladorPagina {
       const dados = await resposta.json().catch(() => ({}));
       if (resposta.ok) {
         this.versao = dados.versao;
-        this.salvo = chave;
-        const pendente = chaveDoDocumento(this.estado.doc) !== chave;
+        // O servidor pode ter trocado anexos: o que está gravado é o documento já trocado.
+        const trocas: Troca[] = dados.trocas ?? [];
+        const gravado = trocas.length ? chaveDoDocumento(aplicarTrocas(doc, trocas)) : chave;
+        this.salvo = gravado;
+        if (trocas.length && !this.editor?.trocas(trocas) && this.estado.doc) this.alterar(aplicarTrocas(this.estado.doc, trocas));
+        const pendente = chaveDoDocumento(this.estado.doc) !== gravado;
         this.mudar({ salvando: false, pendente, atualizadoPor: dados.atualizadoPor, atualizadoEm: dados.atualizadoEm, uso: dados.uso ?? this.estado.uso });
         if (pendente) this.agendar(ESPERA);
       } else if (resposta.status === 409) {

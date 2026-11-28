@@ -368,12 +368,13 @@ summary::-webkit-details-marker {
   border-top: 2px solid var(--borda);
   margin: 1em 0;
 }
-.conteudo-rico a {
+/* "sem-estilo": botões e cartões em forma de link usam as próprias classes. */
+.conteudo-rico a:not(.sem-estilo) {
   color: var(--marca-texto);
   text-decoration: underline;
   text-underline-offset: 2px;
 }
-.conteudo-rico a:hover {
+.conteudo-rico a:not(.sem-estilo):hover {
   color: var(--texto);
 }
 .conteudo-rico .ProseMirror,
@@ -453,7 +454,7 @@ summary::-webkit-details-marker {
   mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Cpath d='M12 8v4M12 16h.01'/%3E%3C/svg%3E")
     center / contain no-repeat;
 }
-.conteudo-pagina div[data-type="fraseDestaque"] a {
+.conteudo-pagina div[data-type="fraseDestaque"] a:not(.sem-estilo) {
   color: var(--sobre-ouro);
 }
 .conteudo-pagina div[data-type="fraseDestaque"] mark {
@@ -596,18 +597,14 @@ summary::-webkit-details-marker {
   }
 }
 
-/* Botões e cartões em forma de link não levam o sublinhado do texto. */
-.conteudo-pagina a.sem-estilo {
-  color: inherit;
-  text-decoration: none;
-}
-.conteudo-pagina a.sem-estilo:hover {
-  color: inherit;
-}
-.conteudo-pagina a.sem-estilo.inline-flex:hover {
-  color: var(--sobre-inverso);
-}
 /* O contorno de seleção dos blocos de mídia é desenhado por eles. */
 .conteudo-pagina .react-renderer.ProseMirror-selectednode {
   outline: none;
+}
+
+/* Destaque de 2 segundos ao chegar por um link: grupo no quadro e citação na página. */
+.destacado,
+.conteudo-pagina [data-destaque] {
+  outline: 3px solid var(--marca);
+  outline-offset: 3px;
 }

@@ -2,6 +2,7 @@
 
 import type { Pessoa, TarefaDb } from "@/lib/tarefas";
 import { STATUS_OPCOES } from "@/lib/tarefas-campos";
+import { Cadeado } from "./Cadeado";
 import { CelulaPeriodo } from "./CelulaPeriodo";
 import { CelulaPessoa } from "./CelulaPessoa";
 import { CelulaOpcao, CelulaTitulo } from "./Celulas";
@@ -31,8 +32,9 @@ export function SubtarefasLista({ paiId, subtarefas, membros, hoje }: { paiId: s
             </div>
             <div
               onPointerDown={a.arrastarPeloTitulo}
-              className="flex min-w-0 flex-1 basis-48 cursor-grab items-center pl-2 active:cursor-grabbing [&_a]:cursor-grab!"
+              className="flex min-w-0 flex-1 basis-48 cursor-grab items-center gap-1 pl-2 active:cursor-grabbing [&_a]:cursor-grab!"
             >
+              <Cadeado bloqueios={s.bloqueios} status={s.status} />
               <CelulaTitulo id={s.id} valor={s.titulo} riscado={s.status === "concluida"} />
             </div>
             <div className="flex basis-full flex-wrap items-start gap-2 pb-2 pl-3 md:basis-auto md:flex-nowrap md:pb-0 md:pl-0">

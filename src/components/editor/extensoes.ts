@@ -29,7 +29,9 @@ import {
 import { LIMITE_CARACTERES, type TipoAnexo } from "@/lib/editor/documento";
 import { AtalhoAlternante, Divisor, FraseDestaque } from "./blocos-pagina";
 import { Coluna, Colunas, DocumentoPagina } from "./colunas";
-import { Comandos, type CanalDeComandos } from "./comandos";
+import { Comandos, Seletor, type CanalDeComandos } from "./comandos";
+import type { DadosDeVinculos } from "./vinculos/dados";
+import { GrupoBloco, GrupoMencao, TarefaBloco, TarefaMencao } from "./vinculos/nos";
 import { LimitesDaPagina } from "./limites-editor";
 import { ArquivoBloco, CartaoLink, ImagemPagina } from "./midia";
 import { ImagemAnexo } from "./ImagemAnexo";
@@ -104,17 +106,22 @@ export function criarExtensoes({ placeholder, tipo, tarefaId, aoPedirLink }: Opc
 }
 
 /**
- * Páginas dos projetos: o básico com os blocos de documento. Os caracteres "{" (tarefas) e
- * "@" (pessoas) ficam reservados para as próximas etapas: nada aqui usa esses gatilhos.
+ * Páginas dos projetos: o básico com os blocos de documento. "{" abre o seletor de tarefas e
+ * grupos; "@" (pessoas) fica reservado para a próxima etapa: nada aqui usa esse gatilho.
  */
 export function criarExtensoesPagina({
   abaId,
   canal,
+  seletor,
+  dados,
   aoPedirLink,
   aoRecusar,
 }: {
   abaId: string;
   canal: CanalDeComandos;
+  /** Canal do seletor "{" e os dados ao vivo das citações. */
+  seletor: CanalDeComandos;
+  dados: DadosDeVinculos;
   aoPedirLink: () => void;
   /** Um limite da página barrou a mudança. */
   aoRecusar: (mensagem: string) => void;
@@ -166,6 +173,11 @@ export function criarExtensoesPagina({
     CartaoLink,
     LimitesDaPagina.configure({ aoRecusar }),
     Comandos.configure({ canal }),
+    Seletor.configure({ canal: seletor }),
+    TarefaBloco.configure({ dados }),
+    TarefaMencao.configure({ dados }),
+    GrupoBloco.configure({ dados }),
+    GrupoMencao.configure({ dados }),
   ];
 }
 

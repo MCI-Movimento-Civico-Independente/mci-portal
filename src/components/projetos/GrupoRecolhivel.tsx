@@ -30,7 +30,7 @@ export function GrupoRecolhivel({ grupo, total, feitas, hrefNovaTarefa, primeiro
   const pct = total > 0 ? Math.round((feitas / total) * 100) : 0;
 
   return (
-    <section aria-label={nome} className="border-2 border-borda bg-superficie">
+    <section id={`secao-grupo-${grupo.id}`} aria-label={nome} className="scroll-mt-24 border-2 border-borda bg-superficie">
       <div className="flex flex-wrap items-center gap-x-2 border-b-2 border-borda">
         <div className="pl-1">
           <PaletaCor id={grupo.id} cor={grupo.cor} nome={nome} />

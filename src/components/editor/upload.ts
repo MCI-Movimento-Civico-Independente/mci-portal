@@ -12,13 +12,18 @@ type Compressao = {
   /** Tamanho máximo do resultado; as tentativas vão em ordem até caber. */
   saidaMax?: number;
   tentativas: { escala: number; qualidade: number }[];
+  /** Se o navegador não gerar WebP, gera JPEG com esta qualidade. Sem isso, recusa. */
+  qualidadeJpeg?: number;
 };
 
 const DE_TAREFA: Compressao = { entradaMax: LIMITE_BYTES, maiorLado: MAIOR_LADO, tentativas: [{ escala: 1, qualidade: 0.85 }] };
 
-/** Reduz no navegador e converte para WebP. Padrão (tarefas): 1920px, qualidade 0,85, até 8 MB de entrada. */
+const gerar = (canvas: HTMLCanvasElement, tipo: string, qualidade: number) =>
+  new Promise<Blob | null>((ok) => canvas.toBlob(ok, tipo, qualidade));
+
+/** Reduz no navegador e converte para WebP (ou JPEG, se pedido e necessário). Padrão (tarefas): 1920px, qualidade 0,85, até 8 MB de entrada. */
 export async function reduzirImagem(arquivo: Blob, opcoes: Compressao = DE_TAREFA): Promise<Blob> {
-  const { entradaMax, maiorLado, saidaMax = Infinity, tentativas } = opcoes;
+  const { entradaMax, maiorLado, saidaMax = Infinity, tentativas, qualidadeJpeg } = opcoes;
   if (!arquivo.type.startsWith("image/")) throw new Error("Esse arquivo não é uma imagem.");
   if (arquivo.size > entradaMax) throw new Error(`A imagem passa de ${Math.round(entradaMax / 1024 / 1024)} MB.`);
   let bitmap: ImageBitmap;
@@ -33,12 +38,21 @@ export async function reduzirImagem(arquivo: Blob, opcoes: Compressao = DE_TAREF
       const canvas = document.createElement("canvas");
       canvas.width = Math.max(1, Math.round(bitmap.width * base * escala));
       canvas.height = Math.max(1, Math.round(bitmap.height * base * escala));
-      canvas.getContext("2d")!.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-      const webp = await new Promise<Blob | null>((ok) => canvas.toBlob(ok, "image/webp", qualidade));
-      if (!webp) throw new Error("Não deu para preparar a imagem.");
-      // Alguns navegadores devolvem PNG quando não sabem gerar WebP.
-      if (webp.type !== "image/webp") throw new Error("Este navegador não converte imagens para WebP. Use o Chrome, o Edge ou o Firefox.");
-      if (webp.size <= saidaMax) return webp;
+      const pincel = canvas.getContext("2d")!;
+      pincel.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+      let saida = await gerar(canvas, "image/webp", qualidade);
+      // Quem não sabe gerar WebP devolve outro tipo (PNG): confere o que saiu de verdade.
+      if (saida && saida.type !== "image/webp") {
+        if (!qualidadeJpeg) throw new Error("Este navegador não converte imagens para WebP. Use o Chrome, o Edge ou o Firefox.");
+        // JPEG não tem transparência: o fundo vira branco em vez de preto.
+        pincel.globalCompositeOperation = "destination-over";
+        pincel.fillStyle = "#ffffff";
+        pincel.fillRect(0, 0, canvas.width, canvas.height);
+        saida = await gerar(canvas, "image/jpeg", qualidadeJpeg);
+        if (saida && saida.type !== "image/jpeg") saida = null;
+      }
+      if (!saida) throw new Error("Não deu para preparar a imagem.");
+      if (saida.size <= saidaMax) return saida;
     }
     throw new Error("Não deu para deixar a imagem pequena o bastante.");
   } finally {

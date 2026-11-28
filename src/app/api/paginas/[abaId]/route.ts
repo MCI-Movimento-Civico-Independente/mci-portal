@@ -54,12 +54,15 @@ export async function PUT(req: Request, { params }: { params: Promise<{ abaId: s
   if ("erro" in v) return erro(v.erro, v.grande ? 413 : 400);
 
   try {
-    const r = await salvarPagina(c.abaId, versao, v.doc, v.anexos, c.sessao.conta.id);
+    const quem = { contaId: c.sessao.conta.id, podeOrg: c.sessao.podeOrg };
+    const r = await salvarPagina(c.abaId, versao, v.doc, v.anexos, quem);
     if (r.tipo === "nao_achou") return erro("Esta página foi excluída.", 404);
+    if (r.tipo === "citacao_invalida") {
+      return erro("A página cita uma tarefa ou um grupo que não existe mais. Tire o bloco “removido” para salvar.", 400);
+    }
     if (r.tipo === "conflito") return NextResponse.json({ conflito: true, por: r.por }, { status: 409, headers: SEM_CACHE });
-    if (r.tipo === "anexo_invalido") return erro("A página usa um anexo que não é deste projeto ou não terminou de subir.", 400);
     return NextResponse.json(
-      { versao: r.versao, atualizadoEm: r.atualizadoEm, atualizadoPor: c.sessao.nome, uso: r.uso },
+      { versao: r.versao, atualizadoEm: r.atualizadoEm, atualizadoPor: c.sessao.nome, uso: r.uso, trocas: r.trocas },
       { headers: SEM_CACHE },
     );
   } catch (e) {

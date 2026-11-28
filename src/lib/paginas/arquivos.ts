@@ -1,4 +1,5 @@
 import "server-only";
+import { podeVerProjeto, type Quem } from "@/lib/auth/projetos";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { ARQUIVO, COTA_PROJETO, IMAGEM } from "@/lib/limites";
 import {
@@ -12,6 +13,8 @@ import {
   type Especie,
   type Uso,
 } from "./arquivos-tipos";
+import type { AnexoCitado } from "./documento";
+import type { Troca } from "./trocas";
 
 // Mesmo modelo de acesso das páginas: quem chama já conferiu o login e o papel.
 
@@ -47,9 +50,9 @@ export async function reservarEnvio(
   pedido: { nome: string; tamanho: number; especie: Especie },
 ): Promise<{ id: string; caminho: string; token: string; tipo: string; uso: Uso } | Recusa> {
   const nome = nomeLimpo(pedido.nome);
-  const ext = pedido.especie === "imagem" ? "webp" : extensaoDe(nome);
+  const ext = pedido.especie === "imagem" ? (/\.jpe?g$/i.test(nome) ? "jpg" : "webp") : extensaoDe(nome);
   if (!ext) return { erro: RECUSA_TIPO, status: 415 };
-  const tipo = ext === "webp" ? IMAGEM.tipo : ARQUIVO.tipos[ext];
+  const tipo = ext === "webp" ? IMAGEM.tipo : ext === "jpg" ? IMAGEM.tipoReserva : ARQUIVO.tipos[ext];
   if (pedido.especie === "imagem" && pedido.tamanho > IMAGEM.maxBytes) return { erro: IMAGEM_GRANDE, status: 413 };
   if (pedido.especie === "arquivo" && pedido.tamanho > ARQUIVO.maxBytes) return { erro: ARQUIVO_GRANDE, status: 413 };
 
@@ -96,7 +99,7 @@ export async function confirmarEnvio(abaId: string, arquivoId: string, autorId: 
     await db.from("projeto_arquivos").delete().eq("id", arquivoId);
     return { erro, status };
   };
-  const imagem = linha.tipo === IMAGEM.tipo;
+  const imagem = (linha.tipo as string).startsWith("image/");
   if (blob.size > (imagem ? IMAGEM.maxBytes : ARQUIVO.maxBytes)) return recusar(imagem ? IMAGEM_GRANDE : ARQUIVO_GRANDE, 413);
   if (!conteudoConfere(linha.tipo as string, new Uint8Array(await blob.arrayBuffer()))) {
     return recusar("O conteúdo do arquivo não bate com o tipo dele.", 415);
@@ -122,17 +125,103 @@ export async function urlDeLeitura(arquivoId: string, baixar: boolean, segundos:
   return url.signedUrl;
 }
 
-/** Tipos dos arquivos confirmados do projeto, entre os pedidos (os que faltarem não são dele). */
-export async function tiposDosArquivos(projetoId: string, ids: string[]): Promise<Map<string, string>> {
-  if (ids.length === 0) return new Map();
-  const { data, error } = await createAdminClient()
+type Origem = {
+  id: string;
+  projeto_id: string;
+  caminho: string;
+  nome: string;
+  tamanho: number;
+  tipo: string;
+  confirmado: boolean;
+};
+
+/**
+ * Confere os anexos citados numa página. O que é de outro projeto é copiado para este (conta na
+ * cota). O que não dá para usar nem copiar vira troca com `para: null`, e a página salva assim mesmo.
+ */
+export async function trazerAnexos(
+  destino: { projetoId: string; abaId: string },
+  anexos: AnexoCitado[],
+  quem: Quem,
+): Promise<Troca[]> {
+  if (anexos.length === 0) return [];
+  const db = createAdminClient();
+  const { data, error } = await db
     .from("projeto_arquivos")
-    .select("id, tipo")
-    .eq("projeto_id", projetoId)
-    .eq("confirmado", true)
-    .in("id", ids);
+    .select("id, projeto_id, caminho, nome, tamanho, tipo, confirmado")
+    .in("id", [...new Set(anexos.map((a) => a.id))]);
   if (error) throw error;
-  return new Map((data ?? []).map((a) => [a.id as string, a.tipo as string]));
+  const linhas = new Map((data as Origem[]).map((l) => [l.id, l]));
+
+  const trocas: Troca[] = [];
+  let uso: Uso | null = null;
+  for (const anexo of new Map(anexos.map((a) => [a.id, a])).values()) {
+    const origem = linhas.get(anexo.id);
+    const serve = !!origem?.confirmado && (anexo.especie === "imagem") === origem.tipo.startsWith("image/");
+    if (serve && origem.projeto_id === destino.projetoId) continue;
+    let para: string | null = null;
+    if (serve && podeVerProjeto(quem, origem.projeto_id)) {
+      try {
+        uso ??= await usoDoProjeto(destino.projetoId);
+        para = await copiar(origem, destino, quem, uso);
+      } catch (e) {
+        console.error("Falha ao copiar o arquivo de outro projeto:", e);
+      }
+    }
+    trocas.push({ de: anexo.id, para });
+  }
+  return trocas;
+}
+
+/** Id da cópia no projeto de destino (reaproveita a que já existir). Null se a cota não der. */
+async function copiar(origem: Origem, destino: { projetoId: string; abaId: string }, quem: Quem, uso: Uso): Promise<string | null> {
+  const db = createAdminClient();
+  const tamanho = Number(origem.tamanho);
+  const cabe = () => uso.usado + tamanho <= uso.maximo;
+
+  const { data: pronta, error } = await db
+    .from("projeto_arquivos")
+    .select("id, excluido_em")
+    .eq("projeto_id", destino.projetoId)
+    .eq("origem_id", origem.id)
+    .eq("confirmado", true)
+    .limit(1)
+    .maybeSingle();
+  if (error) throw error;
+  if (pronta) {
+    // Uma cópia que tinha saído das páginas volta a ocupar espaço.
+    if (pronta.excluido_em) {
+      if (!cabe()) return null;
+      uso.usado += tamanho;
+    }
+    return pronta.id as string;
+  }
+  if (!cabe()) return null;
+
+  const caminho = `${destino.projetoId}/${destino.abaId}/${crypto.randomUUID()}${origem.caminho.slice(origem.caminho.lastIndexOf("."))}`;
+  const { error: erroCopia } = await db.storage.from(BUCKET_PAGINAS).copy(origem.caminho, caminho);
+  if (erroCopia) throw erroCopia;
+  const { data: nova, error: erroLinha } = await db
+    .from("projeto_arquivos")
+    .insert({
+      projeto_id: destino.projetoId,
+      aba_id: destino.abaId,
+      origem_id: origem.id,
+      caminho,
+      nome: origem.nome,
+      tamanho,
+      tipo: origem.tipo,
+      confirmado: true,
+      criado_por: quem.contaId,
+    })
+    .select("id")
+    .single();
+  if (erroLinha) {
+    await db.storage.from(BUCKET_PAGINAS).remove([caminho]);
+    throw erroLinha;
+  }
+  uso.usado += tamanho;
+  return nova.id as string;
 }
 
 /**

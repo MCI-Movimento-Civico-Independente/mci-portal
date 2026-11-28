@@ -23,7 +23,19 @@ const buscaSegura: LookupFunction = (nome, opcoes, responder) => {
   });
 };
 
-function pedir(url: URL, sinal: AbortSignal): Promise<IncomingMessage> {
+export type Opcoes = {
+  /** Limite do corpo (já descomprimido). */
+  maxBytes: number;
+  /** Precisa vir inteiro (imagem): passar do limite é erro. Senão, para no fim do <head>. */
+  inteiro?: boolean;
+  /** Confere o tipo antes de baixar o corpo. */
+  aceita?: (tipo: string) => boolean;
+  accept: string;
+};
+
+const PAGINA_HTML: Opcoes = { maxBytes: MAX_BYTES, accept: "text/html,application/xhtml+xml,application/json;q=0.9" };
+
+function pedir(url: URL, sinal: AbortSignal, accept: string): Promise<IncomingMessage> {
   return new Promise((ok, falha) => {
     const get = url.protocol === "https:" ? getHttps : getHttp;
     get(
@@ -34,7 +46,7 @@ function pedir(url: URL, sinal: AbortSignal): Promise<IncomingMessage> {
         agent: false, // conexão nova, sempre passando pela conferência do endereço
         headers: {
           "user-agent": "Mozilla/5.0 (compatible; PreviaDeLinks/1.0)",
-          accept: "text/html,application/xhtml+xml,application/json;q=0.9",
+          accept,
           "accept-language": "pt-BR,pt;q=0.9,en;q=0.5",
           "accept-encoding": "gzip, deflate, br",
         },
@@ -44,8 +56,8 @@ function pedir(url: URL, sinal: AbortSignal): Promise<IncomingMessage> {
   });
 }
 
-/** Lê o corpo até o fim do <head> ou o limite de tamanho. */
-function ler(resposta: IncomingMessage, sinal: AbortSignal): Promise<Buffer> {
+/** Lê o corpo até o limite de tamanho (nas páginas, basta chegar ao fim do <head>). */
+function ler(resposta: IncomingMessage, sinal: AbortSignal, { maxBytes, inteiro }: Opcoes): Promise<Buffer> {
   const codificacao = resposta.headers["content-encoding"];
   const descompressor =
     codificacao === "gzip" ? createGunzip() : codificacao === "br" ? createBrotliDecompress() : codificacao === "deflate" ? createInflate() : null;
@@ -67,7 +79,11 @@ function ler(resposta: IncomingMessage, sinal: AbortSignal): Promise<Buffer> {
     corpo.on("data", (parte: Buffer) => {
       partes.push(parte);
       total += parte.length;
-      if (total >= MAX_BYTES || parte.includes("</head>")) terminar();
+      if (inteiro && total > maxBytes) {
+        sinal.removeEventListener("abort", abortar);
+        resposta.destroy();
+        falha(new Error("Arquivo grande demais."));
+      } else if (!inteiro && (total >= maxBytes || parte.includes("</head>"))) terminar();
     });
     corpo.on("end", terminar);
     corpo.on("error", falha);
@@ -77,11 +93,11 @@ function ler(resposta: IncomingMessage, sinal: AbortSignal): Promise<Buffer> {
 
 export type Resposta = { url: URL; tipo: string; corpo: Buffer };
 
-export async function buscarExterno(inicio: string): Promise<Resposta> {
+export async function buscarExterno(inicio: string, opcoes: Opcoes = PAGINA_HTML): Promise<Resposta> {
   const sinal = AbortSignal.timeout(TEMPO_MAX_MS);
   let url = urlPermitida(inicio);
   for (let saltos = 0; url; saltos++) {
-    const resposta = await pedir(url, sinal);
+    const resposta = await pedir(url, sinal, opcoes.accept);
     const status = resposta.statusCode ?? 0;
     const destino = resposta.headers.location;
     if (status >= 300 && status < 400 && destino) {
@@ -94,7 +110,13 @@ export async function buscarExterno(inicio: string): Promise<Resposta> {
       resposta.destroy();
       throw new Error(`Resposta ${status}.`);
     }
-    return { url, tipo: resposta.headers["content-type"] ?? "", corpo: await ler(resposta, sinal) };
+    const tipo = resposta.headers["content-type"] ?? "";
+    const declarado = Number(resposta.headers["content-length"] ?? 0);
+    if ((opcoes.aceita && !opcoes.aceita(tipo)) || (opcoes.inteiro && declarado > opcoes.maxBytes)) {
+      resposta.destroy();
+      throw new Error("Tipo ou tamanho não aceito.");
+    }
+    return { url, tipo, corpo: await ler(resposta, sinal, opcoes) };
   }
   throw new Error("Endereço não permitido.");
 }

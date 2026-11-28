@@ -2,6 +2,7 @@
 
 import { useOptimistic, useState, useTransition } from "react";
 import { atualizarCampoAction } from "@/app/org/tarefas/acoes";
+import { comConfirmacao } from "@/components/org/confirmacao";
 import { anunciarXp } from "@/components/org/avisos-xp";
 import type { ChaveCampo } from "@/lib/tarefas-campos";
 
@@ -19,7 +20,9 @@ export function useCampo(id: string, chave: ChaveCampo, valorServidor: string) {
     setErro(null);
     iniciar(async () => {
       setOtimista(novo);
-      const r = await atualizarCampoAction(id, chave, novo);
+      // Com dependência aberta, o servidor pede confirmação; desistir volta ao valor anterior.
+      const r = await comConfirmacao((forcar) => atualizarCampoAction(id, chave, novo, forcar));
+      if (!r) return;
       if (r.erro) setErro(r.erro);
       anunciarXp(r.xp);
     });

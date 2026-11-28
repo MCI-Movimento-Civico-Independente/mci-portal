@@ -3,37 +3,57 @@
 import type { Editor } from "@tiptap/core";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import type { IconType } from "react-icons";
-import { TbAt, TbBinaryTree, TbHash, TbUsers } from "react-icons/tb";
-import { BLOCOS_DA_PAGINA, cabe, combina, transformar, type AcoesDeMidia, type Bloco } from "./blocos";
+import { TbAt } from "react-icons/tb";
+import { BLOCOS_DA_PAGINA, cabe, combina, transformar, type AcoesDaTela, type Bloco } from "./blocos";
 import type { CanalDeComandos, EstadoComandos } from "./comandos";
 
-// Chegam numa próxima etapa.
-const VINCULOS: { rotulo: string; icone: IconType }[] = [
-  { rotulo: "Mencionar tarefa", icone: TbHash },
-  { rotulo: "Mencionar grupo", icone: TbUsers },
-  { rotulo: "Mencionar pessoa", icone: TbAt },
-  { rotulo: "Dependência", icone: TbBinaryTree },
-];
+// Chega numa próxima etapa, com as notificações.
+const EM_BREVE: { rotulo: string; icone: IconType }[] = [{ rotulo: "Mencionar pessoa", icone: TbAt }];
+
+/** Posiciona a caixa junto do cursor: abaixo, ou acima se faltar espaço. */
+export function usePosicaoNoCursor(onde: () => DOMRect | null) {
+  const caixa = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const posicionar = () => {
+      const m = caixa.current;
+      const r = onde();
+      if (!m || !r) return;
+      m.style.left = `${Math.max(8, Math.min(r.left, window.innerWidth - m.offsetWidth - 8))}px`;
+      const abaixo = r.bottom + 6;
+      const cabeEmbaixo = abaixo + m.offsetHeight <= window.innerHeight - 8;
+      m.style.top = `${cabeEmbaixo ? abaixo : Math.max(8, r.top - m.offsetHeight - 6)}px`;
+      m.style.visibility = "visible";
+    };
+    posicionar();
+    window.addEventListener("scroll", posicionar, true);
+    window.addEventListener("resize", posicionar);
+    return () => {
+      window.removeEventListener("scroll", posicionar, true);
+      window.removeEventListener("resize", posicionar);
+    };
+  });
+  return caixa;
+}
 
 const linha = "flex min-h-9 w-full items-center gap-3 px-3 text-left text-sm";
 
-type Props = { editor: Editor; canal: CanalDeComandos; acoes: AcoesDeMidia };
+type Props = { editor: Editor; canal: CanalDeComandos; acoes: AcoesDaTela };
 
 function Lista({ editor, canal, acoes, estado }: Props & { estado: NonNullable<EstadoComandos> }) {
   const { consulta, trecho } = estado;
   const achados = BLOCOS_DA_PAGINA.filter((b) => cabe(editor, b) && combina(consulta, b.rotulo, b.busca, b.atalho ?? ""));
   // Na ordem em que aparecem: básicos e, depois dos vínculos, mídia.
-  const basicos = achados.filter((b) => b.secao !== "midia");
+  const basicos = achados.filter((b) => !b.secao);
+  const vinculos = achados.filter((b) => b.secao === "vinculo");
   const midia = achados.filter((b) => b.secao === "midia");
-  const itens = [...basicos, ...midia];
-  const breve = VINCULOS.filter((i) => combina(consulta, i.rotulo));
+  const itens = [...basicos, ...vinculos, ...midia];
+  const breve = EM_BREVE.filter((i) => combina(consulta, i.rotulo));
   // "/ " no meio do texto, ou palavras que não são comando: o menu sai da frente.
   const esconder = consulta.startsWith(" ") || (consulta.includes(" ") && !itens.length);
 
   // A escolha volta ao primeiro item quando o filtro muda.
   const [escolha, setEscolha] = useState({ consulta, i: 0 });
   const indice = escolha.consulta === consulta ? Math.min(escolha.i, Math.max(0, itens.length - 1)) : 0;
-  const caixa = useRef<HTMLDivElement>(null);
   const rolagem = useRef<HTMLDivElement>(null);
 
   function inserir(b: Bloco) {
@@ -63,26 +83,7 @@ function Lista({ editor, canal, acoes, estado }: Props & { estado: NonNullable<E
     rolagem.current?.querySelector('[aria-selected="true"]')?.scrollIntoView({ block: "nearest" });
   }, [indice]);
 
-  // Posiciona junto do cursor: abaixo, ou acima se faltar espaço.
-  useEffect(() => {
-    const posicionar = () => {
-      const m = caixa.current;
-      const r = estado.onde();
-      if (!m || !r) return;
-      m.style.left = `${Math.max(8, Math.min(r.left, window.innerWidth - m.offsetWidth - 8))}px`;
-      const abaixo = r.bottom + 6;
-      const cabe = abaixo + m.offsetHeight <= window.innerHeight - 8;
-      m.style.top = `${cabe ? abaixo : Math.max(8, r.top - m.offsetHeight - 6)}px`;
-      m.style.visibility = "visible";
-    };
-    posicionar();
-    window.addEventListener("scroll", posicionar, true);
-    window.addEventListener("resize", posicionar);
-    return () => {
-      window.removeEventListener("scroll", posicionar, true);
-      window.removeEventListener("resize", posicionar);
-    };
-  });
+  const caixa = usePosicaoNoCursor(estado.onde);
 
   if (esconder) return null;
 
@@ -116,7 +117,8 @@ function Lista({ editor, canal, acoes, estado }: Props & { estado: NonNullable<E
       <div ref={rolagem} role="listbox" aria-label="Comandos" className="overflow-y-auto p-1.5">
         {basicos.length > 0 && <p className="rotulo px-3 py-2 text-suave">Blocos básicos</p>}
         {basicos.map(opcao)}
-        {breve.length > 0 && <p className="rotulo px-3 pb-2 pt-3 text-suave">Vínculos do projeto</p>}
+        {(vinculos.length > 0 || breve.length > 0) && <p className="rotulo px-3 pb-2 pt-3 text-suave">Vínculos do projeto</p>}
+        {vinculos.map(opcao)}
         {breve.map((i) => (
           <div key={i.rotulo} role="option" aria-disabled="true" aria-selected="false" className={`${linha} cursor-not-allowed text-suave`}>
             <i.icone size={17} aria-hidden="true" />

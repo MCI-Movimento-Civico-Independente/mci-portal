@@ -13,6 +13,7 @@ import { PRIORIDADE_OPCOES, STATUS_OPCOES } from "@/lib/tarefas-campos";
 import { CelulaOpcao, CelulaProjeto, CelulaTitulo } from "./Celulas";
 import { CelulaPessoa } from "./CelulaPessoa";
 import { CelulaPeriodo } from "./CelulaPeriodo";
+import { Cadeado } from "./Cadeado";
 import { SubtarefasOrdenaveis } from "./SubtarefasOrdenaveis";
 import { LinhaNovaSubtarefa } from "./LinhaNovaSubtarefa";
 import { Progresso } from "./Progresso";
@@ -100,6 +101,7 @@ function Linha({ t, membros, comites, projetos, hoje, qs, caminho = "/org/tarefa
           arrastarPeloTitulo ? "cursor-grab active:cursor-grabbing [&_a]:cursor-grab! [&_a]:active:cursor-grabbing!" : ""
         }`}
       >
+        <Cadeado bloqueios={t.bloqueios} status={t.status} />
         <CelulaTitulo id={t.id} valor={t.titulo} href={href} riscado={t.status === "concluida"} />
         <Progresso feitas={feitas} total={t.subtarefas.length} />
       </div>

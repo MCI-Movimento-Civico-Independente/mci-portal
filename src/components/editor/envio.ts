@@ -13,6 +13,7 @@ const COMPRESSAO = {
   entradaMax: IMAGEM.entradaMaxBytes,
   maiorLado: IMAGEM.maiorLadoPx,
   saidaMax: IMAGEM.maxBytes,
+  qualidadeJpeg: IMAGEM.qualidadeReserva,
   tentativas: [
     { escala: 1, qualidade: 0.85 },
     { escala: 1, qualidade: 0.72 },
@@ -48,7 +49,11 @@ export async function enviarAnexo(abaId: string, uploadId: string) {
       });
     }
     const vaga = await pedir<{ id: string; caminho: string; token: string; tipo: string }>(`/api/paginas/${abaId}/arquivos`, {
-      nome: especie === "imagem" ? `${arquivo.name.replace(/\.[^.]*$/, "") || "imagem"}.webp` : arquivo.name,
+      // A extensão conta ao servidor em que formato a imagem saiu.
+      nome:
+        especie === "imagem"
+          ? `${arquivo.name.replace(/\.[^.]*$/, "") || "imagem"}.${corpo.type === IMAGEM.tipoReserva ? "jpg" : "webp"}`
+          : arquivo.name,
       tamanho: corpo.size,
       especie,
     });

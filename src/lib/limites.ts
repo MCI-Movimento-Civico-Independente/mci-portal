@@ -18,6 +18,9 @@ export const IMAGEM = {
   /** Depois de comprimida. */
   maxBytes: 1.5 * MB,
   tipo: "image/webp",
+  /** Para navegadores que não geram WebP (iPhone e Safari). */
+  tipoReserva: "image/jpeg",
+  qualidadeReserva: 0.82,
   maiorLadoPx: 1920,
   /** Maior arquivo que o navegador aceita abrir para comprimir. */
   entradaMaxBytes: 25 * MB,
@@ -41,4 +44,10 @@ export const COTA_PROJETO = {
   maxBytes: 100 * MB,
   /** Fração da cota a partir da qual o portal avisa. */
   avisoEm: 0.8,
+} as const;
+
+/** Imagem dos cartões de link: o servidor baixa, reduz e guarda uma cópia (fora da cota). */
+export const PREVIA = {
+  imagemMaxBytes: 2 * MB,
+  larguraMaxPx: 600,
 } as const;

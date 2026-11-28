@@ -8,6 +8,6 @@ const PaginaEditor = dynamic(() => import("./PaginaEditor").then((m) => m.Pagina
   loading: () => <div className="mx-auto h-64 w-full max-w-[780px] animate-pulse bg-sutil" aria-busy="true" />,
 });
 
-export function PaginaProjeto(props: { abaId: string; tituloInicial: string }) {
+export function PaginaProjeto(props: { abaId: string; projetoId: string; tituloInicial: string }) {
   return <PaginaEditor {...props} />;
 }

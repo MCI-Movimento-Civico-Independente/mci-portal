@@ -10,13 +10,20 @@ import { useEffect, useRef, type ReactNode } from "react";
 export function Modal({ fecharHref, rotulo, children }: { fecharHref: string; rotulo: string; children: ReactNode }) {
   const ref = useRef<HTMLDialogElement>(null);
 
+  const escondendo = useRef(false);
+
   useEffect(() => {
     const dialogo = ref.current;
+    escondendo.current = false;
     if (dialogo && !dialogo.open) dialogo.showModal();
     const antes = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => {
       document.body.style.overflow = antes;
+      // Ao ir para outra tela (um link de "Mencionada em", por exemplo), a página fica guardada
+      // escondida: a janela precisa sair da frente sem trocar o endereço.
+      escondendo.current = true;
+      dialogo?.close();
     };
   }, []);
 
@@ -24,7 +31,9 @@ export function Modal({ fecharHref, rotulo, children }: { fecharHref: string; ro
     <dialog
       ref={ref}
       aria-label={rotulo}
-      onClose={() => window.history.pushState(null, "", fecharHref)}
+      onClose={() => {
+        if (!escondendo.current && !ref.current?.open) window.history.pushState(null, "", fecharHref);
+      }}
       onClick={(e) => {
         if (e.target === ref.current) ref.current?.close();
       }}

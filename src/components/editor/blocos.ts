@@ -18,6 +18,9 @@ import {
   TbPhoto,
   TbPaperclip,
   TbLink,
+  TbHash,
+  TbUsers,
+  TbBinaryTree,
 } from "react-icons/tb";
 import { criarAlternante } from "./blocos-pagina";
 import { criarColunas } from "./colunas";
@@ -29,11 +32,18 @@ import { inserirBlocos, naTabela } from "./inserir";
  */
 
 /** O que precisa de uma janela ou caixa própria da tela. */
-export type AcoesDeMidia = { imagem: () => void; arquivo: () => void; cartao: () => void };
+export type AcoesDaTela = {
+  imagem: () => void;
+  arquivo: () => void;
+  cartao: () => void;
+  tarefa: () => void;
+  grupo: () => void;
+  dependencia: () => void;
+};
 
 export type Bloco = {
   id: string;
-  secao?: "midia";
+  secao?: "midia" | "vinculo";
   /** Insere sem antes converter o bloco atual em texto. */
   direto?: boolean;
   rotulo: string;
@@ -45,7 +55,7 @@ export type Bloco = {
   /** Aparece em "Transformar em". */
   transforma: boolean;
   /** Aplica ao bloco onde está o cursor. */
-  aplicar: (e: Editor, acoes?: AcoesDeMidia) => void;
+  aplicar: (e: Editor, acoes?: AcoesDaTela) => void;
 };
 
 const cadeia = (e: Editor) => e.chain().focus();
@@ -65,6 +75,9 @@ export const BLOCOS_DA_PAGINA: Bloco[] = [
   { id: "tabela", rotulo: "Tabela", icone: TbTable, busca: "planilha linhas", transforma: false, direto: true, aplicar: inserirTabela },
   { id: "colunas2", rotulo: "2 colunas", icone: TbColumns2, busca: "duas colunas lado a lado", transforma: false, direto: true, aplicar: (e) => criarColunas(e, 2) },
   { id: "colunas3", rotulo: "3 colunas", icone: TbColumns3, busca: "três colunas lado a lado", transforma: false, direto: true, aplicar: (e) => criarColunas(e, 3) },
+  { id: "tarefa", secao: "vinculo", rotulo: "Tarefa", atalho: "{", icone: TbHash, busca: "mencionar vincular bloco", transforma: false, direto: true, aplicar: (_e, a) => a?.tarefa() },
+  { id: "grupo", secao: "vinculo", rotulo: "Grupo", icone: TbUsers, busca: "mencionar vincular", transforma: false, direto: true, aplicar: (_e, a) => a?.grupo() },
+  { id: "dependencia", secao: "vinculo", rotulo: "Dependência", icone: TbBinaryTree, busca: "depende bloqueia ordem", transforma: false, direto: true, aplicar: (_e, a) => a?.dependencia() },
   { id: "imagem", secao: "midia", rotulo: "Imagem", icone: TbPhoto, busca: "foto print figura", transforma: false, direto: true, aplicar: (_e, a) => a?.imagem() },
   { id: "arquivo", secao: "midia", rotulo: "Arquivo", icone: TbPaperclip, busca: "anexo pdf docx xlsx pptx", transforma: false, direto: true, aplicar: (_e, a) => a?.arquivo() },
   { id: "cartao", secao: "midia", rotulo: "Link com prévia", icone: TbLink, busca: "cartão url youtube vídeo", transforma: false, direto: true, aplicar: (_e, a) => a?.cartao() },
@@ -89,7 +102,8 @@ const NA_CELULA = new Set(["texto", "marcadores", "numerada", "tarefas"]);
 /** O bloco pode ser usado onde está o cursor? */
 export function cabe(e: Editor, b: Bloco) {
   // Mídia entra depois da tabela; os demais blocos não valem dentro de uma célula.
-  if (naTabela(e)) return NA_CELULA.has(b.id) || b.secao === "midia";
+  // Menções e dependências também valem na célula (o bloco, se escolhido, entra depois da tabela).
+  if (naTabela(e)) return NA_CELULA.has(b.id) || !!b.secao;
   if (b.id === "colunas2" || b.id === "colunas3") return e.state.selection.$from.depth === 1;
   return true;
 }

@@ -1,10 +1,14 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
+import type { Quem } from "@/lib/auth/projetos";
 import type { Documento } from "@/lib/editor/documento";
+import { citacoesValidas, rotulosDe, sincronizarReferencias } from "@/lib/vinculos/servidor";
 import { PAGINA } from "@/lib/limites";
-import { sincronizarArquivos, tiposDosArquivos, usoDoProjeto } from "./arquivos";
+import { sincronizarArquivos, trazerAnexos, usoDoProjeto } from "./arquivos";
 import type { Uso } from "./arquivos-tipos";
+import type { Rotulo } from "@/lib/vinculos/referencias";
 import { textoPagina, type AnexoCitado } from "./documento";
+import { aplicarTrocas, type Troca } from "./trocas";
 
 // Mesmo modelo de acesso do projeto: quem chama já conferiu o login e o papel.
 
@@ -98,7 +102,8 @@ export async function reordenarAbas(projetoId: string, ids: string[]): Promise<v
 }
 
 /** Cópia da página, logo depois da original. */
-export async function duplicarAba(id: string, autorId: string): Promise<string | null> {
+export async function duplicarAba(id: string, quem: Quem): Promise<string | null> {
+  const autorId = quem.contaId;
   const aba = await abaPorId(id);
   if (!aba) return null;
   const { data, error } = await createAdminClient()
@@ -117,6 +122,7 @@ export async function duplicarAba(id: string, autorId: string): Promise<string |
   const ordem = (await listarAbas(aba.projeto_id)).map((a) => a.id).filter((i) => i !== nova);
   ordem.splice(ordem.indexOf(id) + 1, 0, nova);
   await gravarOrdem(ordem);
+  if (data) await atualizarCitacoes(nova, data.conteudo as Documento, quem);
   return nova;
 }
 
@@ -158,7 +164,7 @@ export async function listarLixeira(projetoId: string): Promise<{ id: string; ti
 }
 
 /** Tira a página da lixeira e a põe no fim das abas. */
-export async function restaurarAba(id: string): Promise<boolean> {
+export async function restaurarAba(id: string, quem: Quem): Promise<boolean> {
   const db = createAdminClient();
   const { data: aba, error } = await db
     .from("projeto_abas")
@@ -173,6 +179,8 @@ export async function restaurarAba(id: string): Promise<boolean> {
   const { error: erroUpd } = await db.from("projeto_abas").update({ excluido_em: null, posicao }).eq("id", id);
   if (erroUpd) throw erroUpd;
   await sincronizarDaAba(aba.projeto_id as string, id);
+  const pagina = await linhaDaPagina(id);
+  if (pagina) await atualizarCitacoes(id, pagina.conteudo, quem);
   return true;
 }
 
@@ -218,10 +226,20 @@ export async function carregarPagina(abaId: string): Promise<PaginaCarregada | n
   };
 }
 
+/** O "Mencionada em" não pode derrubar o salvamento: se falhar, acerta no próximo. */
+async function atualizarCitacoes(abaId: string, conteudo: Documento, quem: Quem, rotulo?: Rotulo) {
+  try {
+    await sincronizarReferencias(abaId, conteudo, rotulo ?? (await rotulosDe(conteudo, quem)));
+  } catch (e) {
+    console.error("Falha ao atualizar as citações da página:", e);
+  }
+}
+
 export type ResultadoSalvar =
-  | { tipo: "ok"; versao: number; atualizadoEm: string; uso: Uso }
+  | { tipo: "ok"; versao: number; atualizadoEm: string; uso: Uso; trocas: Troca[] }
   | { tipo: "conflito"; por: string }
-  | { tipo: "anexo_invalido" }
+  /** Citou uma tarefa ou grupo que não existe ou que a pessoa não vê. */
+  | { tipo: "citacao_invalida" }
   | { tipo: "nao_achou" };
 
 /** Só grava se a versão no banco ainda for a que a pessoa carregou (a conferência é no próprio update). */
@@ -230,46 +248,59 @@ export async function salvarPagina(
   versao: number,
   doc: Documento,
   anexos: AnexoCitado[],
-  autorId: string,
+  quem: Quem,
 ): Promise<ResultadoSalvar> {
   const aba = await abaPorId(abaId);
   if (!aba) return { tipo: "nao_achou" };
-  // Todo anexo citado precisa ser deste projeto, ter sido conferido e ser do tipo certo.
-  const ids = [...new Set(anexos.map((a) => a.id))];
-  const tipos = await tiposDosArquivos(aba.projeto_id, ids);
-  const certo = (a: AnexoCitado) => {
-    const tipo = tipos.get(a.id);
-    return !!tipo && (a.especie === "imagem") === tipo.startsWith("image/");
-  };
-  if (!anexos.every(certo)) return { tipo: "anexo_invalido" };
-
   const db = createAdminClient();
-  const { data: antes, error: erroAntes } = await db.from("projeto_paginas").select("arquivos").eq("aba_id", abaId).maybeSingle();
+  const { data: antes, error: erroAntes } = await db
+    .from("projeto_paginas")
+    .select("versao, arquivos, conteudo")
+    .eq("aba_id", abaId)
+    .maybeSingle();
   if (erroAntes) throw erroAntes;
+  const conflito = async (): Promise<ResultadoSalvar> => {
+    const atual = await linhaDaPagina(abaId);
+    return atual ? { tipo: "conflito", por: nomeDe(atual.autor) } : { tipo: "nao_achou" };
+  };
+  // Já desatualizada: nem começa a copiar arquivos.
+  if (!antes || antes.versao !== versao) return conflito();
 
+  if (!(await citacoesValidas(doc, antes.conteudo as Documento | null, quem))) return { tipo: "citacao_invalida" };
+
+  // Anexos de outro projeto são copiados; o que não der vira um aviso no lugar do bloco.
+  const trocas = await trazerAnexos({ projetoId: aba.projeto_id, abaId }, anexos, quem);
+  const conteudo = trocas.length ? aplicarTrocas(doc, trocas) : doc;
+  const destino = new Map(trocas.map((t) => [t.de, t.para]));
+  const ids = [
+    ...new Set(anexos.map((a) => (destino.has(a.id) ? destino.get(a.id) : a.id)).filter((i): i is string => !!i)),
+  ];
+
+  const rotulo = await rotulosDe(conteudo, quem);
   const agora = new Date().toISOString();
   const { data, error } = await db
     .from("projeto_paginas")
     .update({
-      conteudo: doc,
-      conteudo_texto: textoPagina(doc),
+      conteudo,
+      conteudo_texto: textoPagina(conteudo, rotulo),
       arquivos: ids,
       versao: versao + 1,
-      atualizado_por: autorId,
+      atualizado_por: quem.contaId,
       atualizado_em: agora,
     })
     .eq("aba_id", abaId)
     .eq("versao", versao)
     .select("versao");
   if (error) throw error;
-  if (!data?.length) {
-    const atual = await linhaDaPagina(abaId);
-    return atual ? { tipo: "conflito", por: nomeDe(atual.autor) } : { tipo: "nao_achou" };
-  }
+  const gravou = !!data?.length;
   try {
-    await sincronizarArquivos(aba.projeto_id, [...((antes?.arquivos as string[] | undefined) ?? []), ...ids], abaId);
+    // Sem gravar (alguém salvou no meio), as cópias recém-feitas ficam marcadas como sem uso.
+    const antigos = (antes.arquivos as string[] | undefined) ?? [];
+    await sincronizarArquivos(aba.projeto_id, [...antigos, ...ids], gravou ? abaId : undefined);
   } catch (e) {
     console.error("Falha ao atualizar os arquivos do projeto:", e);
   }
-  return { tipo: "ok", versao: versao + 1, atualizadoEm: agora, uso: await usoDoProjeto(aba.projeto_id) };
+  if (!gravou) return conflito();
+  await atualizarCitacoes(abaId, conteudo, quem, rotulo);
+  return { tipo: "ok", versao: versao + 1, atualizadoEm: agora, uso: await usoDoProjeto(aba.projeto_id), trocas };
 }

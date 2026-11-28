@@ -2,6 +2,7 @@
 // Sem "server-only": o navegador usa o texto puro; o servidor usa a validação.
 import { hrefSeguro, type Documento, type Marca, type No } from "@/lib/editor/documento";
 import { PAGINA, TABELA } from "@/lib/limites";
+import { NOS_DE_REFERENCIA, referenciaDe, type Rotulo } from "@/lib/vinculos/referencias";
 import { extensaoDe, nomeLimpo, type Especie } from "./arquivos-tipos";
 
 const MAX_NOS = 20_000;
@@ -11,8 +12,10 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 // Para liberar um bloco novo: inclua aqui e trate em `limparNo`.
 const BLOCOS = [
   "paragraph", "heading", "bulletList", "orderedList", "taskList", "details", "fraseDestaque", "blockquote", "horizontalRule",
-  "table", "imagem", "arquivo", "cartaoLink",
+  "table", "imagem", "arquivo", "cartaoLink", "tarefaBloco", "grupoBloco",
 ];
+/** O que cabe numa linha de texto (as menções de tarefa e grupo são parte da frase). */
+const NA_LINHA = ["text", "hardBreak", "tarefaMencao", "grupoMencao"];
 const NA_CELULA = ["paragraph", "bulletList", "orderedList", "taskList"];
 const FILHOS: Record<string, string[]> = {
   // Colunas só no primeiro nível: assim nunca há colunas dentro de colunas.
@@ -26,9 +29,13 @@ const FILHOS: Record<string, string[]> = {
   imagem: [],
   arquivo: [],
   cartaoLink: [],
-  paragraph: ["text", "hardBreak"],
-  heading: ["text", "hardBreak"],
-  fraseDestaque: ["text", "hardBreak"],
+  paragraph: NA_LINHA,
+  heading: NA_LINHA,
+  fraseDestaque: NA_LINHA,
+  tarefaBloco: [],
+  tarefaMencao: [],
+  grupoBloco: [],
+  grupoMencao: [],
   bulletList: ["listItem"],
   orderedList: ["listItem"],
   taskList: ["taskItem"],
@@ -179,6 +186,16 @@ function limparNo(bruto: unknown, pai: string, profundidade: number, ctx: Contex
       if (!url || !/^https?:/.test(url)) throw new Recusado();
       return { type: "cartaoLink", attrs: { url } };
     }
+    case "tarefaBloco":
+    case "tarefaMencao":
+    case "grupoBloco":
+    case "grupoMencao": {
+      // Guarda só o id: nome, status e o resto vêm ao vivo do quadro.
+      const atributo = NOS_DE_REFERENCIA[no.type].atributo;
+      const id = no.attrs?.[atributo];
+      if (typeof id !== "string" || !UUID.test(id)) throw new Recusado();
+      return { type: no.type, attrs: { [atributo]: id.toLowerCase() } };
+    }
     default:
       throw new Recusado();
   }
@@ -207,15 +224,25 @@ export function validarPagina(bruto: unknown): { doc: Documento; anexos: AnexoCi
 }
 
 /** Texto simples, uma linha por bloco: usado na busca e para copiar o que não foi salvo. */
-export function textoPagina(doc: Documento | null | undefined): string {
+export function textoPagina(doc: Documento | null | undefined, rotulo: Rotulo = () => ""): string {
   const linhas: string[] = [];
+  const deLinha = (n: No) => {
+    const r = referenciaDe(n);
+    return r ? rotulo(r.tipo, r.id) : n.type === "hardBreak" ? "\n" : (n.text ?? "");
+  };
   const andar = (no: No, prefixo: string) => {
     if (no.type === "paragraph" || no.type === "heading" || no.type === "fraseDestaque" || no.type === "detailsSummary") {
-      linhas.push(prefixo + (no.content ?? []).map((n) => (n.type === "hardBreak" ? "\n" : (n.text ?? ""))).join(""));
+      linhas.push(prefixo + (no.content ?? []).map(deLinha).join(""));
       return;
     }
     if (no.type === "horizontalRule") {
       linhas.push("---");
+      return;
+    }
+    const citacao = referenciaDe(no);
+    if (citacao) {
+      const t = rotulo(citacao.tipo, citacao.id);
+      if (t) linhas.push(prefixo + t);
       return;
     }
     if (no.type === "imagem" || no.type === "arquivo" || no.type === "cartaoLink") {

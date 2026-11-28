@@ -19,6 +19,8 @@ import { CampoEditavel, CelulaTitulo } from "./Celulas";
 import { DescricaoTarefa } from "./DescricaoTarefa";
 import { NovaSubtarefa } from "./NovaSubtarefa";
 import { SubtarefasLista } from "./SubtarefasLista";
+import { VinculosDaTarefa } from "./VinculosDaTarefa";
+import { codigo } from "@/lib/vinculos/tipos";
 
 /** Conteúdo da janela da tarefa: campos editáveis, descrição, subtarefas e atividade. */
 export function DetalheTarefa({
@@ -82,7 +84,7 @@ export function DetalheTarefa({
             Subtarefa de {tarefa.paiTitulo ?? "tarefa"}
           </LinkLocal>
         ) : (
-          <p className="rotulo text-suave">Tarefa</p>
+          <p className="rotulo text-suave">Tarefa · {codigo(tarefa.numero)}</p>
         )}
         <div className="mt-1">
           <CelulaTitulo id={tarefa.id} valor={tarefa.titulo} grande />
@@ -160,6 +162,13 @@ export function DetalheTarefa({
           <NovaSubtarefa paiId={tarefa.id} membros={membros} responsavelPadrao={tarefa.responsavel_id} />
         </section>
       )}
+
+      <VinculosDaTarefa
+        key={tarefa.id}
+        tarefaId={tarefa.id}
+        projetoId={tarefa.projeto_id ?? (caminho.startsWith("/org/projetos/") ? caminho.split("/")[3] : null)}
+        versao={tarefa}
+      />
 
       <AtividadeCarregavel tarefaId={tarefa.id} euId={euId} souAdmin={souAdmin} versao={tarefa} />
 

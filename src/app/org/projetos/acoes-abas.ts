@@ -66,7 +66,7 @@ export async function duplicarAbaAction(id: string): Promise<RetornoAba> {
   const sessao = await exigirOrg();
   if (!UUID.test(id)) return { erro: "Aba inválida." };
   return tentar("duplicar a aba", async () => {
-    const nova = await duplicarAba(id, sessao.conta.id);
+    const nova = await duplicarAba(id, { contaId: sessao.conta.id, podeOrg: sessao.podeOrg });
     return nova ? { id: nova } : { erro: "Aba não encontrada." };
   });
 }
@@ -96,10 +96,10 @@ export async function listarLixeiraAction(projetoId: string): Promise<{ itens: I
 }
 
 export async function restaurarAbaAction(id: string): Promise<RetornoAba> {
-  await exigirOrg();
+  const sessao = await exigirOrg();
   if (!UUID.test(id)) return { erro: "Aba inválida." };
   return tentar("restaurar a aba", async () =>
-    (await restaurarAba(id)) ? { id } : { erro: "Esta página não está mais na lixeira." },
+    (await restaurarAba(id, { contaId: sessao.conta.id, podeOrg: sessao.podeOrg })) ? { id } : { erro: "Esta página não está mais na lixeira." },
   );
 }
 

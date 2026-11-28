@@ -43,6 +43,7 @@ const PASTA_OFFICE: Record<string, string> = { docx: "word/", xlsx: "xl/", pptx:
 /** O começo (e, nos arquivos do Office, o miolo) do arquivo bate com o que a extensão promete? */
 export function conteudoConfere(tipo: string, bytes: Uint8Array): boolean {
   if (tipo === IMAGEM.tipo) return comeca(bytes, "RIFF") && comeca(bytes, "WEBP", 8);
+  if (tipo === IMAGEM.tipoReserva) return bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff;
   if (tipo === ARQUIVO.tipos.pdf) return comeca(bytes, "%PDF-");
   const ext = (Object.keys(ARQUIVO.tipos) as Extensao[]).find((e) => ARQUIVO.tipos[e] === tipo);
   if (!ext || !PASTA_OFFICE[ext]) return false;

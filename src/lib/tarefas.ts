@@ -1,12 +1,15 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { Prioridade, StatusTarefa } from "./tarefas-campos";
+import { bloqueiosAbertos } from "./vinculos/dependencias";
 import { premiarConclusao, type PremioXp, type TarefaConcluida } from "./xp";
 
 export type Pessoa = { id: string; nome: string | null };
 
 export type TarefaDb = {
   id: string;
+  /** Código da tarefa (T-14). */
+  numero: number;
   titulo: string;
   descricao: string | null;
   status: StatusTarefa;
@@ -36,6 +39,8 @@ export type TarefaDb = {
   subtarefas: TarefaDb[];
   /** Título da tarefa-pai, quando esta é uma subtarefa. */
   paiTitulo: string | null;
+  /** Números das tarefas de que esta depende e que ainda não foram concluídas. */
+  bloqueios: number[];
 };
 
 // Modelo de acesso: quem é da organização (papel organizacao/admin) vê e edita
@@ -44,10 +49,10 @@ export type TarefaDb = {
 // essa conferência na borda é o que protege estes dados.
 
 const COLUNAS =
-  "id, titulo, descricao, status, prioridade, data_inicio, prazo, pai_id, comite_slug, formulario_id, projeto_id, grupo_id, solicitante_id, responsavel_id, executores_extra, criado_em, ordem, concluida_em, campos, " +
+  "id, numero, titulo, descricao, status, prioridade, data_inicio, prazo, pai_id, comite_slug, formulario_id, projeto_id, grupo_id, solicitante_id, responsavel_id, executores_extra, criado_em, ordem, concluida_em, campos, " +
   "projeto:projetos!projeto_id(id, nome), solicitante:contas!solicitante_id(id, nome), responsavel:contas!responsavel_id(id, nome)";
 
-type Linha = Omit<TarefaDb, "subtarefas" | "paiTitulo">;
+type Linha = Omit<TarefaDb, "subtarefas" | "paiTitulo" | "bloqueios">;
 const comoLinhas = (dados: unknown) => (dados ?? []) as Linha[];
 
 /** Prazo mais próximo primeiro, sem prazo por último; empate: a mais nova primeiro. */
@@ -69,11 +74,22 @@ function montar(topo: Linha[], subs: Linha[]): TarefaDb[] {
   return [...topo].sort(ordenar).map((t) => ({
     ...t,
     paiTitulo: null,
+    bloqueios: [],
     // Subtarefas na ordem manual (arrastar e soltar); empate: pela criação.
     subtarefas: (porPai.get(t.id) ?? [])
       .sort((a, b) => a.ordem - b.ordem || (a.criado_em < b.criado_em ? -1 : 1))
-      .map((s) => ({ ...s, subtarefas: [], paiTitulo: t.titulo })),
+      .map((s) => ({ ...s, subtarefas: [], paiTitulo: t.titulo, bloqueios: [] })),
   }));
+}
+
+/** Marca o cadeado: preenche `bloqueios` nas tarefas e subtarefas. */
+async function comBloqueios(tarefas: TarefaDb[]): Promise<TarefaDb[]> {
+  const todas = tarefas.flatMap((t) => [t, ...t.subtarefas]);
+  if (!todas.length) return tarefas;
+  // Para listas pequenas, consulta só elas; para o quadro inteiro, todas as dependências de uma vez.
+  const abertos = await bloqueiosAbertos(todas.length <= 150 ? todas.map((t) => t.id) : undefined);
+  for (const t of todas) t.bloqueios = abertos.get(t.id) ?? [];
+  return tarefas;
 }
 
 /**
@@ -100,7 +116,7 @@ export async function listarTarefas(filtro: FiltroTarefas = {}): Promise<TarefaD
     ]);
     if (topo.error) throw topo.error;
     if (subs.error) throw subs.error;
-    return montar(comoLinhas(topo.data).filter(passa), comoLinhas(subs.data));
+    return comBloqueios(montar(comoLinhas(topo.data).filter(passa), comoLinhas(subs.data)));
   }
 
   const { data, error } = await admin
@@ -130,7 +146,7 @@ export async function listarTarefas(filtro: FiltroTarefas = {}): Promise<TarefaD
     .in("pai_id", visiveis.map((t) => t.id))
     .order("criado_em");
   if (erroSubs) throw erroSubs;
-  return montar(visiveis, comoLinhas(subs));
+  return comBloqueios(montar(visiveis, comoLinhas(subs)));
 }
 
 /** Tarefas (de qualquer nível) em aberto atribuídas à conta, para o Início. */
@@ -144,7 +160,7 @@ export async function tarefasAbertasDe(contaId: string, limite = 50): Promise<Ta
     .order("criado_em", { ascending: false })
     .limit(limite);
   if (error) throw error;
-  return comoLinhas(data).map((t) => ({ ...t, subtarefas: [], paiTitulo: null }));
+  return comBloqueios(comoLinhas(data).map((t) => ({ ...t, subtarefas: [], paiTitulo: null, bloqueios: [] })));
 }
 
 /** Uma tarefa com as subtarefas (se for de primeiro nível) ou o título da pai (se for subtarefa). */
@@ -162,7 +178,8 @@ export async function tarefaPorId(id: string): Promise<TarefaDb | null> {
       .eq("id", tarefa.pai_id)
       .maybeSingle();
     if (erroPai) throw erroPai;
-    return { ...tarefa, subtarefas: [], paiTitulo: (pai?.titulo as string | undefined) ?? null };
+    const sub: TarefaDb = { ...tarefa, subtarefas: [], paiTitulo: (pai?.titulo as string | undefined) ?? null, bloqueios: [] };
+    return (await comBloqueios([sub]))[0];
   }
 
   const { data: filhas, error: erroFilhas } = await admin
@@ -171,7 +188,7 @@ export async function tarefaPorId(id: string): Promise<TarefaDb | null> {
     .eq("pai_id", id)
     .order("criado_em");
   if (erroFilhas) throw erroFilhas;
-  return montar([tarefa], comoLinhas(filhas))[0];
+  return (await comBloqueios(montar([tarefa], comoLinhas(filhas))))[0];
 }
 
 /** Pessoas que podem ser solicitante ou executor: quem tem acesso à organização. */

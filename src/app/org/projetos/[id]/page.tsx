@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { notFound, redirect } from "next/navigation";
 import { TbPlus } from "react-icons/tb";
 import { BotaoArquivar } from "@/components/projetos/BotaoArquivar";
+import { DestaqueNoQuadro } from "@/components/projetos/DestaqueNoQuadro";
 import { QuadroGrupos } from "@/components/projetos/QuadroGrupos";
 import { JanelasTarefa } from "@/components/tarefas/JanelasTarefa";
 import { Botao } from "@/components/ui/Botao";
@@ -80,6 +81,10 @@ export default async function ProjetoPage({
           <div className="h-full bg-ouro" style={{ width: `${pct}%` }} />
         </div>
       </Card>
+
+      <Suspense fallback={null}>
+        <DestaqueNoQuadro />
+      </Suspense>
 
       <QuadroGrupos
         projetoId={id}

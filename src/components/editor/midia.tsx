@@ -185,7 +185,7 @@ function ArquivoView(props: NodeViewProps) {
               href={`/api/arquivos/${arquivoId}?baixar=1`}
               target="_blank"
               rel="noopener"
-              className="sem-estilo inline-flex min-h-11 items-center gap-2 border-2 border-inverso px-3 text-xs font-bold hover:bg-inverso hover:text-sobre-inverso md:min-h-9"
+              className="sem-estilo inline-flex min-h-11 items-center gap-2 border-2 border-inverso px-3 text-xs font-bold text-texto hover:bg-inverso hover:text-sobre-inverso md:min-h-9"
             >
               <TbDownload size={15} aria-hidden="true" />
               Baixar
@@ -246,8 +246,8 @@ function CartaoView({ node, selected }: NodeViewProps) {
         className={`sem-estilo flex min-h-24 border border-borda bg-menu hover:border-texto ${selected ? "outline-2 outline-marca-texto" : ""}`}
       >
         {imagem && (
-          // eslint-disable-next-line @next/next/no-img-element -- imagem do site de origem
-          <img src={imagem} alt="" loading="lazy" referrerPolicy="no-referrer" onError={() => setSemImagem(imagem)} className="w-28 shrink-0 self-stretch object-cover sm:w-44" />
+          // eslint-disable-next-line @next/next/no-img-element -- cópia guardada no portal, endereço assinado na hora
+          <img src={imagem} alt="" loading="lazy" onError={() => setSemImagem(imagem)} className="w-28 shrink-0 self-stretch object-cover sm:w-44" />
         )}
         <span className="flex min-w-0 flex-1 flex-col gap-1 p-3" aria-busy={carregando}>
           <span className="line-clamp-2 text-sm font-bold">{carregando ? "Buscando a prévia…" : (previa?.titulo ?? url)}</span>

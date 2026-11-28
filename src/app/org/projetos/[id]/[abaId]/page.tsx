@@ -14,5 +14,5 @@ export default async function PaginaDaAba({ params }: { params: Promise<{ id: st
   const aba = await abaPorId(abaId);
   if (!aba || aba.projeto_id !== id) notFound();
 
-  return <PaginaProjeto key={aba.id} abaId={aba.id} tituloInicial={aba.titulo} />;
+  return <PaginaProjeto key={aba.id} abaId={aba.id} projetoId={id} tituloInicial={aba.titulo} />;
 }

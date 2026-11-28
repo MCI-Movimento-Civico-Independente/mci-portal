@@ -36,9 +36,21 @@ import {
 import type { ComentarioView, EventoView } from "@/components/tarefas/Atividade";
 import { resumirPremios, type PremioXp } from "@/lib/xp";
 import type { AvisoXp } from "@/lib/xp-tipos";
+import { avisoDeBloqueio } from "@/lib/vinculos/tipos";
 import { campoPorChave, type CampoTarefa, type ChaveCampo, type Prioridade } from "@/lib/tarefas-campos";
 
-export type EstadoForm = { erro?: string; ok?: boolean; n?: number; /** XP ganho com a mudança. */ xp?: AvisoXp[] };
+export type EstadoForm = {
+  erro?: string;
+  ok?: boolean;
+  n?: number;
+  /** XP ganho com a mudança. */
+  xp?: AvisoXp[];
+  /** Nada foi gravado: pergunte isto e, com "sim", chame de novo com `forcar`. */
+  confirmar?: string;
+};
+
+/** Status que pedem confirmação quando há dependência aberta. */
+const AVANCA = new Set(["em_andamento", "concluida"]);
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const ERRO_PERIODO = "A data de início não pode ser depois da entrega.";
@@ -138,7 +150,7 @@ const avisosDeXp = (premios: PremioXp[], euId: string, cat: Catalogos) =>
 const valorAtual = (t: TarefaDb, chave: ChaveCampo) => (t as unknown as Record<string, string | null>)[chave] ?? null;
 
 /** Edição inline de um campo (lista, quadro e janela da tarefa). */
-export async function atualizarCampoAction(id: string, chave: string, valor: string): Promise<EstadoForm> {
+export async function atualizarCampoAction(id: string, chave: string, valor: string, forcar = false): Promise<EstadoForm> {
   const sessao = await exigirOrg();
   const campo = campoPorChave(chave);
   if (!campo || !UUID.test(id)) return { erro: "Pedido inválido." };
@@ -153,6 +165,9 @@ export async function atualizarCampoAction(id: string, chave: string, valor: str
   if ("erro" in validado) return { erro: validado.erro };
 
   const patch: Alteracao = { [campo.chave]: validado.valor };
+  if (chave === "status" && !forcar && atual.status !== validado.valor && AVANCA.has(validado.valor ?? "") && atual.bloqueios.length) {
+    return { confirmar: avisoDeBloqueio([{ numero: atual.numero, depende: atual.bloqueios }]) };
+  }
 
   if (campo.tipo === "data") {
     const inicio = chave === "data_inicio" ? validado.valor : atual.data_inicio;
@@ -595,7 +610,7 @@ export type MudancaEmMassa =
   | { tipo: "periodo"; inicio: string; fim: string };
 
 /** Aplica a mesma mudança a várias subtarefas de uma vez (status, pessoas ou período). */
-export async function atualizarEmMassaAction(ids: string[], mudanca: MudancaEmMassa): Promise<EstadoForm> {
+export async function atualizarEmMassaAction(ids: string[], mudanca: MudancaEmMassa, forcar = false): Promise<EstadoForm> {
   const sessao = await exigirOrg();
   if (!Array.isArray(ids) || ids.length === 0 || ids.length > 200 || ids.some((i) => typeof i !== "string" || !UUID.test(i))) {
     return { erro: "Pedido inválido." };
@@ -640,6 +655,17 @@ export async function atualizarEmMassaAction(ids: string[], mudanca: MudancaEmMa
 
   const nomes = (conjunto: (string | null)[]) =>
     conjunto.filter(Boolean).length ? conjunto.filter(Boolean).map((i) => cat.membros.find((m) => m.id === i)?.nome?.trim() || "Membro").join(", ") : null;
+
+  if (mudanca.tipo === "status" && !forcar && AVANCA.has(mudanca.valor)) {
+    const selecionadas = (await Promise.all(alvos.map((id) => tarefaPorId(id)))).filter((t): t is TarefaDb => !!t);
+    // Concluindo em conjunto, a dependência que está na própria seleção deixa de estar aberta.
+    const juntas = new Set(mudanca.valor === "concluida" ? selecionadas.map((t) => t.numero) : []);
+    const bloqueadas = selecionadas
+      .filter((t) => t.status !== mudanca.valor)
+      .map((t) => ({ numero: t.numero, depende: t.bloqueios.filter((n) => !juntas.has(n)) }))
+      .filter((t) => t.depende.length);
+    if (bloqueadas.length) return { confirmar: avisoDeBloqueio(bloqueadas, true) };
+  }
 
   const premios: PremioXp[] = [];
   for (const id of alvos) {
